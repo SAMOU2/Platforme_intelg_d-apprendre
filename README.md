@@ -104,12 +104,10 @@ Cette authentification vérifie l'identité et le rôle pour l'accès à l'inter
 métiers s'appuient encore sur les données simulées ; le branchement des opérations métier et leur
 autorisation côté API restent à faire avant un déploiement de production.
 
-Pour tester le modèle local v2, utiliser les scripts dédiés
-`2-administrateur-PC2-modele-v2.cmd`, `3-enseignant-PC3-modele-v2.cmd` ou
-`4-apprenant-PC4-modele-v2.cmd`. Ils gardent le même rôle et la même connexion serveur, mais
-sélectionnent explicitement le modèle expérimental. Les scripts habituels continuent d'utiliser
-le v1. Le v2 a obtenu 14/24 (58 %) sur le jeu synthétique réservé et a refusé à tort 9/40 questions
-légitimes lors de cette première évaluation : ne pas le déployer comme modèle normal.
+Pour chaque rôle, utiliser le lanceur standard correspondant : `2-administrateur-PC2.cmd`,
+`3-enseignant-PC3.cmd` ou `4-apprenant-PC4.cmd` sous Windows (les fichiers `.sh` sont leurs
+équivalents Linux/macOS). Ces lanceurs donnent accès aux fonctionnalités du rôle et utilisent le
+modèle v1 recommandé. Le modèle v2 reste expérimental et n'a pas de lanceur destiné aux utilisateurs.
 
 Le lancement direct sans `--role=` affiche un message de configuration et ne donne aucun accès.
 Les écrans d'un rôle s'ouvrent seulement après connexion au serveur ; il n'existe plus d'entrée
