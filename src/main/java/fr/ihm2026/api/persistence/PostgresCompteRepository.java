@@ -214,11 +214,6 @@ public final class PostgresCompteRepository {
             boolean complet = nom != null && !nom.isBlank()
                     && email != null && !email.isBlank()
                     && motDePasse != null && !motDePasse.isBlank();
-            if (!aucun && !complet) {
-                throw new IllegalStateException(
-                        "Pour l'amorçage admin, définir ensemble IHM_BOOTSTRAP_ADMIN_NAME, "
-                                + "IHM_BOOTSTRAP_ADMIN_EMAIL et IHM_BOOTSTRAP_ADMIN_PASSWORD.");
-            }
 
             try (Connection connexion = ouvrir()) {
                 connexion.setAutoCommit(false);
@@ -239,6 +234,12 @@ public final class PostgresCompteRepository {
                     if (admins > 0) {
                         connexion.commit();
                         return;
+                    }
+                    // Les variables d'amorçage ne servent plus une fois l'admin créé.
+                    if (!aucun && !complet) {
+                        throw new IllegalStateException(
+                                "Pour l'amorçage admin, définir ensemble IHM_BOOTSTRAP_ADMIN_NAME, "
+                                        + "IHM_BOOTSTRAP_ADMIN_EMAIL et IHM_BOOTSTRAP_ADMIN_PASSWORD.");
                     }
                     if (aucun) {
                         throw new IllegalStateException(

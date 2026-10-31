@@ -25,6 +25,8 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Logger.getLogger(ClientAuthentificationHttps.class.getName());
     private static final Duration DELAI_CONNEXION = Duration.ofSeconds(3);
     private static final Duration DELAI_REQUETE = Duration.ofSeconds(8);
+    // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS.
+    private static final Duration DELAI_ENVOI_EMAIL = Duration.ofSeconds(60);
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(DELAI_CONNEXION)
@@ -94,7 +96,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             String corps = MAPPER.writeValueAsString(
                     Map.of("email", email == null ? "" : email, "motDePasse", secret));
             JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/connexion"))
-                    .timeout(DELAI_REQUETE)
+                    .timeout(DELAI_ENVOI_EMAIL)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(corps))
@@ -190,7 +192,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
                     "email", email == null ? "" : email,
                     "role", role == null ? "" : role.name()));
             JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/admin/invitations"))
-                    .timeout(DELAI_REQUETE)
+                    .timeout(DELAI_ENVOI_EMAIL)
                     .header("Authorization", "Bearer " + jeton)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")
@@ -276,7 +278,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
                     "acceptee", acceptee));
             JsonNode reponse = envoyer(HttpRequest.newBuilder(
                             base.resolve("/api/admin/comptes/decision"))
-                    .timeout(DELAI_REQUETE)
+                    .timeout(DELAI_ENVOI_EMAIL)
                     .header("Authorization", "Bearer " + jeton)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")

@@ -77,7 +77,6 @@ public final class PostgresAuthentificationService {
             throw new AuthentificationRefuseeException();
         }
 
-        CompteAuthentifie compte;
         try (Connection connexion = ouvrir()) {
             connexion.setAutoCommit(false);
             try (PreparedStatement requete = connexion.prepareStatement("""
@@ -119,7 +118,7 @@ public final class PostgresAuthentificationService {
                         connexion.commit();
                         throw new AuthentificationRefuseeException();
                     }
-                    compte = new CompteAuthentifie(resultat.getLong("utilisateur_id"),
+                    CompteAuthentifie compte = new CompteAuthentifie(resultat.getLong("utilisateur_id"),
                             resultat.getString("nom"), resultat.getString("email"),
                             Session.Role.valueOf(resultat.getString("role")), true,
                             resultat.getString("statut_inscription"));
@@ -128,14 +127,15 @@ public final class PostgresAuthentificationService {
                         supprimer.setObject(1, id);
                         supprimer.executeUpdate();
                     }
+                    ResultatConnexion session = creerSession(connexion, compte);
                     connexion.commit();
+                    return session;
                 }
             } catch (SQLException | RuntimeException ex) {
                 connexion.rollback();
                 throw ex;
             }
         }
-        return creerSession(compte);
     }
 
     public void annulerCodeConnexion(String identifiant) throws SQLException {
@@ -257,7 +257,8 @@ public final class PostgresAuthentificationService {
         }
     }
 
-    private ResultatConnexion creerSession(CompteAuthentifie compte) throws SQLException {
+    private ResultatConnexion creerSession(Connection connexion, CompteAuthentifie compte)
+            throws SQLException {
         byte[] aleatoire = new byte[32];
         ALEA.nextBytes(aleatoire);
         String jeton = Base64.getUrlEncoder().withoutPadding().encodeToString(aleatoire);
@@ -271,8 +272,7 @@ public final class PostgresAuthentificationService {
                         now() + INTERVAL '8 hours')
                 RETURNING expire_le
                 """;
-        try (Connection connexion = ouvrir();
-             PreparedStatement requete = connexion.prepareStatement(sql)) {
+        try (PreparedStatement requete = connexion.prepareStatement(sql)) {
             requete.setLong(1, compte.id());
             requete.setString(2, empreinte(jeton));
             try (ResultSet resultat = requete.executeQuery()) {

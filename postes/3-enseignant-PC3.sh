@@ -7,10 +7,10 @@
 # =====================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
-export PATH="$JAVA_HOME/bin:$PATH"
+if [[ -n "${JAVA_HOME:-}" ]]; then export PATH="$JAVA_HOME/bin:$PATH"; fi
 MVN=./mvnw
 PORT="${PORT:-7777}"
 ARGS="--role=enseignant --poste=PC3 --port=${PORT}"
+if [[ -n "${IHM_SERVEUR:-}" ]]; then ARGS+=" --serveur=${IHM_SERVEUR}"; fi
 echo "  PC3 enseignant - detection automatique du serveur local."
-exec "$MVN" -B javafx:run "-Djavafx.args=${ARGS}"
+exec bash "$MVN" -B javafx:run "-Djavafx.args=${ARGS}"

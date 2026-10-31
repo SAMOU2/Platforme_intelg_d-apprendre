@@ -163,6 +163,58 @@ class PostgresAuthentificationServiceIntegrationTest {
         }
     }
 
+    @Test
+    @DisplayName("Cinq codes incorrects bloquent aussi le bon code")
+    void limiterLesEssaisDuCode() throws SQLException {
+        var challenge = authentification.demanderCodeConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source);
+        String mauvaisCode = challenge.code().equals("000000") ? "000001" : "000000";
+        for (int i = 0; i < 5; i++) {
+            assertThrows(PostgresAuthentificationService.AuthentificationRefuseeException.class,
+                    () -> authentification.confirmerCodeConnexion(challenge.identifiant(), mauvaisCode));
+        }
+        assertThrows(PostgresAuthentificationService.AuthentificationRefuseeException.class,
+                () -> authentification.confirmerCodeConnexion(challenge.identifiant(), challenge.code()));
+    }
+
+    @Test
+    @DisplayName("Redemander un code invalide le précédent")
+    void nouveauCodeRemplaceLePrecedent() throws SQLException {
+        var ancien = authentification.demanderCodeConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source);
+        var nouveau = authentification.demanderCodeConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source);
+        assertThrows(PostgresAuthentificationService.AuthentificationRefuseeException.class,
+                () -> authentification.confirmerCodeConnexion(ancien.identifiant(), ancien.code()));
+        var session = authentification.confirmerCodeConnexion(nouveau.identifiant(), nouveau.code());
+        assertTrue(authentification.valider(session.jeton()).isPresent());
+    }
+
+    @Test
+    @DisplayName("Un échec d'insertion de session ne consomme pas le code")
+    void echecSessionConserveLeCode() throws SQLException {
+        var challenge = authentification.demanderCodeConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source);
+        // Contrainte propre à ce compte de test ; aucune session existante n'est modifiée.
+        String contrainte = "test_auth_" + UUID.randomUUID().toString().replace("-", "");
+        try (var connexion = DriverManager.getConnection(configuration.url(),
+                configuration.utilisateur(), configuration.motDePasse());
+             var requete = connexion.createStatement()) {
+            long id = comptes.lister().stream().filter(c -> c.email().equals(email))
+                    .findFirst().orElseThrow().id();
+            requete.execute("ALTER TABLE sessions ADD CONSTRAINT " + contrainte
+                    + " CHECK (utilisateur_id <> " + id + ") NOT VALID");
+            try {
+                assertThrows(SQLException.class, () -> authentification.confirmerCodeConnexion(
+                        challenge.identifiant(), challenge.code()));
+            } finally {
+                requete.execute("ALTER TABLE sessions DROP CONSTRAINT " + contrainte);
+            }
+        }
+        var session = authentification.confirmerCodeConnexion(challenge.identifiant(), challenge.code());
+        assertTrue(authentification.valider(session.jeton()).isPresent());
+    }
+
     private boolean empreinteEnBaseEgaleAuJeton(String jeton) throws SQLException {
         try (var connexion = DriverManager.getConnection(configuration.url(),
                 configuration.utilisateur(), configuration.motDePasse());
