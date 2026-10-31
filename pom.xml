@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>fr.ihm2026</groupId>
+  <artifactId>apprentissage</artifactId>
+  <version>0.14.4</version>
+  <name>Plateforme d'apprentissage Java / Python / C++</name>
+  <description>Projet d'IHM 2026 — client JavaFX (AtlantaFX + CSS3)</description>
+
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <javafx.version>25.0.5</javafx.version>
+    <atlantafx.version>2.0.1</atlantafx.version>
+    <jackson.version>2.17.2</jackson.version>
+    <postgresql.version>42.7.5</postgresql.version>
+  </properties>
+
+  <dependencies>
+    <!-- JavaFX : contrôles et fenêtres (IHM-JFX1) -->
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-controls</artifactId>
+      <version>${javafx.version}</version>
+    </dependency>
+    <!-- AtlantaFX : thèmes clair / sombre (IHM-JFX2) -->
+    <dependency>
+      <groupId>io.github.mkpaz</groupId>
+      <artifactId>atlantafx-base</artifactId>
+      <version>${atlantafx.version}</version>
+    </dependency>
+
+    <!-- Jackson : client HTTP / JSON (api/dto) -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+
+    <!-- Driver utilisé par le service de comptes côté serveur. -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgresql.version}</version>
+    </dependency>
+
+    <!-- E-mails de validation de compte et codes de connexion à usage unique. -->
+    <dependency>
+      <groupId>org.eclipse.angus</groupId>
+      <artifactId>angus-mail</artifactId>
+      <version>2.0.3</version>
+    </dependency>
+
+    <!-- Tests -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Une seule ressource est filtrée : le fichier de version. Les CSS, polices et images
+         sont copiées telles quelles (le filtrage corromprait les fichiers binaires). -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>fr/ihm2026/version.properties</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>fr/ihm2026/version.properties</include>
+        </includes>
+      </resource>
+      <!-- Les prompts sont écrits dans ia/prompts/ (étape 5) et NON recopiés dans
+           src/main/resources : une seule source, donc aucune dérive possible entre le prompt
+           relu et le prompt chargé. Les fichiers système sont copiés tels quels, sans filtrage
+           (le filtrage mangeait les ${...} du gabarit). -->
+      <resource>
+        <directory>${project.basedir}/ia/prompts</directory>
+        <targetPath>fr/ihm2026/ia</targetPath>
+        <filtering>false</filtering>
+        <includes>
+          <include>system-*.md</include>
+          <include>sortie-schema.json</include>
+        </includes>
+      </resource>
+      <!-- Même principe pour le modèle local (étape 6) : il est entraîné par ia/modele/entrainer.py
+           et copié tel quel sur le classpath. Le fichier de poids n'est pas versionné à la main :
+           il est régénéré et vérifié par entrainer.py, option de vérification. -->
+      <resource>
+        <directory>${project.basedir}/ia/modele</directory>
+        <targetPath>fr/ihm2026/ia</targetPath>
+        <filtering>false</filtering>
+        <includes>
+          <include>modele-local-*.json</include>
+        </includes>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+      </plugin>
+
+      <!-- mvn javafx:run -->
+      <plugin>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-maven-plugin</artifactId>
+        <version>0.0.8</version>
+        <configuration>
+          <mainClass>fr.ihm2026.Launcher</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

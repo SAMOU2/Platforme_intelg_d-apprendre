@@ -1,0 +1,310 @@
+/* =====================================================================
+   retro.css — style « old school » (v0.12.0), chargé après le thème.
+   Activé par la classe racine--retro (-Dihm.style=retro ou bouton ▚).
+   Principe : les jetons changent de valeur, les composants se dépouillent
+   (aucun arrondi, aucune ombre), et la typographie passe en monospace.
+   Aucune couleur n'est écrite en dur ailleurs que dans ce fichier.
+   ===================================================================== */
+
+.racine--retro {
+    -color-fenetre: #0b0f0b;
+    -color-surface-translucide: #0f140f;
+    -color-barre-titre: #16201a;
+    -color-barre-laterale: #101710;
+    -color-contenu: #0f140f;
+    -color-separateur: #2c3a2c;
+    -color-survol-lateral: #1c2a1c;
+    -color-surface: #131a13;
+    -color-surface-2: #18221a;
+    -color-surface-2-50: #18221a;
+    -color-surface-3: #223026;
+    -color-bordure: #2c3a2c;
+    -color-bordure-forte: #465a46;
+    -color-texte: #b6f0b6;          /* phosphore vert */
+    -color-texte-2: #7fbf8a;
+    -color-texte-3: #5d8a66;
+    -color-accent: #3fbf5f;
+    -color-accent-fonce: #2f8f47;
+    -color-ia: #e0b050;             /* l'assistant est en ambre, comme un Minitel */
+    -color-java: #d08a2a;
+    -color-python: #4fbf7f;
+    -color-cpp: #4fb0b0;
+    -color-valide: #3fbf5f;
+    -color-encours: #3f8fbf;
+    -color-verrouille: #5d8a66;
+    -color-alerte: #e0b050;
+    -color-danger: #e05f4f;
+
+    -fx-font-family: "JetBrains Mono", "Consolas", monospace;
+    -fx-font-size: 12.5px;
+}
+
+/* --------------------------------------------------- tout devient anguleux */
+.racine--retro .fenetre,
+.racine--retro .card,
+.racine--retro .panel-ia,
+.racine--retro .carte-code,
+.racine--retro .login-card,
+.racine--retro .table-view,
+.racine--retro .text-field,
+.racine--retro .text-area,
+.racine--retro .combo-box,
+.racine--retro .bulle-ia,
+.racine--retro .recapitulatif {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-effect: none;
+}
+.racine--retro .barre-titre {
+    -fx-background-radius: 0;
+    -fx-border-width: 0 0 2 0;
+    -fx-border-color: transparent transparent -color-bordure-forte transparent;
+}
+.racine--retro .barre-laterale {
+    -fx-background-radius: 0;
+    -fx-border-width: 0 2 0 0;
+    -fx-border-color: transparent -color-bordure-forte transparent transparent;
+}
+.racine--retro .contenu-fenetre {
+    -fx-background-radius: 0;
+    -fx-background-color: -color-contenu;
+}
+
+/* ------------------------------------------------- boutons biseautés 1995 */
+.racine--retro .button,
+.racine--retro .btn-secondaire,
+.racine--retro .btn-ia,
+.racine--retro .bouton-nav,
+.racine--retro .bouton-apparence,
+.racine--retro .bouton-quitter {
+    -fx-background-color: -color-surface-3;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-color: #6f8f6f #1a241a #1a241a #6f8f6f;   /* lumière en haut à gauche */
+    -fx-text-fill: -color-texte;
+    -fx-effect: none;
+    -fx-padding: 5 12 5 12;
+}
+.racine--retro .button:hover,
+.racine--retro .btn-ia:hover {
+    -fx-background-color: #2c4030;
+}
+.racine--retro .button:pressed,
+.racine--retro .btn-ia:pressed {
+    -fx-border-color: #1a241a #6f8f6f #6f8f6f #1a241a;   /* le biseau s'inverse : ça s'enfonce */
+    -fx-background-color: #223026;
+}
+.racine--retro .btn-primary {
+    -fx-background-color: -color-accent-fonce;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-color: #8ff0a8 #18602c #18602c #8ff0a8;
+    -fx-text-fill: #04120a;
+    -fx-effect: none;
+    -fx-font-weight: bold;
+}
+.racine--retro .btn-primary:hover {
+    -fx-background-color: -color-accent;
+}
+
+/* Les pastilles gardent leurs couleurs système : ce sont des boutons, mais pas des boutons
+   de commande. Sans cette règle, le biseau 1995 les repeignait en gris. */
+.racine--retro .feu {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-color: #000000 #000000 #ffffff #ffffff;
+    -fx-padding: 0;
+    -fx-effect: none;
+}
+.racine--retro .feu-rouge { -fx-background-color: #e0503f; }
+.racine--retro .feu-jaune { -fx-background-color: #d0a02a; }
+.racine--retro .feu-vert  { -fx-background-color: #3fbf5f; }
+
+/* Les commandes de l'assistant tiennent sur deux lignes au lieu de trois */
+.racine--retro .btn-ia {
+    -fx-font-size: 10.5px;
+    -fx-padding: 4 8 4 8;
+}
+
+/* ----------------------------------------- barre latérale et titre en mono */
+.racine--retro .titre-vue,
+.racine--retro .titre-fenetre,
+.racine--retro .titre-panneau,
+.racine--retro .titre-bloc,
+.racine--retro .role-nom,
+.racine--retro .kpi-valeur,
+.racine--retro .login-titre {
+    -fx-font-family: "JetBrains Mono", "Consolas", monospace;
+    -fx-font-weight: bold;
+}
+.racine--retro .titre-vue {
+    -fx-text-fill: -color-accent;
+    -fx-border-color: transparent transparent -color-accent transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0 0 6 0;
+}
+.racine--retro .entete-section {
+    -fx-text-fill: -color-texte-3;
+    -fx-font-size: 10px;
+}
+.racine--retro .ligne-laterale.active {
+    -fx-background-color: -color-accent-fonce;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-color: transparent transparent transparent -color-texte;
+}
+.racine--retro .ligne-laterale.active .libelle-lateral {
+    -fx-text-fill: #04120a;
+}
+
+/* ---------------------------------------------- bulles : cadres, pas des bulles */
+.racine--retro .ia-utilisateur {
+    -fx-background-color: #1d3020;
+    -fx-border-width: 1;
+    -fx-border-color: -color-bordure-forte;
+    -fx-text-fill: -color-texte;
+}
+.racine--retro .ia-reponse {
+    -fx-background-color: #1b1a10;
+    -fx-border-color: -color-ia;
+    -fx-border-width: 1;
+    -fx-text-fill: #f0d9a0;
+}
+.racine--retro .ia-systeme {
+    -fx-background-color: #141a14;
+    -fx-border-color: -color-bordure;
+    -fx-border-width: 1;
+}
+.racine--retro .mention-ia {
+    -fx-text-fill: -color-texte-3;
+}
+
+/* --------------------------------------------------------- tableaux, onglets */
+.racine--retro .table-view,
+.racine--retro .table-view .column-header,
+.racine--retro .table-row-cell {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.racine--retro .table-view .column-header .label {
+    -fx-text-fill: -color-texte-3;
+    -fx-font-family: "JetBrains Mono", monospace;
+}
+.racine--retro .table-row-cell:selected {
+    -fx-background-color: #22452c;
+}
+/* Aucune bande claire derrière les onglets : le fond du panneau suffit. */
+.racine--retro .tab-pane,
+.racine--retro .tab-pane > .tab-header-area,
+.racine--retro .tab-pane > .tab-header-area > .headers-region,
+.racine--retro .tab-pane > .tab-header-area > .tab-header-background,
+.racine--retro .tab-pane > .tab-content-area {
+    -fx-background-color: transparent;
+}
+.racine--retro .tab-pane > .tab-header-area .tab {
+    -fx-background-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-color: -color-bordure-forte;
+    -fx-padding: 4 14 4 14;
+}
+.racine--retro .tab-pane > .tab-header-area .tab:selected {
+    -fx-background-color: -color-accent-fonce;
+    -fx-effect: none;
+}
+.racine--retro .tab-pane > .tab-header-area .tab:selected .tab-label {
+    -fx-text-fill: #04120a;
+}
+
+/* ------------------------------------------------------- éditeur, console */
+.racine--retro .editor,
+.racine--retro .console,
+.racine--retro .bloc-code {
+    -fx-font-family: "JetBrains Mono", "Consolas", monospace;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-color: -color-bordure-forte;
+    -fx-border-width: 1;
+}
+.racine--retro .code-kw { -fx-fill: #8ff0a8; }
+.racine--retro .code-str { -fx-fill: #f0d9a0; }
+.racine--retro .code-com { -fx-fill: #5d8a66; }
+.racine--retro .code-defaut { -fx-fill: -color-texte; }
+
+/* -------------------------------------------------------------- divers */
+.racine--retro .scroll-bar .thumb {
+    -fx-background-color: -color-bordure-forte;
+    -fx-background-radius: 0;
+}
+.racine--retro .chip-etat,
+.racine--retro .badge-langage,
+.racine--retro .pastille,
+.racine--retro .avatar {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.racine--retro .badge-langage {
+    -fx-text-fill: #04120a;
+    -fx-font-family: "JetBrains Mono", monospace;
+}
+.racine--retro .login-view {
+    -fx-background-color: -color-fenetre;
+}
+.racine--retro .login-card {
+    -fx-border-width: 2;
+    -fx-border-color: -color-bordure-forte;
+    -fx-background-color: -color-surface;
+}
+.racine--retro .login-titre {
+    -fx-text-fill: -color-accent;
+}
+.racine--retro .kpi {
+    -fx-border-width: 1;
+    -fx-border-color: -color-bordure-forte;
+}
+.racine--retro .tooltip {
+    -fx-background-radius: 0;
+    -fx-background-color: #0b0f0b;
+    -fx-border-width: 1;
+    -fx-border-color: -color-bordure-forte;
+    -fx-text-fill: -color-texte;
+}
+
+/* La coloration syntaxique est écrite pour un fond clair ; sur le phosphore elle devient
+   illisible. On la ramène dans la gamme du tube : mots-clés en phosphore vif, chaînes en vert
+   doux, nombres en ambre, commentaires en vert éteint. */
+.racine--retro .code-java .code-kw,
+.racine--retro .code-python .code-kw,
+.racine--retro .code-cpp .code-kw {
+    -fx-fill: #e8ffe8;
+}
+.racine--retro .code-java .code-str,
+.racine--retro .code-python .code-str,
+.racine--retro .code-cpp .code-str {
+    -fx-fill: #9fe0a0;
+}
+.racine--retro .code-java .code-num,
+.racine--retro .code-python .code-num,
+.racine--retro .code-cpp .code-num {
+    -fx-fill: -color-ia;
+}
+.racine--retro .code-java .code-com,
+.racine--retro .code-python .code-com,
+.racine--retro .code-cpp .code-com {
+    -fx-fill: -color-texte-3;
+}
+
+/* Le champ d'adresse du poste est un champ comme les autres : angles droits, curseur plein. */
+.racine--retro .champ-adresse {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-color: #6f8f6f #1a241a #1a241a #6f8f6f;
+}
+.racine--retro .champ-adresse:focused {
+    -fx-border-color: -color-accent;
+}
+.racine--retro .btn-discret {
+    -fx-text-fill: -color-texte-3;
+}

@@ -1,0 +1,42 @@
+# =====================================================================
+#  PostgreSQL 16 pour la plateforme d'apprentissage (projet d'IHM 2026)
+#  Démarrage :  docker compose up -d
+#  Le schéma, le jeu de données et le corpus v1 sont appliqués automatiquement
+#  au premier démarrage (dossier /docker-entrypoint-initdb.d, ordre alphabétique).
+#  L'image porte pgvector : l'extension `vector` est indispensable à l'indexation.
+#  Reste à lancer une fois la base démarrée : python3 ia/indexer.py
+# =====================================================================
+services:
+  postgres:
+    # pgvector/pgvector:pg16 et non postgres:16-alpine : le corpus de l'agent a besoin
+    # de l'extension `vector` (db/03-corpus-ia.sql), absente de l'image officielle.
+    image: pgvector/pgvector:pg16
+    container_name: ihm2026-postgres
+    environment:
+      POSTGRES_DB: ihm2026
+      POSTGRES_USER: ihm2026
+      POSTGRES_PASSWORD: ihm2026
+      TZ: Africa/Algiers
+      # Le corpus est en français : la base doit être en UTF8, sinon l'indexation
+      # échoue sur UnicodeDecodeError (constaté le 27/10/2026).
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    ports:
+      - "${IHM_DB_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./03-corpus-ia.sql:/docker-entrypoint-initdb.d/03-corpus-ia.sql:ro
+      - ./04-ia-index.sql:/docker-entrypoint-initdb.d/04-ia-index.sql:ro
+      - ./05-corpus-v1.sql:/docker-entrypoint-initdb.d/05-corpus-v1.sql:ro
+      - ./07-auth.sql:/docker-entrypoint-initdb.d/07-auth.sql:ro
+      - ./08-auth-sessions.sql:/docker-entrypoint-initdb.d/08-auth-sessions.sql:ro
+      - ./09-inscriptions-et-codes.sql:/docker-entrypoint-initdb.d/09-inscriptions-et-codes.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ihm2026 -d ihm2026"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

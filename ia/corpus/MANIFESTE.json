@@ -1,0 +1,23 @@
+{
+  "version": "corpus-v1",
+  "gele": "2026-10-27T20:16:19",
+  "regenere": "2026-10-27T20:19:32",
+  "principe": "le jeu de 60 questions est figé AVANT la première mesure : aucune évaluation postérieure au réglage n'est admise",
+  "empreintes_sha256": {
+    "source": "e98930314f49af01baa5678685ce3a323b136a07e344dfff3aa980a0801abd1f",
+    "corpus": "36cb2188920cbb77a3c9932a3bf0c79d0024bdb930130d9b991d7c511f97a68f",
+    "tsv": "4649e72f474b49d07634950aec84cb994e34f90eadb15b38b23b3246b64fa7c1",
+    "questions": "a8f4fcc1dcfb1d0c7565bf7e258c7f0e2296548afaec43ea0af6b834356bb6fd",
+    "questions_invariantes": "16d7c7613ded1028d89d9a199d46be238e4bd91e608244205b2bf1f60aae84ec",
+    "sql": "12c9bdd4c5a0872c8b7e3c27ad6a7ccc50e8f9d1fc5341590f54c4929e26bd98"
+  },
+  "corrections": [
+    "2026-10-27 : titre du cours Java « Methodes… » corrigé en « Méthodes… » ; énoncés, témoins et types des 60 questions inchangés (signature invariante identique)"
+  ],
+  "compteurs": {
+    "cours": 18,
+    "fragments": 36,
+    "questions": 60
+  },
+  "gel_initial": "2026-10-27T20:16:19 — date du premier gel, conservée : la correction d'un titre de cours ne change aucun énoncé, aucun témoin, aucun type (signature invariante 16d7c761… identique depuis le premier gel)"
+}

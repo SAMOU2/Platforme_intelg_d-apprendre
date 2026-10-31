@@ -1,0 +1,958 @@
+/* =====================================================================
+   app.css — feuille de style unique de la plateforme (v0.9.0)
+   Direction visuelle : macOS (Sonoma) — barre de titre translucide,
+   pastilles de fenêtre, surfaces blanches à coins arrondis, ombres
+   douces, couleur d'accent système, contrôles « push » et « segmented ».
+
+   Aucune couleur n'est écrite en Java : la palette est dans
+   theme-light.css / theme-dark.css, les composants sont ici (BNF-T4).
+   Aucune couleur n'est non plus écrite en dur dans ce fichier, sauf les
+   teintes de la fenêtre de connexion et de la coloration syntaxique,
+   qui ont leur propre surcharge sombre.
+   ===================================================================== */
+
+.root {
+    /* Palette : theme-light.css / theme-dark.css (jetons symétriques, testés).
+       Ici, uniquement la typographie et les réglages généraux. */
+    -fx-font-family: "Inter", "SF Pro Text", "Segoe UI", "DejaVu Sans", sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-texte;
+    -fx-accent: -color-accent;
+    -fx-focus-color: -color-accent;
+    -fx-faint-focus-color: rgba(0, 122, 255, 0.20);
+}
+
+/* ================================================= cadre de fenêtre macOS */
+.calque-fenetre {
+    -fx-background-color: transparent;
+}
+.hote-fenetre {
+    -fx-background-color: transparent;
+}
+/* La fenêtre elle-même : coins arrondis, ombre portée, bord 0,5 px */
+.fenetre {
+    -fx-background-color: -color-fenetre;
+    -fx-background-radius: 12;
+    -fx-border-color: -color-bordure-forte;
+    -fx-border-radius: 12;
+    -fx-border-width: 0.5;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.42), 34, 0.24, 0, 12);
+    -fx-padding: 0;
+    -fx-clip-radius: 12;
+}
+
+/* ------------------------------------------------- barre de titre unifiée */
+.barre-titre {
+    -fx-background-color: -color-barre-titre;
+    -fx-background-radius: 12 12 0 0;
+    -fx-border-color: transparent transparent -color-separateur transparent;
+    -fx-border-width: 0 0 0.5 0;
+    -fx-padding: 0 12 0 16;
+    -fx-min-height: 46;
+    -fx-pref-height: 46;
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+.racine--login .fenetre {
+    -fx-background-color: transparent;
+}
+
+/* pastilles — couleurs système exactes, symboles au survol comme sur macOS */
+.feux {
+    -fx-spacing: 8;
+    -fx-padding: 0 8 0 0;
+    -fx-alignment: center-left;
+}
+.feu {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-width: 0.5;
+    -fx-border-color: -color-bordure-forte;
+    -fx-padding: 0;
+    -fx-font-size: 8px;
+    -fx-font-weight: bold;
+    -fx-text-fill: transparent;
+    -fx-cursor: hand;
+    -fx-effect: none;
+}
+.feu-rouge { -fx-background-color: #ff5f57; }
+.feu-jaune { -fx-background-color: #febc2e; }
+.feu-vert  { -fx-background-color: #28c840; }
+.feux:hover .feu { -fx-text-fill: rgba(0, 0, 0, 0.55); }
+.feu > .text { -fx-font-size: 8px; }
+.feu:hover { -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 4, 0.2, 0, 0); }
+
+/* chevrons retour / avance */
+.bouton-nav {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6;
+    -fx-padding: 3 7 3 7;
+    -fx-effect: none;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+.bouton-nav:hover {
+    -fx-background-color: -color-surface-3;
+}
+.bouton-nav:disabled {
+    -fx-opacity: 0.32;
+}
+.bouton-nav-icone {
+    -fx-fill: -color-texte-2;
+    -fx-scale-x: 0.72;
+    -fx-scale-y: 0.72;
+}
+.titre-fenetre {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+    -fx-padding: 0 0 0 4;
+}
+.bouton-apparence {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-texte-2;
+    -fx-padding: 3 8 3 8;
+    -fx-cursor: hand;
+}
+.bouton-apparence:hover {
+    -fx-background-color: -color-surface-3;
+}
+.bouton-laterale {
+    -fx-font-size: 12px;
+}
+
+/* ------------------------------------------------------ barre latérale */
+.barre-laterale {
+    -fx-background-color: -color-barre-laterale;
+    -fx-background-radius: 0 0 0 12;
+    -fx-border-color: transparent -color-separateur transparent transparent;
+    -fx-border-width: 0 0.5 0 0;
+    -fx-padding: 8 10 10 10;
+    -fx-spacing: 1;
+    -fx-min-width: 244;
+    -fx-pref-width: 244;
+}
+.entete-section {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte-3;
+    -fx-padding: 12 8 4 8;
+}
+.ligne-laterale {
+    -fx-padding: 5 8 5 8;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+.ligne-laterale:hover {
+    -fx-background-color: -color-survol-lateral;
+}
+.ligne-laterale.active {
+    -fx-background-color: -color-accent;
+}
+.ligne-laterale.active .libelle-lateral {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+.ligne-laterale.active .icone-laterale {
+    -fx-fill: white;
+}
+.libelle-lateral {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -color-texte;
+}
+.icone-laterale {
+    -fx-fill: -color-accent;
+    -fx-scale-x: 0.86;
+    -fx-scale-y: 0.86;
+}
+.ligne-laterale.active .icone-laterale { -fx-fill: white; }
+.pastille-parcours {
+    -fx-min-width: 9;
+    -fx-min-height: 9;
+    -fx-max-width: 9;
+    -fx-max-height: 9;
+    -fx-background-radius: 5;
+}
+.parcours-java { -fx-background-color: -color-java; }
+.parcours-python { -fx-background-color: -color-python; }
+.parcours-cpp { -fx-background-color: -color-cpp; }
+.ligne-parcours .libelle-lateral { -fx-padding: 0 0 0 3; }
+.coche-parcours {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-texte-2;
+    -fx-font-weight: bold;
+}
+.ligne-parcours.courant .coche-parcours { -fx-text-fill: -color-accent; }
+
+/* pied de barre latérale : le compte */
+.compte-lateral {
+    -fx-padding: 10 4 2 4;
+    -fx-border-color: -color-separateur transparent transparent transparent;
+    -fx-border-width: 0.5 0 0 0;
+}
+.avatar {
+    -fx-min-width: 26;
+    -fx-min-height: 26;
+    -fx-max-width: 26;
+    -fx-max-height: 26;
+    -fx-background-color: -color-accent;
+    -fx-background-radius: 13;
+}
+.avatar-initiale {
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+.compte-nom {
+    -fx-font-size: 11.5px;
+    -fx-max-width: 148;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+}
+.compte-role {
+    -fx-font-size: 10.5px;
+    -fx-text-fill: -color-texte-3;
+}
+.bouton-quitter {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-texte-2;
+    -fx-padding: 3 7 3 7;
+    -fx-cursor: hand;
+}
+.bouton-quitter:hover {
+    -fx-background-color: rgba(255, 59, 48, 0.14);
+    -fx-text-fill: -color-danger;
+}
+
+/* --------------------------------------------------------- zone de contenu */
+.contenu-fenetre {
+    -fx-background-color: -color-contenu;
+    -fx-background-radius: 0 0 12 0;
+    -fx-padding: 0;
+}
+/* Sur l'écran de connexion, c'est le dégradé qui peint le contenu : la fenêtre, elle, reste
+   transparente pour laisser voir les coins arrondis. */
+.racine--login .contenu-fenetre {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0 0 12 12;
+}
+
+/* ---------------------------------------------------------- contrôles */
+.button {
+    -fx-background-color: -color-surface, linear-gradient(to bottom, -color-surface, -color-surface-2);
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 7, 6;
+    -fx-border-color: -color-bordure-forte;
+    -fx-border-radius: 7;
+    -fx-border-width: 0.5;
+    -fx-text-fill: -color-texte;
+    -fx-font-size: 12.5px;
+    -fx-padding: 5 14 5 14;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.07), 3, 0, 0, 1);
+}
+.button:hover {
+    -fx-background-color: -color-surface, linear-gradient(to bottom, -color-surface, -color-surface-3);
+}
+.button:pressed {
+    -fx-background-color: -color-surface-2;
+    -fx-effect: none;
+}
+.button:focused {
+    -fx-border-color: -color-accent;
+    -fx-effect: dropshadow(gaussian, rgba(0, 122, 255, 0.35), 6, 0.15, 0, 0);
+}
+.btn-primary {
+    -fx-background-color: linear-gradient(to bottom, -color-accent, -color-accent-fonce);
+    -fx-background-insets: 0;
+    -fx-background-radius: 7;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 6 18 6 18;
+    -fx-effect: dropshadow(gaussian, rgba(0, 122, 255, 0.45), 6, 0.2, 0, 1);
+}
+.btn-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, #1a8bff, -color-accent);
+}
+.btn-primary:pressed {
+    -fx-background-color: -color-accent-fonce;
+}
+.btn-secondaire, .btn-ia {
+    -fx-background-color: -color-surface;
+    -fx-background-insets: 0;
+    -fx-background-radius: 7;
+    -fx-border-color: -color-bordure-forte;
+    -fx-border-radius: 7;
+    -fx-border-width: 0.5;
+    -fx-text-fill: -color-texte;
+    -fx-font-size: 12px;
+    -fx-padding: 5 11 5 11;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 3, 0, 0, 1);
+}
+.btn-secondaire:hover, .btn-ia:hover {
+    -fx-background-color: -color-surface-2;
+}
+.btn-ia:pressed {
+    -fx-background-color: -color-surface-3;
+}
+.wide {
+    -fx-max-width: 10000;
+}
+
+/* champs de saisie — coins arrondis et anneau de focus système */
+.text-field, .text-area, .password-field, .combo-box, .spinner {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 6;
+    -fx-border-color: -color-bordure-forte;
+    -fx-border-radius: 6;
+    -fx-border-width: 0.5;
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-texte;
+    -fx-prompt-text-fill: -color-texte-3;
+    -fx-padding: 5 8 5 8;
+}
+.text-field:focused, .text-area:focused, .password-field:focused, .combo-box:focused {
+    -fx-border-color: -color-accent;
+    -fx-effect: dropshadow(gaussian, rgba(0, 122, 255, 0.28), 7, 0.1, 0, 0);
+}
+.text-area {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+.text-area .content {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 6;
+    -fx-padding: 8;
+}
+.combo-box {
+    -fx-padding: 0;
+}
+.combo-box .list-cell {
+    -fx-padding: 4 8 4 8;
+    -fx-text-fill: -color-texte;
+    -fx-background-color: transparent;
+}
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 6 0 2;
+}
+.combo-box .arrow {
+    -fx-background-color: -color-texte-3;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 10;
+    -fx-border-color: -color-bordure;
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.22), 18, 0.1, 0, 6);
+    -fx-padding: 4;
+}
+.combo-box-popup .list-cell {
+    -fx-background-radius: 6;
+    -fx-padding: 5 8 5 8;
+}
+.combo-box-popup .list-cell:hover,
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: white;
+}
+.selecteur-parcours {
+    -fx-background-radius: 7;
+    -fx-padding: 2 4 2 8;
+}
+
+.check-box .box, .radio-button .radio {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-bordure-forte;
+    -fx-border-width: 0.5;
+}
+.check-box:selected .box, .radio-button:selected .radio {
+    -fx-background-color: -color-accent;
+    -fx-border-color: -color-accent;
+}
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+.radio-button:selected .dot {
+    -fx-background-color: white;
+}
+
+/* barre de défilement « overlay » : liseré fin, piste transparente */
+.scroll-pane, .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-pane {
+    -fx-padding: 0;
+}
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+.scroll-bar:vertical { -fx-pref-width: 11; }
+.scroll-bar:horizontal { -fx-pref-height: 11; }
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.scroll-bar .thumb {
+    -fx-background-color: rgba(0, 0, 0, 0.24);
+    -fx-background-radius: 5;
+    -fx-background-insets: 2;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.38);
+}
+.scroll-bar .increment-button, .scroll-bar .decrement-button,
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-pref-height: 0;
+    -fx-pref-width: 0;
+}
+
+/* --------------------------------------------------------------- tableaux */
+.table-view {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 10;
+    -fx-border-color: -color-bordure;
+    -fx-border-radius: 10;
+    -fx-border-width: 0.5;
+    -fx-padding: 2;
+}
+.table-view .column-header-background {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -color-bordure transparent;
+    -fx-border-width: 0 0 0.5 0;
+}
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-padding: 6 8 6 8;
+}
+.table-view .column-header .label {
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte-2;
+    -fx-alignment: center-left;
+}
+.table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -color-bordure transparent;
+    -fx-border-width: 0 0 0.5 0;
+    -fx-table-cell-border-color: transparent;
+    -fx-cell-size: 30;
+}
+.table-row-cell:odd {
+    -fx-background-color: -color-surface-2-50;
+}
+.table-row-cell:hover {
+    -fx-background-color: -color-surface-3;
+}
+.table-row-cell:selected {
+    -fx-background-color: rgba(0, 122, 255, 0.16);
+    -fx-text-fill: -color-texte;
+}
+.table-view .cell {
+    -fx-padding: 4 8 4 8;
+    -fx-text-fill: -color-texte;
+    -fx-alignment: center-left;
+}
+.table-view .filler {
+    -fx-background-color: transparent;
+}
+.ligne-difficulte {
+    -fx-background-color: rgba(255, 159, 10, 0.14);
+}
+.ligne-valide {
+    -fx-background-color: transparent;
+}
+
+/* onglets « segmented control » */
+.tab-pane > .tab-header-area {
+    -fx-padding: 2 0 8 0;
+}
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+}
+/* Contrôle segmenté macOS : le segment actif est la seule surface peinte, les autres
+   segments sont du texte. Un fond de conteneur pleine largeur ferait une bande grise. */
+.tab-pane > .tab-header-area > .headers-region {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.tab-pane > .tab-header-area .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 7;
+    -fx-padding: 5 16 5 16;
+    -fx-border-width: 0;
+}
+.tab-pane > .tab-header-area .tab .tab-label {
+    -fx-text-fill: -color-texte;
+    -fx-font-size: 12.5px;
+}
+.tab-pane > .tab-header-area .tab:selected {
+    -fx-background-color: -color-surface-3;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.14), 4, 0.1, 0, 1);
+}
+.tab-pane > .tab-header-area .tab:selected .tab-label {
+    -fx-font-weight: bold;
+}
+.tab-pane > .tab-header-area .tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
+.tab-pane > .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 10 0 0 0;
+}
+.onglets-langages .tab {
+    -fx-padding: 5 16 5 16;
+}
+
+.tooltip {
+    -fx-background-color: rgba(30, 30, 32, 0.94);
+    -fx-background-radius: 6;
+    -fx-text-fill: #f5f5f7;
+    -fx-font-size: 11.5px;
+    -fx-padding: 4 8 4 8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.1, 0, 3);
+}
+.progress-bar > .track {
+    -fx-background-color: -color-surface-3;
+    -fx-background-radius: 4;
+}
+.progress-bar > .bar {
+    -fx-background-color: -color-accent;
+    -fx-background-radius: 4;
+    -fx-background-insets: 0;
+}
+
+/* --------------------------------------------------------- badge langage */
+.badge-langage {
+    -fx-padding: 2 10 2 10;
+    -fx-background-radius: 9;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.langage-java { -fx-background-color: -color-java; }
+.langage-python { -fx-background-color: -color-python; }
+.langage-cpp { -fx-background-color: -color-cpp; }
+
+/* --------------------------------------------------------------- entête */
+.entete-vue {
+    -fx-padding: 16 2 10 2;
+}
+.titre-vue {
+    -fx-font-family: "Inter", "SF Pro Display", "Segoe UI Semibold", "Segoe UI", sans-serif;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+}
+.sous-titre-vue {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -color-texte-2;
+}
+
+/* ---------------------------------------------------------------- carte */
+.card {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -color-bordure;
+    -fx-border-radius: 12;
+    -fx-border-width: 0.5;
+    -fx-padding: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 8, 0.05, 0, 2);
+}
+.card-niveau {
+    -fx-padding: 13 15 13 15;
+    -fx-cursor: hand;
+}
+.card-niveau:hover {
+    -fx-border-color: -color-accent;
+    -fx-effect: dropshadow(gaussian, rgba(0, 122, 255, 0.22), 10, 0.1, 0, 2);
+}
+.rang-niveau {
+    -fx-min-width: 26;
+    -fx-alignment: center;
+    -fx-background-color: -color-surface-3;
+    -fx-background-radius: 13;
+    -fx-padding: 2 0 2 0;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte-2;
+}
+.titre-niveau {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+}
+.chip-etat {
+    -fx-padding: 2 10 2 10;
+    -fx-background-radius: 9;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+.explication-niveau {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-texte-2;
+}
+.etat-valide .chip-etat, .chip-etat.etat-valide, .pastille.etat-valide {
+    -fx-background-color: -color-valide;
+}
+.etat-en-cours .chip-etat, .chip-etat.etat-en-cours, .pastille.etat-en-cours {
+    -fx-background-color: -color-encours;
+}
+.etat-verrouille .chip-etat, .chip-etat.etat-verrouille, .pastille.etat-verrouille {
+    -fx-background-color: -color-verrouille;
+}
+.card-niveau.etat-verrouille {
+    -fx-opacity: 0.9;
+    -fx-cursor: default;
+    -fx-effect: none;
+}
+.card-niveau.etat-valide {
+    -fx-border-color: -color-valide;
+}
+
+/* ----------------------------------------------------------------- frise */
+.frise {
+    -fx-padding: 6 4 6 4;
+}
+.rail {
+    -fx-padding: 4 0 0 0;
+}
+.pastille {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
+    -fx-background-radius: 6;
+}
+.rail-trait {
+    -fx-min-width: 2;
+    -fx-max-width: 2;
+    -fx-background-color: -color-bordure;
+}
+
+/* ------------------------------------------------------------------ KPI */
+.kpi {
+    -fx-padding: 14 18 14 18;
+    -fx-min-width: 150;
+}
+.kpi-valeur {
+    -fx-font-family: "Inter", "SF Pro Display", "Segoe UI Semibold", "Segoe UI", sans-serif;
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+}
+.kpi-libelle {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -color-texte-2;
+}
+.kpi-succes .kpi-valeur { -fx-text-fill: -color-valide; }
+.kpi-echec .kpi-valeur { -fx-text-fill: -color-danger; }
+.kpi-accent .kpi-valeur { -fx-text-fill: -color-accent; }
+
+/* --------------------------------------------------------------- éditeur */
+.editor {
+    -fx-font-family: "JetBrains Mono", "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    -fx-font-size: 12.5px;
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 10;
+    -fx-border-color: -color-bordure;
+    -fx-border-radius: 10;
+    -fx-border-width: 0.5;
+}
+.editor .content {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 10;
+    -fx-padding: 10 12 10 12;
+}
+.console {
+    -fx-font-family: "JetBrains Mono", "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    -fx-font-size: 12px;
+    -fx-control-inner-background: -color-surface-2;
+    -fx-background-radius: 10;
+    -fx-border-color: -color-bordure;
+    -fx-border-radius: 10;
+    -fx-border-width: 0.5;
+}
+.console .content {
+    -fx-background-color: -color-surface-2;
+    -fx-background-radius: 10;
+}
+.console.succes {
+    -fx-text-fill: -color-valide;
+}
+.console.erreur {
+    -fx-text-fill: -color-danger;
+}
+
+/* ------------------------------------------------------------- contenus */
+.colonne {
+    -fx-padding: 4 2 4 2;
+}
+.panneau-lateral {
+    -fx-padding: 16;
+}
+.titre-bloc {
+    -fx-font-size: 13.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+}
+.texte-secondaire {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-texte-2;
+}
+.scroll-vue {
+    -fx-background-color: transparent;
+}
+.scroll-vue > .viewport {
+    -fx-background-color: transparent;
+}
+.paragraphe-cours {
+    -fx-font-size: 13.5px;
+    -fx-text-fill: -color-texte;
+}
+.carte-code {
+    -fx-background-color: -color-surface-2;
+    -fx-background-radius: 10;
+    -fx-border-color: -color-bordure;
+    -fx-border-radius: 10;
+    -fx-border-width: 0.5;
+    -fx-padding: 12 14 12 14;
+}
+.entete-code {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-texte-2;
+    -fx-padding: 0 0 6 0;
+}
+.bloc-code {
+    -fx-font-family: "JetBrains Mono", "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    -fx-font-size: 12.5px;
+}
+.code-kw { -fx-fill: #a1328f; -fx-font-weight: bold; }
+.code-str { -fx-fill: #c1481c; }
+.code-com { -fx-fill: -color-texte-3; -fx-font-style: italic; }
+.code-defaut { -fx-fill: -color-texte; }
+
+/* ----------------------------------------------------------------- test */
+.enonce, .enonce-question {
+    -fx-font-size: 13.5px;
+    -fx-text-fill: -color-texte;
+}
+.card-question {
+    -fx-padding: 15 17 15 17;
+}
+.proposition {
+    -fx-font-size: 13px;
+}
+.contenu-test {
+    -fx-padding: 4 2 12 2;
+}
+
+/* ---------------------------------------------------------- assistant IA */
+.panel-ia {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -color-bordure;
+    -fx-border-radius: 12;
+    -fx-border-width: 0.5;
+    -fx-padding: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.10), 10, 0.05, 0, 2);
+}
+.titre-panneau {
+    -fx-font-family: "Inter", "SF Pro Display", "Segoe UI Semibold", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-ia;
+}
+.mention-ia {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-texte-2;
+}
+.messages-ia {
+    -fx-padding: 2;
+}
+.bulle-ia {
+    -fx-padding: 8 11 8 11;
+    -fx-background-radius: 13;
+    -fx-font-size: 12px;
+}
+.ia-systeme {
+    -fx-background-color: -color-surface-2;
+    -fx-text-fill: -color-texte-2;
+    -fx-background-radius: 13 13 13 4;
+}
+.ia-utilisateur {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: white;
+    -fx-background-radius: 13 13 4 13;
+}
+.ia-reponse {
+    -fx-background-color: rgba(94, 92, 230, 0.10);
+    -fx-text-fill: -color-texte;
+    -fx-background-radius: 13 13 13 4;
+}
+
+/* --------------------------------------------------------------- boutons */
+.barre-actions {
+    -fx-padding: 10 2 2 2;
+    -fx-spacing: 8;
+}
+.barre-actions .button {
+    -fx-background-radius: 7;
+    -fx-padding: 6 14 6 14;
+}
+
+/* ------------------------------------------- postes en réseau local (v0.13.0) */
+/* Une seule chose à saisir sur un poste : l'adresse du serveur. Le champ est donc assez large
+   pour une adresse complète, en chasse fixe pour que l'on voie une faute de frappe. */
+.carte-reseau {
+    -fx-min-width: 520;
+}
+.champ-adresse {
+    -fx-font-family: "JetBrains Mono", "Consolas", monospace;
+    -fx-font-size: 14px;
+    -fx-padding: 8 12 8 12;
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 6;
+    -fx-border-color: -color-bordure-forte;
+    -fx-border-radius: 6;
+    -fx-border-width: 0.5;
+}
+.champ-adresse:focused {
+    -fx-border-color: -color-accent;
+}
+/* Bouton tertiaire : présent, mais qui ne concurrence pas « Se connecter ». */
+.btn-discret {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -color-texte-2;
+    -fx-font-size: 11.5px;
+    -fx-padding: 4 8 4 8;
+    -fx-underline: true;
+    -fx-cursor: hand;
+}
+.btn-discret:hover {
+    -fx-text-fill: -color-accent;
+}
+
+/* ---------------------------------------------------------------- login */
+.login-view {
+    -fx-background-color: linear-gradient(to bottom right, #3a5fcd 0%, #5e5ce6 42%, #a06ad4 72%, #e26f8c 100%);
+}
+.login-card {
+    -fx-padding: 34 40 30 40;
+    -fx-background-radius: 20;
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 40, 0.2, 0, 14);
+}
+.login-marque {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-accent;
+    -fx-font-weight: bold;
+}
+.login-titre {
+    -fx-font-family: "Inter", "SF Pro Display", "Segoe UI Semibold", "Segoe UI", sans-serif;
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+}
+.login-soustitre {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-texte-2;
+    -fx-padding: 0 0 14 0;
+}
+.login-mode {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-texte-3;
+    -fx-padding: 16 0 0 0;
+}
+.role-card {
+    -fx-padding: 18;
+    -fx-min-height: 156;
+    -fx-background-color: -color-surface;
+}
+.role-card:hover {
+    -fx-border-color: -color-accent;
+}
+.role-nom {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-texte;
+}
+.role-desc {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-texte-2;
+    -fx-padding: 0 0 10 0;
+}
+
+/* ----------------------------------------------------------- formulaire */
+.formulaire .etiquette-champ {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -color-texte-2;
+}
+.champ {
+    -fx-background-radius: 6;
+    -fx-padding: 6 8 6 8;
+}
+.recapitulatif {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -color-texte;
+    -fx-background-color: -color-surface-2;
+    -fx-background-radius: 8;
+    -fx-padding: 9 11 9 11;
+}
+.autosave {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-texte-3;
+    -fx-padding: 8 0 0 6;
+}
+
+/* ------------------------------------------------------------- tableaux */
+.table-resultats .row-cell, .table-comptes .row-cell {
+    -fx-padding: 4 8 4 8;
+}
+.table-resultats, .table-comptes {
+    -fx-background-radius: 12;
+}
+.etat-vide {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-texte-3;
+    -fx-padding: 24;
+}
+
+/* --------------------------------------------------- conteneurs de vue */
+.vue {
+    -fx-padding: 16 20 16 20;
+}
+.contenu-cours {
+    -fx-padding: 6 10 20 6;
+}
+.ligne-niveau {
+    -fx-alignment: center-left;
+}
+.dialogue {
+    -fx-padding: 6;
+}
+.dialogue > .content {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 14;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 30, 0.15, 0, 10);
+}

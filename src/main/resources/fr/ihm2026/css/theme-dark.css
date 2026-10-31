@@ -1,0 +1,54 @@
+/* =====================================================================
+   theme-dark.css — palette macOS sombre.
+   Mêmes jetons que theme-light.css. Vient ensuite ce qui n'est pas un
+   jeton de palette : états de survol, symboles des pastilles, coloration
+   syntaxique et fenêtre de connexion.
+   ===================================================================== */
+.root {
+    -color-fenetre: #0f0f10;
+    -color-barre-titre: rgba(48, 48, 51, 0.92);
+    -color-barre-laterale: rgba(38, 38, 41, 0.88);
+    -color-contenu: #1e1e1e;
+    -color-separateur: rgba(255, 255, 255, 0.10);
+    -color-survol-lateral: rgba(255, 255, 255, 0.08);
+    -color-surface-translucide: rgba(40, 40, 43, 0.92);
+    -color-surface: #2c2c2e;
+    -color-surface-2: #3a3a3c;
+    -color-surface-2-50: rgba(58, 58, 60, 0.55);
+    -color-surface-3: #48484a;
+    -color-bordure: rgba(255, 255, 255, 0.12);
+    -color-bordure-forte: rgba(255, 255, 255, 0.20);
+    -color-texte: #f5f5f7;
+    -color-texte-2: #a1a1a6;
+    -color-texte-3: #8e8e93;
+    -color-accent: #0a84ff;
+    -color-accent-fonce: #0060df;
+    -color-ia: #7d7aff;
+    -color-java: #ff9f0a;
+    -color-python: #0a84ff;
+    -color-cpp: #40c8e0;
+    -color-valide: #30d158;
+    -color-encours: #0a84ff;
+    -color-verrouille: #8e8e93;
+    -color-alerte: #ff9f0a;
+    -color-danger: #ff453a;
+    -fx-faint-focus-color: rgba(10, 132, 255, 0.25);
+}
+
+/* --- états et teintes qui ne sont pas des jetons de palette --- */
+.feux:hover .feu { -fx-text-fill: rgba(0, 0, 0, 0.60); }
+.badge-langage { -fx-text-fill: #101014; }
+.btn-primary { -fx-text-fill: #ffffff; }
+.ligne-laterale.active .libelle-lateral { -fx-text-fill: #ffffff; }
+.table-row-cell:selected { -fx-background-color: rgba(10, 132, 255, 0.28); }
+.table-row-cell:hover { -fx-background-color: rgba(255, 255, 255, 0.06); }
+.scroll-bar .thumb { -fx-background-color: rgba(255, 255, 255, 0.26); }
+.scroll-bar .thumb:hover { -fx-background-color: rgba(255, 255, 255, 0.42); }
+.ligne-difficulte { -fx-background-color: rgba(255, 159, 10, 0.16); }
+.console { -fx-control-inner-background: #232325; }
+.login-card { -fx-background-color: rgba(44, 44, 46, 0.94); }
+.tooltip { -fx-background-color: rgba(70, 70, 74, 0.96); }
+.code-kw { -fx-fill: #ff8ac4; }
+.code-str { -fx-fill: #fea97a; }
+.code-com { -fx-fill: #8e8e93; }
+.code-defaut { -fx-fill: #f5f5f7; }

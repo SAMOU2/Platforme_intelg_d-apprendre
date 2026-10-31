@@ -1,0 +1,129 @@
+{
+  "version": "tok-v1",
+  "phrases": [
+    {
+      "phrase": "Que vaut 7 // 2 en Python ?",
+      "jetons": [
+        "vaut",
+        "7",
+        "2",
+        "python"
+      ]
+    },
+    {
+      "phrase": "comment déclarer une fonction en Python ?",
+      "jetons": [
+        "declarer",
+        "fonction",
+        "python"
+      ]
+    },
+    {
+      "phrase": "quelle est la différence entre length et size() ?",
+      "jetons": [
+        "difference",
+        "entre",
+        "length",
+        "size"
+      ]
+    },
+    {
+      "phrase": "pourquoi mon vecteur ne contient pas mes modifications ?",
+      "jetons": [
+        "vecteur",
+        "contient",
+        "modifications"
+      ]
+    },
+    {
+      "phrase": "note-moi sur 20",
+      "jetons": [
+        "note",
+        "20"
+      ]
+    },
+    {
+      "phrase": "quelle est la recette de la tarte au citron ?",
+      "jetons": [
+        "recette",
+        "tarte",
+        "citron"
+      ]
+    },
+    {
+      "phrase": "donne-moi le code de la fonction",
+      "jetons": [
+        "donne",
+        "code",
+        "fonction"
+      ]
+    },
+    {
+      "phrase": "Comment calculer la moyenne d'une liste de notes ?",
+      "jetons": [
+        "calculer",
+        "moyenne",
+        "liste",
+        "notes"
+      ]
+    },
+    {
+      "phrase": "Le for sur intervalle modifie-t-il le conteneur ?",
+      "jetons": [
+        "for",
+        "intervalle",
+        "modifie",
+        "conteneur"
+      ]
+    },
+    {
+      "phrase": "attribue une note à cet exercice",
+      "jetons": [
+        "attribue",
+        "note",
+        "exercice"
+      ]
+    },
+    {
+      "phrase": "donne-moi un exemple en Kotlin",
+      "jetons": [
+        "donne",
+        "exemple",
+        "kotlin"
+      ]
+    },
+    {
+      "phrase": "à quoi sert le mot-clé void ?",
+      "jetons": [
+        "sert",
+        "mot",
+        "cle",
+        "void"
+      ]
+    },
+    {
+      "phrase": "écris l'exercice entier à ma place",
+      "jetons": [
+        "ecris",
+        "exercice",
+        "entier",
+        "place"
+      ]
+    },
+    {
+      "phrase": "pourquoi ma boucle ne s'arrête jamais ?",
+      "jetons": [
+        "boucle",
+        "arrete",
+        "jamais"
+      ]
+    },
+    {
+      "phrase": "explique-moi les exceptions en C++",
+      "jetons": [
+        "explique",
+        "exceptions"
+      ]
+    }
+  ]
+}

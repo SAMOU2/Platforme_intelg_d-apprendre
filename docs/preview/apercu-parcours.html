@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Aperçu — écran Parcours (v0.1)</title>
+<style>
+  :root{
+    --java:#b06a00; --python:#1f6fb2; --cpp:#17807c; --valide:#17807c; --encours:#1f6fb2;
+    --verrouille:#8a97a9; --danger:#a32222; --surface:#fff; --surface2:#f5f8fc;
+    --bord:#dfe7f1; --texte:#16202e; --texte2:#5b6b80;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--surface2);color:var(--texte);
+       font-family:"Inter","Segoe UI",system-ui,sans-serif;font-size:13px}
+  .bar{display:flex;align-items:center;gap:8px;background:var(--surface);
+       border-bottom:1px solid var(--bord);padding:10px 18px}
+  .marque{font-weight:700;color:var(--python);font-size:15px;margin-right:18px}
+  .nav{padding:6px 12px;border-radius:6px;color:var(--texte2);cursor:pointer}
+  .nav.active{background:var(--python);color:#fff;font-weight:700}
+  .spacer{flex:1}
+  .sel{border:1px solid var(--bord);border-radius:6px;padding:5px 10px;background:#fff}
+  .badge{padding:2px 10px;border-radius:10px;color:#fff;font-size:11px;font-weight:700;background:var(--python)}
+  .theme{border:none;background:transparent;font-size:15px;color:var(--texte2);cursor:pointer}
+  .user{color:var(--texte2);font-size:12px}
+  .quit{color:var(--danger);padding:6px 12px}
+  main{padding:0 22px 20px}
+  h1{font-size:21px;margin:16px 0 2px}
+  .sub{color:var(--texte2);font-size:12.5px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:1fr 330px;gap:16px}
+  .card{background:var(--surface);border:1px solid var(--bord);border-radius:10px;padding:12px}
+  .niv{display:flex;gap:12px}
+  .rail{width:34px;display:flex;flex-direction:column;align-items:center;padding-top:16px}
+  .pastille{width:14px;height:14px;border-radius:7px;background:var(--verrouille)}
+  .trait{width:2px;flex:1;background:var(--bord);min-height:26px}
+  .carte{flex:1;margin-bottom:14px;cursor:pointer}
+  .ligne{display:flex;align-items:center;gap:10px}
+  .rang{min-width:26px;height:26px;border-radius:13px;background:var(--surface2);color:var(--texte2);
+        font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .titre{font-weight:700;font-size:14px}
+  .chip{margin-left:auto;padding:2px 10px;border-radius:9px;color:#fff;font-size:11px;font-weight:700}
+  .expl{color:var(--texte2);font-size:12px;margin-top:4px}
+  .valide .pastille,.valide .chip{background:var(--valide)}
+  .encours .pastille,.encours .chip{background:var(--encours)}
+  .verrouille .pastille,.verrouille .chip{background:var(--verrouille)}
+  .card.verrouille{opacity:.86}
+  .card.valide{border-color:var(--valide)}
+  .kpis{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+  .kpi{padding:12px 16px}
+  .kpi b{display:block;font-size:24px;line-height:1.1}
+  .kpi span{color:var(--texte2);font-size:11.5px}
+  .vert b{color:var(--valide)} .bleu b{color:var(--python)}
+  .bloc{font-weight:700;font-size:13.5px;margin:14px 0 6px}
+  .btn{border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:13px;
+       font-family:inherit;background:var(--surface2);color:var(--texte);width:100%;margin-top:8px}
+  .btn.p{background:var(--python);color:#fff;font-weight:700}
+  .note{margin-top:14px;color:var(--texte2);font-size:11.5px;line-height:1.5}
+</style></head>
+<body>
+<div class="bar">
+  <span class="marque">IHM 2026</span>
+  <span class="nav active">Parcours</span><span class="nav">Cours</span>
+  <span class="nav">Exercice</span><span class="nav">Tableau de bord</span>
+  <span class="spacer"></span>
+  <span class="sel">Python ▾</span><span class="badge">Python</span>
+  <button class="theme">◐</button>
+  <span class="user">Compte de démonstration — Apprenant</span>
+  <span class="quit">Quitter</span>
+</div>
+<main>
+  <h1>Mon parcours — Python</h1>
+  <div class="sub">Chaque parcours est indépendant : valider un niveau ici ne débloque rien dans un autre langage.</div>
+  <div class="grid">
+    <section>
+      <div class="niv">
+        <div class="rail"><div class="pastille" style="background:var(--valide)"></div><div class="trait"></div></div>
+        <div class="card carte valide">
+          <div class="ligne"><span class="rang">1</span><span class="titre">Variables et types</span>
+            <span class="chip">Validé</span></div>
+          <div class="expl">Validé avec 16/20 (seuil 10)</div>
+        </div>
+      </div>
+      <div class="niv">
+        <div class="rail"><div class="pastille" style="background:var(--valide)"></div><div class="trait"></div></div>
+        <div class="card carte valide">
+          <div class="ligne"><span class="rang">2</span><span class="titre">Conditions et boucles</span>
+            <span class="chip">Validé</span></div>
+          <div class="expl">Validé avec 13/20 (seuil 10)</div>
+        </div>
+      </div>
+      <div class="niv">
+        <div class="rail"><div class="pastille" style="background:var(--encours)"></div><div class="trait"></div></div>
+        <div class="card carte encours" style="border-color:var(--encours)">
+          <div class="ligne"><span class="rang">3</span><span class="titre">Fonctions et modules</span>
+            <span class="chip">En cours</span></div>
+          <div class="expl">En cours — 2 tentative(s) restante(s)</div>
+        </div>
+      </div>
+      <div class="niv">
+        <div class="rail"><div class="pastille"></div><div class="trait"></div></div>
+        <div class="card carte verrouille">
+          <div class="ligne"><span class="rang">4</span><span class="titre">Structures de données</span>
+            <span class="chip">Verrouillé</span></div>
+          <div class="expl">Débloqué après validation du niveau 3</div>
+        </div>
+      </div>
+      <div class="niv">
+        <div class="rail"><div class="pastille"></div></div>
+        <div class="card carte verrouille">
+          <div class="ligne"><span class="rang">5</span><span class="titre">Fichiers et exceptions</span>
+            <span class="chip">Verrouillé</span></div>
+          <div class="expl">Débloqué après validation du niveau 4</div>
+        </div>
+      </div>
+    </section>
+    <aside>
+      <div class="kpis">
+        <div class="card kpi vert"><b>2</b><span>niveaux validés</span></div>
+        <div class="card kpi"><b>5</b><span>niveaux du parcours</span></div>
+        <div class="card kpi bleu"><b>12/20</b><span>seuil du niveau en cours</span></div>
+      </div>
+      <div class="bloc">Prochaine étape</div>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:4px">Niveau 3 — Fonctions et modules</div>
+        <div style="color:var(--texte2);font-size:12px">Seuil 12/20 · 2 tentative(s) restante(s)</div>
+        <button class="btn p">Passer le test de validation</button>
+        <button class="btn">Revoir le cours du niveau</button>
+      </div>
+      <div class="note">Rendu statique de l'écran <b>Parcours</b> (A4) avec les mêmes couleurs et classes CSS que
+      l'application JavaFX : <code>frise</code>, <code>card-niveau</code>, <code>etat-valide</code>,
+      <code>etat-en-cours</code>, <code>etat-verrouille</code>.</div>
+    </aside>
+  </div>
+</main>
+</body></html>

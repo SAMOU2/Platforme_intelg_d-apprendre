@@ -1,0 +1,665 @@
+{
+  "version": "corpus-v1",
+  "genere": "2026-10-27T20:19:32",
+  "source": {
+    "fichier": "corpus/source-corpus.json",
+    "sha256": "e98930314f49af01baa5678685ce3a323b136a07e344dfff3aa980a0801abd1f"
+  },
+  "regles": {
+    "roles_admis": [
+      "COURS"
+    ],
+    "longueur_min": {
+      "TEXTE": 150,
+      "CODE": 40
+    },
+    "taille_max_fragment": 600,
+    "seuil_jaccard": 0.85
+  },
+  "statistiques": {
+    "cours": 18,
+    "fragments": 36,
+    "caracteres_total": 10751,
+    "caracteres_moyen": 299,
+    "caracteres_min": 145,
+    "caracteres_max": 437,
+    "par_langage": {
+      "cpp": 12,
+      "java": 12,
+      "python": 12
+    },
+    "par_type": {
+      "CODE": 18,
+      "TEXTE": 18
+    },
+    "par_notion": {
+      "BOUCLE": 6,
+      "COLL": 6,
+      "COND": 6,
+      "ERREUR": 6,
+      "FONC": 6,
+      "VAR": 6
+    }
+  },
+  "nettoyage": {
+    "roles_retires": 0,
+    "trop_courts": [],
+    "doublons_exacts": [],
+    "doublons_proches": [],
+    "fragments": 36
+  },
+  "cours": [
+    {
+      "section": "Variables et types en Python — Variables et types",
+      "notion": "VAR",
+      "notion_titre": "Variables et types",
+      "objectif": "declarer une variable, connaitre son type, convertir sans perte",
+      "titre": "Variables et types en Python",
+      "langage": "python",
+      "blocs": [
+        {
+          "id": "VAR-python-T1-1",
+          "notion": "VAR",
+          "notion_titre": "Variables et types",
+          "langage": "python",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Variables et types en Python — Variables et types",
+          "ordre": 11,
+          "caracteres": 317,
+          "contenu": "En Python, une variable est un nom associé à un objet : aucune déclaration de type n'est nécessaire, le type est porté par la valeur. Les types de base sont int pour les entiers, float pour les réels, str pour les chaînes et bool pour les booléens. Attention à la division : 7 / 2 donne 3.5, alors que 7 // 2 donne 3."
+        },
+        {
+          "id": "VAR-python-C2-1",
+          "notion": "VAR",
+          "notion_titre": "Variables et types",
+          "langage": "python",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Variables et types en Python — Variables et types",
+          "ordre": 21,
+          "caracteres": 254,
+          "contenu": "age = 20            # int\nmoyenne = 12.5      # float\nnom = \"Amina\"       # str\nreussi = moyenne >= 10   # bool\n\nprint(type(age))      # <class 'int'>\nprint(7 / 2)          # 3.5\nprint(7 // 2)         # 3\nprint(int(\"12\") + 1)  # conversion explicite : 13"
+        }
+      ]
+    },
+    {
+      "section": "Variables et types en Java — Classes et objets",
+      "notion": "VAR",
+      "notion_titre": "Variables et types",
+      "objectif": "declarer une variable, connaitre son type, convertir sans perte",
+      "titre": "Variables et types en Java",
+      "langage": "java",
+      "blocs": [
+        {
+          "id": "VAR-java-T1-1",
+          "notion": "VAR",
+          "notion_titre": "Variables et types",
+          "langage": "java",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Variables et types en Java — Classes et objets",
+          "ordre": 11,
+          "caracteres": 334,
+          "contenu": "En Java, toute variable a un type déclaré avant son nom : int pour les entiers, double pour les réels, String pour les chaînes, boolean pour les booléens. Le type est fixé à la compilation et ne change jamais. La division de deux int est entière : 7 / 2 vaut 3 ; pour obtenir un réel, l'un des deux opérandes doit être de type double."
+        },
+        {
+          "id": "VAR-java-C2-1",
+          "notion": "VAR",
+          "notion_titre": "Variables et types",
+          "langage": "java",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Variables et types en Java — Classes et objets",
+          "ordre": 21,
+          "caracteres": 234,
+          "contenu": "int age = 20;\ndouble moyenne = 12.5;\nString nom = \"Amina\";\nboolean reussi = moyenne >= 10;\n\nSystem.out.println(7 / 2);            // 3\nSystem.out.println(7 / 2.0);          // 3.5\nSystem.out.println(Integer.parseInt(\"12\") + 1);  // 13"
+        }
+      ]
+    },
+    {
+      "section": "Variables et types en C++ — Compilation et types",
+      "notion": "VAR",
+      "notion_titre": "Variables et types",
+      "objectif": "declarer une variable, connaitre son type, convertir sans perte",
+      "titre": "Variables et types en C++",
+      "langage": "cpp",
+      "blocs": [
+        {
+          "id": "VAR-cpp-T1-1",
+          "notion": "VAR",
+          "notion_titre": "Variables et types",
+          "langage": "cpp",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Variables et types en C++ — Compilation et types",
+          "ordre": 11,
+          "caracteres": 322,
+          "contenu": "En C++, le type précède le nom de la variable et sa taille dépend de la plateforme. Les types usuels sont int, double, bool et std::string, qui exige #include <string>. La division entre deux entiers est entière : 7 / 2 vaut 3. Une conversion explicite s'écrit avec static_cast<double>, plus sûre qu'un transtypage à la C."
+        },
+        {
+          "id": "VAR-cpp-C2-1",
+          "notion": "VAR",
+          "notion_titre": "Variables et types",
+          "langage": "cpp",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Variables et types en C++ — Compilation et types",
+          "ordre": 21,
+          "caracteres": 234,
+          "contenu": "#include <string>\n\nint age = 20;\ndouble moyenne = 12.5;\nstd::string nom = \"Amina\";\nbool reussi = moyenne >= 10;\n\nstd::cout << 7 / 2 << std::endl;                       // 3\nstd::cout << static_cast<double>(7) / 2 << std::endl;  // 3.5"
+        }
+      ]
+    },
+    {
+      "section": "Conditions en Python — Variables et types",
+      "notion": "COND",
+      "notion_titre": "Conditions",
+      "objectif": "ecrire une alternative, eviter les comparaisons fautives",
+      "titre": "Conditions en Python",
+      "langage": "python",
+      "blocs": [
+        {
+          "id": "COND-python-T1-1",
+          "notion": "COND",
+          "notion_titre": "Conditions",
+          "langage": "python",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Conditions en Python — Variables et types",
+          "ordre": 11,
+          "caracteres": 318,
+          "contenu": "Une condition s'écrit avec if, elif et else, suivie de deux-points. Contrairement à Java et C++, les parenthèses ne sont pas nécessaires et le bloc est délimité par l'indentation : mélanger tabulations et espaces provoque une IndentationError. La comparaison d'égalité utilise deux signes égaux, l'affectation un seul."
+        },
+        {
+          "id": "COND-python-C2-1",
+          "notion": "COND",
+          "notion_titre": "Conditions",
+          "langage": "python",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Conditions en Python — Variables et types",
+          "ordre": 21,
+          "caracteres": 145,
+          "contenu": "note = 13\n\nif note >= 16:\n    mention = \"très bien\"\nelif note >= 12:\n    mention = \"bien\"\nelse:\n    mention = \"à revoir\"\n\nprint(mention)   # bien"
+        }
+      ]
+    },
+    {
+      "section": "Conditions en Java — Classes et objets",
+      "notion": "COND",
+      "notion_titre": "Conditions",
+      "objectif": "ecrire une alternative, eviter les comparaisons fautives",
+      "titre": "Conditions en Java",
+      "langage": "java",
+      "blocs": [
+        {
+          "id": "COND-java-T1-1",
+          "notion": "COND",
+          "notion_titre": "Conditions",
+          "langage": "java",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Conditions en Java — Classes et objets",
+          "ordre": 11,
+          "caracteres": 332,
+          "contenu": "En Java, la condition d'un if est une expression booléenne entre parenthèses : il n'existe pas de conversion automatique d'un entier vers un booléen, écrire if (note) ne compile pas. Les blocs sont délimités par des accolades ; sans accolades, seule l'instruction suivante appartient au if, ce qui est une source classique d'erreur."
+        },
+        {
+          "id": "COND-java-C2-1",
+          "notion": "COND",
+          "notion_titre": "Conditions",
+          "langage": "java",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Conditions en Java — Classes et objets",
+          "ordre": 21,
+          "caracteres": 200,
+          "contenu": "int note = 13;\nString mention;\n\nif (note >= 16) {\n    mention = \"très bien\";\n} else if (note >= 12) {\n    mention = \"bien\";\n} else {\n    mention = \"à revoir\";\n}\n\nSystem.out.println(mention);   // bien"
+        }
+      ]
+    },
+    {
+      "section": "Conditions en C++ — Compilation et types",
+      "notion": "COND",
+      "notion_titre": "Conditions",
+      "objectif": "ecrire une alternative, eviter les comparaisons fautives",
+      "titre": "Conditions en C++",
+      "langage": "cpp",
+      "blocs": [
+        {
+          "id": "COND-cpp-T1-1",
+          "notion": "COND",
+          "notion_titre": "Conditions",
+          "langage": "cpp",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Conditions en C++ — Compilation et types",
+          "ordre": 11,
+          "caracteres": 328,
+          "contenu": "En C++, la condition d'un if est convertie en booléen : un entier nul vaut faux, tout autre entier vaut vrai. Cette souplesse est un piège : la faute de frappe if (x = 5), qui affecte au lieu de comparer, compile sans avertissement et rend la condition toujours vraie. Les compilateurs modernes la signalent avec l'option -Wall."
+        },
+        {
+          "id": "COND-cpp-C2-1",
+          "notion": "COND",
+          "notion_titre": "Conditions",
+          "langage": "cpp",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Conditions en C++ — Compilation et types",
+          "ordre": 21,
+          "caracteres": 211,
+          "contenu": "int note = 13;\nstd::string mention;\n\nif (note >= 16) {\n    mention = \"très bien\";\n} else if (note >= 12) {\n    mention = \"bien\";\n} else {\n    mention = \"à revoir\";\n}\n\nstd::cout << mention << std::endl;   // bien"
+        }
+      ]
+    },
+    {
+      "section": "Boucles en Python — Variables et types",
+      "notion": "BOUCLE",
+      "notion_titre": "Boucles",
+      "objectif": "repeter un traitement, choisir entre for et while, eviter la boucle infinie",
+      "titre": "Boucles en Python",
+      "langage": "python",
+      "blocs": [
+        {
+          "id": "BOUCLE-python-T1-1",
+          "notion": "BOUCLE",
+          "notion_titre": "Boucles",
+          "langage": "python",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Boucles en Python — Variables et types",
+          "ordre": 11,
+          "caracteres": 360,
+          "contenu": "La boucle for parcourt directement les éléments d'une séquence, sans compteur ni condition d'arrêt, comme dans for note in notes. Pour répéter un nombre connu de fois, on utilise range(n), qui produit les entiers de 0 à n-1. La boucle while répète tant qu'une condition reste vraie ; si cette condition ne devient jamais fausse, le programme ne se termine pas."
+        },
+        {
+          "id": "BOUCLE-python-C2-1",
+          "notion": "BOUCLE",
+          "notion_titre": "Boucles",
+          "langage": "python",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Boucles en Python — Variables et types",
+          "ordre": 21,
+          "caracteres": 201,
+          "contenu": "notes = [12, 15, 9]\nsomme = 0\nfor note in notes:\n    somme += note\nprint(somme / len(notes))   # 12.0\n\ni = 0\nwhile i < 3:\n    i += 1          # sans cette ligne : boucle infinie\nprint(i)            # 3"
+        }
+      ]
+    },
+    {
+      "section": "Boucles en Java — Classes et objets",
+      "notion": "BOUCLE",
+      "notion_titre": "Boucles",
+      "objectif": "repeter un traitement, choisir entre for et while, eviter la boucle infinie",
+      "titre": "Boucles en Java",
+      "langage": "java",
+      "blocs": [
+        {
+          "id": "BOUCLE-java-T1-1",
+          "notion": "BOUCLE",
+          "notion_titre": "Boucles",
+          "langage": "java",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Boucles en Java — Classes et objets",
+          "ordre": 11,
+          "caracteres": 351,
+          "contenu": "Java propose trois formes : le for classique avec initialisation, condition et incrément ; le for-each pour parcourir un tableau sans indice ; et le while pour une condition inconnue à l'avance. Le parcours par indice impose de rester dans les bornes : un tableau de taille n se parcourt de 0 à n-1, sinon une ArrayIndexOutOfBoundsException est levée."
+        },
+        {
+          "id": "BOUCLE-java-C2-1",
+          "notion": "BOUCLE",
+          "notion_titre": "Boucles",
+          "langage": "java",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Boucles en Java — Classes et objets",
+          "ordre": 21,
+          "caracteres": 231,
+          "contenu": "int[] notes = {12, 15, 9};\nint somme = 0;\n\nfor (int note : notes) {\n    somme += note;\n}\nSystem.out.println((double) somme / notes.length);   // 12.0\n\nfor (int i = 0; i < notes.length; i++) {\n    System.out.print(notes[i] + \" \");\n}"
+        }
+      ]
+    },
+    {
+      "section": "Boucles en C++ — Compilation et types",
+      "notion": "BOUCLE",
+      "notion_titre": "Boucles",
+      "objectif": "repeter un traitement, choisir entre for et while, eviter la boucle infinie",
+      "titre": "Boucles en C++",
+      "langage": "cpp",
+      "blocs": [
+        {
+          "id": "BOUCLE-cpp-T1-1",
+          "notion": "BOUCLE",
+          "notion_titre": "Boucles",
+          "langage": "cpp",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Boucles en C++ — Compilation et types",
+          "ordre": 11,
+          "caracteres": 332,
+          "contenu": "C++ reprend les trois formes de Java : for classique, for sur intervalle et while. Le for sur intervalle s'écrit for (int n : notes) et parcourt une copie de chaque élément ; pour modifier le contenu, on écrit for (int& n : notes). Comme en Java, un indice hors bornes n'est pas vérifié à l'exécution : le comportement est indéfini."
+        },
+        {
+          "id": "BOUCLE-cpp-C2-1",
+          "notion": "BOUCLE",
+          "notion_titre": "Boucles",
+          "langage": "cpp",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Boucles en C++ — Compilation et types",
+          "ordre": 21,
+          "caracteres": 274,
+          "contenu": "#include <vector>\n\nstd::vector<int> notes{12, 15, 9};\nint somme = 0;\n\nfor (int n : notes) {\n    somme += n;\n}\nstd::cout << static_cast<double>(somme) / notes.size() << std::endl;  // 12\n\nfor (int& n : notes) {\n    n += 1;      // modifie le vecteur : passage par référence\n}"
+        }
+      ]
+    },
+    {
+      "section": "Fonctions et valeur de retour en Python — Variables et types",
+      "notion": "FONC",
+      "notion_titre": "Fonctions et valeur de retour",
+      "objectif": "declarer une fonction, renvoyer une valeur, comprendre le return manquant",
+      "titre": "Fonctions et valeur de retour en Python",
+      "langage": "python",
+      "blocs": [
+        {
+          "id": "FONC-python-T1-1",
+          "notion": "FONC",
+          "notion_titre": "Fonctions et valeur de retour",
+          "langage": "python",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Fonctions et valeur de retour en Python — Variables et types",
+          "ordre": 11,
+          "caracteres": 343,
+          "contenu": "Une fonction se déclare avec le mot-clé def et son corps est indenté. Une fonction qui ne contient aucun return, ou dont le return est sans valeur, renvoie None : c'est la valeur de retour par défaut en Python. Pour renvoyer un résultat, écrivez return suivi de la valeur, et veillez à ce que tous les chemins d'exécution atteignent un return."
+        },
+        {
+          "id": "FONC-python-C2-1",
+          "notion": "FONC",
+          "notion_titre": "Fonctions et valeur de retour",
+          "langage": "python",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Fonctions et valeur de retour en Python — Variables et types",
+          "ordre": 21,
+          "caracteres": 292,
+          "contenu": "def moyenne(notes):\n    \"\"\"Retourne la moyenne d'une liste de notes.\"\"\"\n    if not notes:\n        return 0\n    return sum(notes) / len(notes)\n\ndef sans_retour(notes):\n    total = sum(notes)          # aucun return\n\nprint(moyenne([12, 15, 9]))     # 12.0\nprint(sans_retour([12, 15, 9])) # None"
+        }
+      ]
+    },
+    {
+      "section": "Méthodes et valeur de retour en Java — Classes et objets",
+      "notion": "FONC",
+      "notion_titre": "Fonctions et valeur de retour",
+      "objectif": "declarer une fonction, renvoyer une valeur, comprendre le return manquant",
+      "titre": "Méthodes et valeur de retour en Java",
+      "langage": "java",
+      "blocs": [
+        {
+          "id": "FONC-java-T1-1",
+          "notion": "FONC",
+          "notion_titre": "Fonctions et valeur de retour",
+          "langage": "java",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Méthodes et valeur de retour en Java — Classes et objets",
+          "ordre": 11,
+          "caracteres": 311,
+          "contenu": "Une méthode déclare son type de retour avant son nom. Si ce type est void, la méthode ne renvoie rien ; sinon, tous les chemins d'exécution doivent atteindre un return, faute de quoi le compilateur refuse la compilation. Une méthode peut aussi lever une exception plutôt que renvoyer une valeur en cas d'erreur."
+        },
+        {
+          "id": "FONC-java-C2-1",
+          "notion": "FONC",
+          "notion_titre": "Fonctions et valeur de retour",
+          "langage": "java",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Méthodes et valeur de retour en Java — Classes et objets",
+          "ordre": 21,
+          "caracteres": 255,
+          "contenu": "public static double moyenne(int[] notes) {\n    if (notes.length == 0) {\n        return 0;\n    }\n    int somme = 0;\n    for (int n : notes) {\n        somme += n;\n    }\n    return (double) somme / notes.length;\n}\n\n// moyenne(new int[]{12, 15, 9}) vaut 12.0"
+        }
+      ]
+    },
+    {
+      "section": "Fonctions, retour et surcharge en C++ — Compilation et types",
+      "notion": "FONC",
+      "notion_titre": "Fonctions et valeur de retour",
+      "objectif": "declarer une fonction, renvoyer une valeur, comprendre le return manquant",
+      "titre": "Fonctions, retour et surcharge en C++",
+      "langage": "cpp",
+      "blocs": [
+        {
+          "id": "FONC-cpp-T1-1",
+          "notion": "FONC",
+          "notion_titre": "Fonctions et valeur de retour",
+          "langage": "cpp",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Fonctions, retour et surcharge en C++ — Compilation et types",
+          "ordre": 11,
+          "caracteres": 437,
+          "contenu": "En C++, le type de retour est déclaré avant le nom de la fonction. Toute fonction non void doit retourner une valeur sur chaque chemin, sinon le comportement est indéfini. C++ autorise la surcharge : deux fonctions peuvent porter le même nom si leurs paramètres diffèrent, ce qui n'est pas possible en Python. Enfin, un paramètre volumineux se passe par référence constante (const std::vector<int>&) pour éviter une copie à chaque appel."
+        },
+        {
+          "id": "FONC-cpp-C2-1",
+          "notion": "FONC",
+          "notion_titre": "Fonctions et valeur de retour",
+          "langage": "cpp",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Fonctions, retour et surcharge en C++ — Compilation et types",
+          "ordre": 21,
+          "caracteres": 346,
+          "contenu": "#include <vector>\n\ndouble moyenne(const std::vector<int>& notes) {\n    if (notes.empty()) {\n        return 0.0;\n    }\n    int somme = 0;\n    for (int n : notes) {\n        somme += n;\n    }\n    return static_cast<double>(somme) / notes.size();\n}\n\n// surcharge : même nom, paramètres différents\nint moyenne(int a, int b) {\n    return (a + b) / 2;\n}"
+        }
+      ]
+    },
+    {
+      "section": "Listes et dictionnaires en Python — Variables et types",
+      "notion": "COLL",
+      "notion_titre": "Collections",
+      "objectif": "stocker plusieurs valeurs, parcourir et connaitre la taille",
+      "titre": "Listes et dictionnaires en Python",
+      "langage": "python",
+      "blocs": [
+        {
+          "id": "COLL-python-T1-1",
+          "notion": "COLL",
+          "notion_titre": "Collections",
+          "langage": "python",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Listes et dictionnaires en Python — Variables et types",
+          "ordre": 11,
+          "caracteres": 372,
+          "contenu": "La liste est la collection ordonnée et modifiable de Python : elle s'écrit entre crochets et accepte des éléments de types différents. Sa taille s'obtient avec len(liste) et l'accès par indice commence à 0. Le dictionnaire associe des clés à des valeurs avec la syntaxe {clé: valeur} ; l'accès à une clé absente avec crochets lève une KeyError, alors que get renvoie None."
+        },
+        {
+          "id": "COLL-python-C2-1",
+          "notion": "COLL",
+          "notion_titre": "Collections",
+          "langage": "python",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Listes et dictionnaires en Python — Variables et types",
+          "ordre": 21,
+          "caracteres": 269,
+          "contenu": "notes = [12, 15, 9]\nnotes.append(11)          # ajout en fin\nprint(len(notes))         # 4\nprint(notes[0])           # 12\n\nbulletin = {\"Amina\": 16, \"Karim\": 9}\nprint(bulletin.get(\"Lina\"))   # None, pas de KeyError\nfor nom, note in bulletin.items():\n    print(nom, note)"
+        }
+      ]
+    },
+    {
+      "section": "Collections en Java — Classes et objets",
+      "notion": "COLL",
+      "notion_titre": "Collections",
+      "objectif": "stocker plusieurs valeurs, parcourir et connaitre la taille",
+      "titre": "Collections en Java",
+      "langage": "java",
+      "blocs": [
+        {
+          "id": "COLL-java-T1-1",
+          "notion": "COLL",
+          "notion_titre": "Collections",
+          "langage": "java",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Collections en Java — Classes et objets",
+          "ordre": 11,
+          "caracteres": 352,
+          "contenu": "En Java, la taille d'un tableau est fixée à sa création et s'obtient avec length, sans parenthèses. Pour une taille variable, on utilise les collections : ArrayList pour une liste modifiable, HashMap pour un dictionnaire. Leur taille s'obtient avec size(), avec des parenthèses. Confondre length et size() est l'erreur de compilation la plus fréquente."
+        },
+        {
+          "id": "COLL-java-C2-1",
+          "notion": "COLL",
+          "notion_titre": "Collections",
+          "langage": "java",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Collections en Java — Classes et objets",
+          "ordre": 21,
+          "caracteres": 413,
+          "contenu": "import java.util.*;\n\nList<Integer> notes = new ArrayList<>(List.of(12, 15, 9));\nnotes.add(11);\nSystem.out.println(notes.size());      // 4\nSystem.out.println(notes.get(0));      // 12\n\nMap<String, Integer> bulletin = new HashMap<>();\nbulletin.put(\"Amina\", 16);\nSystem.out.println(bulletin.getOrDefault(\"Lina\", 0));   // 0\n\nint[] tableau = {12, 15, 9};\nSystem.out.println(tableau.length);    // 3, sans parenthèses"
+        }
+      ]
+    },
+    {
+      "section": "Conteneurs STL en C++ — Compilation et types",
+      "notion": "COLL",
+      "notion_titre": "Collections",
+      "objectif": "stocker plusieurs valeurs, parcourir et connaitre la taille",
+      "titre": "Conteneurs STL en C++",
+      "langage": "cpp",
+      "blocs": [
+        {
+          "id": "COLL-cpp-T1-1",
+          "notion": "COLL",
+          "notion_titre": "Collections",
+          "langage": "cpp",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Conteneurs STL en C++ — Compilation et types",
+          "ordre": 11,
+          "caracteres": 353,
+          "contenu": "La bibliothèque standard de C++ fournit std::vector pour un tableau redimensionnable et std::map pour un dictionnaire ordonné. Leur taille s'obtient avec size(). L'accès par crochets ne vérifie pas les bornes : utiliser at() lève une exception si l'indice est hors limites. Un std::vector se passe par référence constante pour éviter une copie coûteuse."
+        },
+        {
+          "id": "COLL-cpp-C2-1",
+          "notion": "COLL",
+          "notion_titre": "Collections",
+          "langage": "cpp",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Conteneurs STL en C++ — Compilation et types",
+          "ordre": 21,
+          "caracteres": 314,
+          "contenu": "#include <vector>\n#include <map>\n\nstd::vector<int> notes{12, 15, 9};\nnotes.push_back(11);\nstd::cout << notes.size() << std::endl;   // 4\nstd::cout << notes.at(0) << std::endl;    // 12, avec vérification\n\nstd::map<std::string, int> bulletin;\nbulletin[\"Amina\"] = 16;\nstd::cout << bulletin.size() << std::endl;  // 1"
+        }
+      ]
+    },
+    {
+      "section": "Erreurs et exceptions en Python — Variables et types",
+      "notion": "ERREUR",
+      "notion_titre": "Erreurs et exceptions",
+      "objectif": "interpreter un message d'erreur, proteger un traitement risque",
+      "titre": "Erreurs et exceptions en Python",
+      "langage": "python",
+      "blocs": [
+        {
+          "id": "ERREUR-python-T1-1",
+          "notion": "ERREUR",
+          "notion_titre": "Erreurs et exceptions",
+          "langage": "python",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Erreurs et exceptions en Python — Variables et types",
+          "ordre": 11,
+          "caracteres": 318,
+          "contenu": "Python distingue les erreurs de syntaxe, détectées avant l'exécution, des exceptions, déclenchées pendant l'exécution. Une exception se capture avec try et except ; capturer une exception trop large masque les fautes de programmation. La division par zéro lève ZeroDivisionError, un indice hors bornes lève IndexError."
+        },
+        {
+          "id": "ERREUR-python-C2-1",
+          "notion": "ERREUR",
+          "notion_titre": "Erreurs et exceptions",
+          "langage": "python",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Erreurs et exceptions en Python — Variables et types",
+          "ordre": 21,
+          "caracteres": 219,
+          "contenu": "notes = []\n\ntry:\n    moyenne = sum(notes) / len(notes)\nexcept ZeroDivisionError:\n    moyenne = 0     # on traite le cas, on ne masque pas l'erreur\n\nprint(moyenne)      # 0\n\n# IndexError : notes[0] lèverait une exception"
+        }
+      ]
+    },
+    {
+      "section": "Exceptions en Java — Classes et objets",
+      "notion": "ERREUR",
+      "notion_titre": "Erreurs et exceptions",
+      "objectif": "interpreter un message d'erreur, proteger un traitement risque",
+      "titre": "Exceptions en Java",
+      "langage": "java",
+      "blocs": [
+        {
+          "id": "ERREUR-java-T1-1",
+          "notion": "ERREUR",
+          "notion_titre": "Erreurs et exceptions",
+          "langage": "java",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Exceptions en Java — Classes et objets",
+          "ordre": 11,
+          "caracteres": 386,
+          "contenu": "En Java, une exception se capture avec try et catch, et le bloc finally s'exécute dans tous les cas. Les exceptions vérifiées, comme IOException, doivent être déclarées ou capturées : le compilateur l'impose. Les exceptions non vérifiées, comme NullPointerException ou ArrayIndexOutOfBoundsException, traduisent une faute de programmation et ne devraient pas être capturées à la légère."
+        },
+        {
+          "id": "ERREUR-java-C2-1",
+          "notion": "ERREUR",
+          "notion_titre": "Erreurs et exceptions",
+          "langage": "java",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Exceptions en Java — Classes et objets",
+          "ordre": 21,
+          "caracteres": 236,
+          "contenu": "int[] notes = new int[0];\n\ntry {\n    System.out.println(notes[0]);\n} catch (ArrayIndexOutOfBoundsException e) {\n    System.out.println(\"indice hors bornes : \" + e.getMessage());\n} finally {\n    System.out.println(\"fin du traitement\");\n}"
+        }
+      ]
+    },
+    {
+      "section": "Exceptions en C++ — Compilation et types",
+      "notion": "ERREUR",
+      "notion_titre": "Erreurs et exceptions",
+      "objectif": "interpreter un message d'erreur, proteger un traitement risque",
+      "titre": "Exceptions en C++",
+      "langage": "cpp",
+      "blocs": [
+        {
+          "id": "ERREUR-cpp-T1-1",
+          "notion": "ERREUR",
+          "notion_titre": "Erreurs et exceptions",
+          "langage": "cpp",
+          "type": "TEXTE",
+          "role": "COURS",
+          "section": "Exceptions en C++ — Compilation et types",
+          "ordre": 11,
+          "caracteres": 336,
+          "contenu": "C++ utilise try et catch, mais rien n'oblige à traiter une exception : une exception non capturée termine le programme. Le conteneur std::vector lève std::out_of_range si l'on utilise at() avec un indice invalide, alors que l'opérateur crochets ne vérifie rien. Le RAII garantit que les ressources sont libérées même en cas d'exception."
+        },
+        {
+          "id": "ERREUR-cpp-C2-1",
+          "notion": "ERREUR",
+          "notion_titre": "Erreurs et exceptions",
+          "langage": "cpp",
+          "type": "CODE",
+          "role": "COURS",
+          "section": "Exceptions en C++ — Compilation et types",
+          "ordre": 21,
+          "caracteres": 221,
+          "contenu": "#include <stdexcept>\n#include <vector>\n\nstd::vector<int> notes;\n\ntry {\n    std::cout << notes.at(0) << std::endl;\n} catch (const std::out_of_range& e) {\n    std::cout << \"indice hors bornes : \" << e.what() << std::endl;\n}"
+        }
+      ]
+    }
+  ]
+}

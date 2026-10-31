@@ -1,0 +1,37 @@
+/* =====================================================================
+   theme-light.css — palette macOS clair.
+   Mêmes jetons que theme-dark.css, valeur pour valeur (vérifié par StyleTest) :
+   basculer d'apparence ne peut donc laisser aucun élément sans couleur.
+   ===================================================================== */
+.root {
+    -color-fenetre: #d8d8dc;
+    -color-barre-titre: rgba(246, 246, 248, 0.94);
+    -color-barre-laterale: rgba(238, 238, 241, 0.86);
+    -color-contenu: #ffffff;
+    -color-separateur: rgba(0, 0, 0, 0.11);
+    -color-survol-lateral: rgba(0, 0, 0, 0.06);
+    -color-surface-translucide: rgba(246, 246, 248, 0.92);
+    -color-surface: #ffffff;
+    -color-surface-2: #f5f5f7;
+    -color-surface-2-50: rgba(245, 245, 247, 0.6);
+    -color-surface-3: #e8e8ed;
+    -color-bordure: rgba(0, 0, 0, 0.10);
+    -color-bordure-forte: rgba(0, 0, 0, 0.18);
+    -color-texte: #1d1d1f;
+    -color-texte-2: #6e6e73;
+    -color-texte-3: #8e8e93;
+    -color-accent: #007aff;
+    -color-accent-fonce: #0063d1;
+    -color-ia: #5e5ce6;
+    -color-java: #f08a00;
+    -color-python: #007aff;
+    -color-cpp: #30a3b8;
+    -color-valide: #34c759;
+    -color-encours: #007aff;
+    -color-verrouille: #8e8e93;
+    -color-alerte: #ff9f0a;
+    -color-danger: #ff3b30;
+}
+.console {
+    -fx-control-inner-background: #fbfbfd;
+}

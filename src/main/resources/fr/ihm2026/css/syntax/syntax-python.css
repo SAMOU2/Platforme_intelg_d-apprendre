@@ -1,0 +1,5 @@
+/* Coloration syntaxique du langage python (IHM-22) : un fichier par langage, jamais mélangés. */
+.code-python .code-kw { -fx-fill: #0f3d63; -fx-font-weight: bold; }
+.code-python .code-str { -fx-fill: #17807c; }
+.code-python .code-num { -fx-fill: #b06a00; }
+.code-python .code-com { -fx-fill: #7d8ca1; -fx-font-style: italic; }

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ihm2026.local/ia/system-v2/sortie-schema.json",
+  "title": "Sortie de l'agent d'assistance (system-v2)",
+  "description": "Forme unique de la sortie du modèle : une réponse citée, ou un refus motivé. Un refus est une réponse de première classe, pas une exception.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "reponse",
+    "citations",
+    "notion",
+    "refus"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "system-v2",
+      "description": "Version du prompt, journalisée à chaque appel."
+    },
+    "reponse": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 600,
+      "description": "Texte affiché à l'apprenant, en français, trois phrases maximum."
+    },
+    "citations": {
+      "type": "array",
+      "maxItems": 3,
+      "description": "Sections du cours réellement retrouvées. Vide si et seulement si refus != AUCUN.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "section",
+          "langage"
+        ],
+        "properties": {
+          "section": {
+            "type": "string",
+            "minLength": 3
+          },
+          "langage": {
+            "enum": [
+              "python",
+              "java",
+              "cpp"
+            ]
+          }
+        }
+      }
+    },
+    "notion": {
+      "enum": [
+        "VAR",
+        "COND",
+        "BOUCLE",
+        "FONC",
+        "COLL",
+        "ERREUR",
+        "DIVERS"
+      ]
+    },
+    "refus": {
+      "enum": [
+        "HORS_PERIMETRE",
+        "SOLUTION_DEMANDEE",
+        "DECISION_DEMANDEE",
+        "TEST_EN_COURS",
+        "PUBLICATION_AUTOMATIQUE",
+        "DONNEES_INSUFFISANTES",
+        "QUOTA",
+        "INDISPONIBLE"
+      ],
+      "description": "Le motif de refus, ou AUCUN. Ce champ n'est pas un booléen : un booléen et un motif pourraient se contredire."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "refus": {
+            "const": "AUCUN"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "citations": {
+            "minItems": 1
+          }
+        },
+        "description": "Une réponse sans citation n'est pas affichable : elle est rejetée."
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "refus": {
+            "not": {
+              "const": "AUCUN"
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "citations": {
+            "maxItems": 0
+          }
+        },
+        "description": "Un refus ne cite rien : il réoriente."
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+/* Coloration syntaxique du langage cpp (IHM-22) : un fichier par langage, jamais mélangés. */
+.code-cpp .code-kw { -fx-fill: #0f3d63; -fx-font-weight: bold; }
+.code-cpp .code-str { -fx-fill: #17807c; }
+.code-cpp .code-num { -fx-fill: #b06a00; }
+.code-cpp .code-com { -fx-fill: #7d8ca1; -fx-font-style: italic; }

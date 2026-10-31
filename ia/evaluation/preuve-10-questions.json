@@ -1,0 +1,101 @@
+[ {
+  "id" : "VAR-p1",
+  "langage" : "python",
+  "notion" : "VAR",
+  "question" : "En Python, faut-il déclarer le type d'une variable ?",
+  "sectionAttendue" : "Variables et types en Python — Variables et types",
+  "citationObtenue" : "Variables et types en Python — Variables et types",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Variables et types en Python — Variables et types » : En Python, une variable est un nom associé à un objet : aucune déclaration de type n'est nécessaire, le type est porté par la valeur. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Variables et types en Python — Variables et types\",\"langage\":\"python\"},{\"section\":\"Fonctions et valeur de retour en Python — Variables et types\",\"langage\":\"python\"}],\"notion\":\"VAR\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "VAR-j1",
+  "langage" : "java",
+  "notion" : "VAR",
+  "question" : "Pourquoi 7 / 2 vaut-il 3 en Java ?",
+  "sectionAttendue" : "Variables et types en Java — Classes et objets",
+  "citationObtenue" : "Variables et types en Java — Classes et objets",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Variables et types en Java — Classes et objets » : La division de deux int est entière : 7 / 2 vaut 3 ; pour obtenir un réel, l'un des deux opérandes doit être de type double. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Variables et types en Java — Classes et objets\",\"langage\":\"java\"}],\"notion\":\"VAR\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "COND-j1",
+  "langage" : "java",
+  "notion" : "COND",
+  "question" : "Peut-on écrire if (note) avec un int en Java ?",
+  "sectionAttendue" : "Conditions en Java — Classes et objets",
+  "citationObtenue" : "Conditions en Java — Classes et objets",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Conditions en Java — Classes et objets » : En Java, la condition d'un if est une expression booléenne entre parenthèses : il n'existe pas de conversion automatique d'un entier vers un booléen, écrire if (note) ne compile pas. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Conditions en Java — Classes et objets\",\"langage\":\"java\"},{\"section\":\"Variables et types en Java — Classes et objets\",\"langage\":\"java\"}],\"notion\":\"COND\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "COND-c1",
+  "langage" : "cpp",
+  "notion" : "COND",
+  "question" : "Que vaut un entier nul placé comme condition en C++ ?",
+  "sectionAttendue" : "Conditions en C++ — Compilation et types",
+  "citationObtenue" : "Conditions en C++ — Compilation et types",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Conditions en C++ — Compilation et types » : En C++, la condition d'un if est convertie en booléen : un entier nul vaut faux, tout autre entier vaut vrai. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Conditions en C++ — Compilation et types\",\"langage\":\"cpp\"},{\"section\":\"Variables et types en C++ — Compilation et types\",\"langage\":\"cpp\"}],\"notion\":\"COND\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "BOUCLE-c1",
+  "langage" : "cpp",
+  "notion" : "BOUCLE",
+  "question" : "Le for sur intervalle en C++ modifie-t-il le conteneur quand on écrit for (int n : notes) ?",
+  "sectionAttendue" : "Boucles en C++ — Compilation et types",
+  "citationObtenue" : "Boucles en C++ — Compilation et types",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Boucles en C++ — Compilation et types » : Le for sur intervalle s'écrit for (int n : notes) et parcourt une copie de chaque élément ; pour modifier le contenu, on écrit for (int& n : notes). Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Boucles en C++ — Compilation et types\",\"langage\":\"cpp\"}],\"notion\":\"BOUCLE\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "BOUCLE-p1",
+  "langage" : "python",
+  "notion" : "BOUCLE",
+  "question" : "Faut-il un compteur pour parcourir une liste avec for en Python ?",
+  "sectionAttendue" : "Boucles en Python — Variables et types",
+  "citationObtenue" : "Boucles en Python — Variables et types",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Boucles en Python — Variables et types » : La boucle for parcourt directement les éléments d'une séquence, sans compteur ni condition d'arrêt, comme dans for note in notes. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Boucles en Python — Variables et types\",\"langage\":\"python\"},{\"section\":\"Listes et dictionnaires en Python — Variables et types\",\"langage\":\"python\"}],\"notion\":\"BOUCLE\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "FONC-p1",
+  "langage" : "python",
+  "notion" : "FONC",
+  "question" : "Quel mot-clé déclare une fonction en Python ?",
+  "sectionAttendue" : "Fonctions et valeur de retour en Python — Variables et types",
+  "citationObtenue" : "Fonctions et valeur de retour en Python — Variables et types",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Fonctions et valeur de retour en Python — Variables et types » : Une fonction se déclare avec le mot-clé def et son corps est indenté. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Fonctions et valeur de retour en Python — Variables et types\",\"langage\":\"python\"},{\"section\":\"Listes et dictionnaires en Python — Variables et types\",\"langage\":\"python\"}],\"notion\":\"FONC\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "FONC-j1",
+  "langage" : "java",
+  "notion" : "FONC",
+  "question" : "Que signifie le type de retour void en Java ?",
+  "sectionAttendue" : "Méthodes et valeur de retour en Java — Classes et objets",
+  "citationObtenue" : "Méthodes et valeur de retour en Java — Classes et objets",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Méthodes et valeur de retour en Java — Classes et objets » : Si ce type est void, la méthode ne renvoie rien ; sinon, tous les chemins d'exécution doivent atteindre un return, faute de quoi le compilateur refuse la compilation. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Méthodes et valeur de retour en Java — Classes et objets\",\"langage\":\"java\"},{\"section\":\"Variables et types en Java — Classes et objets\",\"langage\":\"java\"}],\"notion\":\"FONC\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "COLL-j1",
+  "langage" : "java",
+  "notion" : "COLL",
+  "question" : "Quelle est la différence entre length et size() en Java ?",
+  "sectionAttendue" : "Collections en Java — Classes et objets",
+  "citationObtenue" : "Collections en Java — Classes et objets",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Collections en Java — Classes et objets » : En Java, la taille d'un tableau est fixée à sa création et s'obtient avec length, sans parenthèses. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Collections en Java — Classes et objets\",\"langage\":\"java\"}],\"notion\":\"COLL\",\"refus\":\"AUCUN\"}"
+}, {
+  "id" : "ERREUR-c1",
+  "langage" : "cpp",
+  "notion" : "ERREUR",
+  "question" : "Que se passe-t-il en C++ si une exception n'est jamais capturée ?",
+  "sectionAttendue" : "Exceptions en C++ — Compilation et types",
+  "citationObtenue" : "Exceptions en C++ — Compilation et types",
+  "refus" : "AUCUN",
+  "juste" : true,
+  "json" : "{\"version\":\"system-v2\",\"reponse\":\"D'après le cours « Exceptions en C++ — Compilation et types » : C++ utilise try et catch, mais rien n'oblige à traiter une exception : une exception non capturée termine le programme. Cette réponse n'est pas une correction : relis la section citée, puis reviens à l'exercice. Je ne note pas et je ne valide pas.\",\"citations\":[{\"section\":\"Exceptions en C++ — Compilation et types\",\"langage\":\"cpp\"},{\"section\":\"Conteneurs STL en C++ — Compilation et types\",\"langage\":\"cpp\"}],\"notion\":\"ERREUR\",\"refus\":\"AUCUN\"}"
+} ]

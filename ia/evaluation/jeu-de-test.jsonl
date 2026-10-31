@@ -1,0 +1,20 @@
+{"id":"py-01","langage":"python","question":"Comment déclarer une fonction en Python ?","section":"Fonctions et modules — Fonctions et modules"}
+{"id":"py-02","langage":"python","question":"À quoi sert le mot-clé def ?","section":"Fonctions et modules — Fonctions et modules"}
+{"id":"py-03","langage":"python","question":"Peut-on donner une valeur par défaut à un paramètre ?","section":"Fonctions et modules — Fonctions et modules"}
+{"id":"py-04","langage":"python","question":"Quand la valeur par défaut est-elle évaluée ?","section":"Fonctions et modules — Fonctions et modules"}
+{"id":"py-05","langage":"python","question":"Comment calculer la moyenne d'une liste de notes ?","section":"Fonctions et modules — Fonctions et modules"}
+{"id":"py-06","langage":"python","question":"Que renvoie la fonction si la liste est vide ?","section":"Fonctions et modules — Fonctions et modules"}
+{"id":"py-07","langage":"python","question":"Pourquoi l'indentation est-elle obligatoire dans le corps d'une fonction ?","section":"Fonctions et modules — Fonctions et modules"}
+{"id":"java-01","langage":"java","question":"Quel type de retour pour une méthode qui ne renvoie rien ?","section":"Méthodes et valeur de retour — Classes et objets"}
+{"id":"java-02","langage":"java","question":"Que se passe-t-il si un chemin d'exécution n'atteint pas return ?","section":"Méthodes et valeur de retour — Classes et objets"}
+{"id":"java-03","langage":"java","question":"Comment connaître la taille d'un tableau en Java ?","section":"Méthodes et valeur de retour — Classes et objets"}
+{"id":"java-04","langage":"java","question":"Quelle différence entre length et length() ?","section":"Méthodes et valeur de retour — Classes et objets"}
+{"id":"java-05","langage":"java","question":"Comment calculer une moyenne à partir d'un tableau d'entiers ?","section":"Méthodes et valeur de retour — Classes et objets"}
+{"id":"java-06","langage":"java","question":"Pourquoi le compilateur refuse-t-il une méthode sans return ?","section":"Méthodes et valeur de retour — Classes et objets"}
+{"id":"cpp-01","langage":"cpp","question":"Où se place le type de retour d'une fonction en C++ ?","section":"Fonctions, retour et surcharge — Compilation et types"}
+{"id":"cpp-02","langage":"cpp","question":"Que vaut 7 divisé par 2 en C++ ?","section":"Fonctions, retour et surcharge — Compilation et types"}
+{"id":"cpp-03","langage":"cpp","question":"Comment obtenir 3.5 en divisant deux entiers ?","section":"Fonctions, retour et surcharge — Compilation et types"}
+{"id":"cpp-04","langage":"cpp","question":"À quoi sert static_cast<double> ?","section":"Fonctions, retour et surcharge — Compilation et types"}
+{"id":"cpp-05","langage":"cpp","question":"Comment tester qu'un vecteur est vide ?","section":"Fonctions, retour et surcharge — Compilation et types"}
+{"id":"cpp-06","langage":"cpp","question":"Que se passe-t-il si une fonction non void ne retourne rien ?","section":"Fonctions, retour et surcharge — Compilation et types"}
+{"id":"cpp-07","langage":"cpp","question":"Comment passer un vecteur en paramètre sans le copier ?","section":"Fonctions, retour et surcharge — Compilation et types"}

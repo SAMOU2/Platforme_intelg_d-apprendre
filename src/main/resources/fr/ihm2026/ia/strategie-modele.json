@@ -1,0 +1,142 @@
+{
+  "version": "strategie-v1",
+  "dateDecision": "2026-10-27",
+  "principe": "Le modèle est un fournisseur interchangeable derrière une seule interface : le choix d'aujourd'hui ne doit pas devenir une contrainte technique demain.",
+  "criteres": [
+    {
+      "id": "qualite_fr",
+      "libelle": "Qualité en français",
+      "poids": 30,
+      "mesure": "Réponse juste, citée, dans un français correct, sur les 60 questions du jeu gelé"
+    },
+    {
+      "id": "cout",
+      "libelle": "Coût par 1 000 requêtes",
+      "poids": 20,
+      "mesure": "Coût mensuel estimé au volume du projet, licence et hébergement compris"
+    },
+    {
+      "id": "latence",
+      "libelle": "Latence perçue",
+      "poids": 20,
+      "mesure": "Temps entre l'envoi et l'affichage ; au-delà de 3 s l'apprenant abandonne"
+    },
+    {
+      "id": "confidentialite",
+      "libelle": "Confidentialité des données",
+      "poids": 20,
+      "mesure": "Ce qui sort de l'établissement : contexte d'aide, extraits de cours, code de l'apprenant"
+    },
+    {
+      "id": "competence",
+      "libelle": "Compétence requise pour maintenir",
+      "poids": 10,
+      "mesure": "Ce qu'il faut savoir faire pour installer, surveiller et dépanner l'option"
+    }
+  ],
+  "echelle": {
+    "1": "rédhibitoire pour ce projet",
+    "2": "faible",
+    "3": "acceptable",
+    "4": "bon",
+    "5": "excellent"
+  },
+  "options": [
+    {
+      "id": "RAG_API",
+      "libelle": "API externe d'un modèle généraliste, avec RAG",
+      "notes": {"qualite_fr": 4, "cout": 4, "latence": 4, "confidentialite": 2, "competence": 5},
+      "arguments": {
+        "qualite_fr": "Les modèles généralistes récents répondent correctement en français ; la citation vient du corpus, pas du modèle.",
+        "cout": "Environ 20 $ par mois au volume du projet (52 800 requêtes), sans matériel à acheter.",
+        "latence": "300 à 900 ms pour 300 jetons de sortie, sans file d'attente à gérer.",
+        "confidentialite": "Point faible assumé : le contexte d'aide sort de l'établissement. Mitigé par le contenu du contexte, qui ne porte aucune donnée personnelle.",
+        "competence": "Une clé d'API et le SDK standard : rien à administrer, redémarrage immédiat si le fournisseur tombe."
+      }
+    },
+    {
+      "id": "RAG_AUTOHEBERGE",
+      "libelle": "Modèle auto-hébergé à poids ouverts, avec RAG",
+      "notes": {"qualite_fr": 4, "cout": 2, "latence": 3, "confidentialite": 5, "competence": 2},
+      "arguments": {
+        "qualite_fr": "Mistral Small 4 (poids ouverts) est du même ordre sur ce type de question courte et citée.",
+        "cout": "Un GPU d'inférence revient à environ 365 $ par mois en location, ou à une machine dédiée à l'établissement plus son exploitation.",
+        "latence": "Excellente à chaud, mais dépend du dimensionnement et du temps de démarrage du service.",
+        "confidentialite": "Aucune donnée ne sort : c'est la meilleure note du tableau.",
+        "competence": "Installation, mises à jour, supervision, redémarrage : une compétence d'exploitation que l'équipe projet n'a pas."
+      }
+    },
+    {
+      "id": "FINE_TUNING",
+      "libelle": "Apprentissage supervisé sur les données du projet",
+      "notes": {"qualite_fr": 2, "cout": 2, "latence": 4, "confidentialite": 4, "competence": 1},
+      "ecarte": true,
+      "motifEcarte": "Écarté en v1 : sans volume de données annotées, l'apprentissage dégrade la qualité au lieu de l'améliorer, et il fige le corpus — chaque cours ajouté imposerait un nouvel entraînement. Le RAG répond au même besoin sans cette dette.",
+      "arguments": {
+        "qualite_fr": "Un modèle affiné sur quelques centaines d'exemples apprend la forme des réponses, pas le contenu des cours.",
+        "cout": "L'annotation de 2 000 exemples coûte environ 100 heures d'enseignant, à refaire à chaque évolution du corpus.",
+        "latence": "Rapide une fois servi, mais il faut servir le modèle, donc la même infrastructure que l'option auto-hébergée.",
+        "confidentialite": "Les données restent internes, mais le modèle devient un artefact à versionner et à auditer.",
+        "competence": "Préparation de jeux de données, évaluation, réentraînement : hors de portée de l'équipe et du calendrier."
+      }
+    }
+  ],
+  "decision": {
+    "option": "RAG_API",
+    "enonce": "Retenir le RAG sur un modèle généraliste servi par API, derrière l'interface ModeleIa, avec le fournisseur encapsulé dans un seul transport.",
+    "consequence": "Passer au modèle auto-hébergé plus tard ne change ni le service, ni les garde-fous, ni l'interface : seule l'implémentation du transport change.",
+    "conditionsDeReexamen": [
+      "Si le volume dépasse 500 000 requêtes par mois, l'auto-hébergement devient moins cher.",
+      "Si une donnée personnelle doit entrer dans le contexte d'aide, l'API externe devient inacceptable.",
+      "Si le fournisseur change ses tarifs de plus de 50 %, la comparaison doit être refaite."
+    ]
+  },
+  "politiqueRepli": {
+    "delaiMs": 3000,
+    "tentatives": 1,
+    "disjoncteur": {
+      "echecsAvantOuverture": 3,
+      "refroidissementS": 120
+    },
+    "comportement": "Aide désactivée, jamais un écran bloqué : la panne est une réponse de première classe (MotifRefus.INDISPONIBLE), l'écran de cours et l'éditeur continuent de fonctionner.",
+    "regles": [
+      "Aucun appel au fournisseur sans clé d'API : l'indisponibilité est décidée avant tout appel.",
+      "Un délai maximal de 3000 ms borne l'attente ; aucun appel n'est relancé automatiquement.",
+      "Après 3 indisponibilités consécutives, le disjoncteur s'ouvre 120 secondes : plus aucun appel n'est tenté, l'IHM affiche l'aide désactivée.",
+      "Une réponse sans citation est traitée comme une indisponibilité : elle ne serait pas affichable, donc elle n'est pas une réponse.",
+      "Aucune donnée personnelle n'est transmise : le contexte d'aide est un record de quatre champs (rang, langage, question, code)."
+    ]
+  },
+  "volume": {
+    "hypothese": "120 apprenants × 20 questions par jour × 22 jours ouvrés = 52 800 requêtes par mois",
+    "jetonsEntree": 1400,
+    "jetonsSortie": 300,
+    "formule": "requêtes × (jetonsEntree × prixEntree + jetonsSortie × prixSortie) / 1 000 000"
+  },
+  "prix": {
+    "releve": "2026-10-27",
+    "unite": "USD par million de jetons (entrée / sortie)",
+    "avertissement": "Prix relevés sur des pages publiques à la date du relevé ; à revérifier avant tout engagement, ils changent souvent.",
+    "sources": [
+      "https://docs.mistral.ai/inference/pricing",
+      "https://www.actuia.com/en/news/ai-api-pricing-in-october-2026-050-to-50-for-output/"
+    ],
+    "modeles": {
+      "Mistral Small 4": {"entree": 0.15, "sortie": 0.60},
+      "Mistral Large 3": {"entree": 0.50, "sortie": 1.50},
+      "Mistral Medium 3.5": {"entree": 1.50, "sortie": 7.50},
+      "GPT-6 Luna": {"entree": 0.10, "sortie": 0.50}
+    },
+    "modeleRetenu": "Mistral Small 4",
+    "coutEstimeMois": 20.6
+  },
+  "architecture": {
+    "interface": "fr.ihm2026.api.ia.ModeleIa",
+    "implementations": ["ModeleSimule", "ModeleDistant"],
+    "sortiesReseau": {
+      "fr.ihm2026.api.ApiClient": "serveur de la plateforme (cours, exercices, comptes) — existant",
+      "fr.ihm2026.api.ia.TransportHttp": "fournisseur de modèle — seule classe qui lit et envoie la clé"
+    },
+    "constat": "Deux sorties réseau, nommées dans un test qui lit les sources : un troisième fichier qui ouvrirait une connexion fait échouer la suite. La clé du fournisseur ne circule que dans TransportHttp."
+  }
+}

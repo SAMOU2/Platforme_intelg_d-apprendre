@@ -1,0 +1,5 @@
+/* Coloration syntaxique du langage java (IHM-22) : un fichier par langage, jamais mélangés. */
+.code-java .code-kw { -fx-fill: #0f3d63; -fx-font-weight: bold; }
+.code-java .code-str { -fx-fill: #17807c; }
+.code-java .code-num { -fx-fill: #b06a00; }
+.code-java .code-com { -fx-fill: #7d8ca1; -fx-font-style: italic; }
