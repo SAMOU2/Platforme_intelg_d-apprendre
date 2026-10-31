@@ -38,6 +38,25 @@ public final class ClientReseau {
         this.port = port;
     }
 
+    /** Une adresse explicite évite la diffusion UDP (pare-feu, Wi-Fi isolé). */
+    public static String choisirHote(String adresse, int port) {
+        String hote = adresse == null ? "" : adresse.strip();
+        if (hote.isEmpty()) {
+            return decouvrirServeur(port);
+        }
+        try {
+            URI uri = new URI("https", null, hote, 8443, null, null, null);
+            if (uri.getHost() == null || hote.contains(":") || hote.contains("/")
+                    || hote.contains("@") || hote.contains("?") || hote.contains("#")) {
+                throw new IllegalArgumentException();
+            }
+            return hote;
+        } catch (java.net.URISyntaxException | IllegalArgumentException ex) {
+            throw new ErreurReseau("Saisir uniquement l'adresse IPv4 ou le nom du PC serveur "
+                    + "(exemple : 192.168.1.10), sans protocole ni port.");
+        }
+    }
+
     /** Résout le serveur par diffusion locale sans demander une adresse IP ou un PIN de salle. */
     public static String decouvrirServeur(int port) {
         if (port < 1 || port > 65535) {

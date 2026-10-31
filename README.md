@@ -26,6 +26,23 @@ Application de bureau **JavaFX 25**, thèmes **AtlantaFX**, style **CSS3**, base
 
 ## 2. Lancer l'application
 
+### Déploiement centralisé (PC1 uniquement pour Docker)
+
+Docker/PostgreSQL et le service HTTPS tournent **uniquement sur PC1**. Les clients
+administrateur, enseignant et apprenant n'ont pas besoin de Docker ni d'accès direct à la base.
+Le champ « Adresse IP du PC serveur » permet maintenant une connexion explicite à PC1 ;
+vide, il utilise la découverte automatique. La variable `IHM_SERVEUR` préremplit ce champ
+via les lanceurs de rôle Windows/Linux. PostgreSQL est publié uniquement sur la boucle locale
+sur PC1 (`127.0.0.1:5433`).
+
+Les lanceurs Windows existent aussi en `.bat`. L'écran de connexion est désormais défilant
+pour garder les champs et actions accessibles sur petit écran.
+
+Voir [le guide et les limites des preuves](docs/preuves/README.md) pour la configuration,
+les contrôles exécutés et les PNG. Les anciens passages imposant la découverte automatique
+sans saisie d'IP décrivent le fonctionnement antérieur.
+
+
 Le backlog, les priorités, les responsables par rôle et la définition de terminé sont centralisés
 dans [docs/GESTION-PROJET.md](docs/GESTION-PROJET.md).
 
@@ -117,6 +134,41 @@ hors ligne ni de choix de rôle à l'écran.
 > HTTPS et PostgreSQL lorsqu'une session administrateur est ouverte. Le rôle fixé par un script ne
 > prouve pas l'identité : c'est la session PostgreSQL/HTTPS qui authentifie le compte, et la connexion
 > est refusée si son rôle ne correspond pas au poste.
+
+### Dépanner la connexion et vérifier les corrections
+
+**Si le service HTTPS ne démarre pas :** la console affiche désormais un diagnostic ciblé
+(port déjà occupé, magasin TLS absent, clé privée/mot de passe incorrect, certificat expiré,
+identifiants PostgreSQL refusés ou migrations manquantes). Un magasin contenant uniquement
+un certificat de confiance est refusé dès le démarrage : le serveur exige sa clé privée.
+Après création du premier administrateur, une configuration d'amorçage partiellement retirée
+ne bloque plus les redémarrages. Sans administrateur, les trois variables restent obligatoires.
+Si Docker utilise déjà un volume, les nouveaux scripts SQL doivent être appliqués explicitement ;
+ne pas supprimer le volume pour tenter de résoudre une migration manquante.
+
+
+- Démarrer **les deux services** sur PC1 : serveur de salle et service HTTPS
+  `postes\authentification-PC1.bat`. La découverte du serveur de salle ne garantit pas que
+  le service HTTPS écoute sur 8443.
+- Si le certificat est refusé, vérifier son nom/SAN (l'hôte découvert est généralement une IP)
+  et la confiance du JDK client. Ne pas désactiver la vérification TLS.
+- Si aucun code n'arrive, vérifier la configuration SMTP du compte qui lance le service.
+  Le transport utilise STARTTLS obligatoire. Les requêtes qui envoient un e-mail disposent
+  désormais de 60 secondes, au lieu de 8, pour attendre les échanges SMTP.
+- Après cinq mauvais codes ou dix minutes, cliquer **Annuler**, puis se reconnecter pour
+  recevoir un nouveau code. Un nouveau code invalide le précédent.
+- Si le code a été accepté mais que le serveur de salle est inaccessible (ou que le rôle ne
+  correspond pas au poste), l'écran revient à la connexion : il ne redemande plus un code
+  déjà consommé. L'annulation est bloquée pendant la validation et les appuis répétés sur
+  Entrée ne lancent plus de requêtes concurrentes.
+- La consommation du code et la création de session sont maintenant atomiques : un échec
+  d'insertion PostgreSQL laisse le code utilisable pour un nouvel essai.
+
+Vérification : `mvnw.cmd test` sous Windows, ou `bash mvnw test` sous Linux, avec un JDK 25.
+Les tests `PostgresAuthentificationServiceIntegrationTest` exigent une **base de test dédiée**,
+les migrations `01`, `02`, `07`, `08`, `09` et les variables `IHM_DB_URL`, `IHM_DB_USER`,
+`IHM_DB_PASSWORD`. Sans `IHM_DB_URL`, ces tests sont ignorés. Le test de panne d'insertion
+ajoute puis retire une contrainte temporaire dans cette base ; ne pas le lancer en production.
 
 ### Parcours de démonstration conseillé
 1. Démarrer le serveur depuis le poste dédié, puis lancer un poste par rôle avec son script.

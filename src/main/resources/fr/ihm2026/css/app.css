@@ -823,7 +823,7 @@
 /* Une seule chose à saisir sur un poste : l'adresse du serveur. Le champ est donc assez large
    pour une adresse complète, en chasse fixe pour que l'on voie une faute de frappe. */
 .carte-reseau {
-    -fx-min-width: 520;
+    -fx-min-width: 0;
 }
 .champ-adresse {
     -fx-font-family: "JetBrains Mono", "Consolas", monospace;
@@ -955,4 +955,13 @@
     -fx-background-radius: 14;
     -fx-padding: 18;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 30, 0.15, 0, 10);
+}
+
+/* Le dégradé du parent reste visible derrière le formulaire défilant. */
+.connexion-scroll, .connexion-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.connexion-scroll {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
 }

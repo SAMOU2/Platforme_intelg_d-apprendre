@@ -7,19 +7,28 @@ cd /d "%~dp0.."
 call "%~dp0environnement.cmd"
 if not "%ENV_OK%"=="1" exit /b 1
 
-if not defined IHM_DB_URL goto :configuration_manquante
-if not defined IHM_DB_USER goto :configuration_manquante
-if not defined IHM_DB_PASSWORD goto :configuration_manquante
-if not defined IHM_TLS_KEYSTORE goto :configuration_manquante
-if not defined IHM_TLS_PASSWORD goto :configuration_manquante
-if not defined IHM_SMTP_HOST goto :configuration_manquante
-if not defined IHM_SMTP_FROM goto :configuration_manquante
+REM Afficher les noms manquants, jamais la valeur des secrets.
+set "CONFIG_MANQUANTE="
+for %%V in (IHM_DB_URL IHM_DB_USER IHM_DB_PASSWORD IHM_TLS_KEYSTORE IHM_TLS_PASSWORD IHM_SMTP_HOST IHM_SMTP_FROM) do (
+    if not defined %%V (
+        echo [ERREUR] Variable obligatoire absente : %%V
+        set "CONFIG_MANQUANTE=1"
+    )
+)
+if defined CONFIG_MANQUANTE goto :configuration_manquante
+if not exist "%IHM_TLS_KEYSTORE%" (
+    echo [ERREUR] Le fichier indique par IHM_TLS_KEYSTORE est introuvable.
+    echo          Utiliser de preference un chemin absolu.
+    goto :echec
+)
 
 if not defined IHM_AUTH_PORT set "IHM_AUTH_PORT=8443"
 
 echo.
+echo PC1 uniquement : Docker et PostgreSQL doivent etre disponibles ici.
+echo Les clients n'ont besoin ni de Docker ni des secrets de ce serveur.
 echo Compilation du service d'authentification HTTPS...
-call "%MVN%" -B -q -DskipTests compile dependency:build-classpath "-Dmdep.outputFile=target\authentification-classpath.txt"
+call "%MVN%" -B -DskipTests compile dependency:build-classpath "-Dmdep.outputFile=target\authentification-classpath.txt"
 if errorlevel 1 (
     echo [ERREUR] Maven n'a pas pu compiler le service ou preparer ses dependances.
     goto :echec

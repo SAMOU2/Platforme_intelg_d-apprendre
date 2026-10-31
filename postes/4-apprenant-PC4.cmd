@@ -8,22 +8,25 @@ REM =====================================================================
 REM  PC4 : APPRENANT
 REM
 REM  Le role APPRENANT est fixe par ce script.
-REM  Le serveur est decouvert automatiquement ; le PIN individuel est saisi a l'inscription.
+REM  Saisir l'IP du serveur dans l'interface, ou utiliser IHM_SERVEUR.
 REM =====================================================================
 
 call "%~dp0environnement.cmd"
 if not "%ENV_OK%"=="1" exit /b 1
 
 set "PORT=7777"
+REM Facultatif : IHM_SERVEUR contient l'IP du PC1, jamais localhost sur un client.
 echo =====================================================================
 echo    POSTE APPRENANT — ROLE FIXE
 echo    Ce script ne peut ouvrir que l'interface apprenant.
 echo =====================================================================
 set "ARGS=--role=apprenant --poste=PC4 --port=%PORT%"
+if defined IHM_SERVEUR set "ARGS=!ARGS! --serveur=!IHM_SERVEUR!"
 
 echo =====================================================================
 echo    IHM 2026 - PC4 : APPRENANT
 echo =====================================================================
+echo    Docker et PostgreSQL : sur PC1 uniquement, jamais sur ce client.
 echo    Role verrouille : APPRENANT. Connexion au serveur obligatoire.
 echo.
 echo    Compilation puis demarrage. Au premier lancement, Maven se telecharge
@@ -38,9 +41,11 @@ if errorlevel 1 (
     echo.
     echo [ERREUR] La fenetre du poste PC4 n'a pas pu s'ouvrir.
     pause
+    exit /b 1
 ) else (
     echo.
     echo La fenetre du poste est fermee.
     pause
 )
 endlocal
+exit /b 0

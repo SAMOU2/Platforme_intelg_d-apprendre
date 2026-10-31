@@ -7,9 +7,8 @@
 # =====================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
-export PATH="$JAVA_HOME/bin:$PATH"
+if [[ -n "${JAVA_HOME:-}" ]]; then export PATH="$JAVA_HOME/bin:$PATH"; fi
 MVN=./mvnw
 PORT="${PORT:-7777}"
 echo "  PC1 serveur. Decouverte des clients automatique sur le reseau local."
-exec "$MVN" -B javafx:run "-Djavafx.args=--role=serveur --poste=PC1 --port=${PORT}"
+exec bash "$MVN" -B javafx:run "-Djavafx.args=--role=serveur --poste=PC1 --port=${PORT}"

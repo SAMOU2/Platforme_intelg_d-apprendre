@@ -12,6 +12,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -32,6 +33,7 @@ public class VueConnexionServeur extends StackPane {
 
     private final Router router;
     private final Session.Role role;
+    private final TextField adresseServeur = new TextField();
     private final TextField codeInvitation = new TextField();
     private final TextField nom = new TextField();
     private final TextField email = new TextField();
@@ -63,7 +65,14 @@ public class VueConnexionServeur extends StackPane {
         Label sousTitre = new Label("Se connecter avec un compte autorisé pour ce rôle.");
         sousTitre.getStyleClass().add("login-soustitre");
 
-        Label decouverteServeur = new Label("Serveur détecté automatiquement sur le réseau local");
+        Label decouverteServeur = new Label("Adresse IP du PC serveur — vide : découverte automatique");
+        adresseServeur.setText(System.getProperty("ihm.serveur", ""));
+        adresseServeur.setPromptText("Exemple : 192.168.1.10 (Docker uniquement sur PC1)");
+        adresseServeur.setMaxWidth(Double.MAX_VALUE);
+        adresseServeur.getStyleClass().add("champ-adresse");
+        adresseServeur.setId("serveur-ip");
+        decouverteServeur.setLabelFor(adresseServeur);
+        adresseServeur.setAccessibleText("Adresse IP ou nom du PC serveur. Vide pour la découverte automatique.");
         decouverteServeur.getStyleClass().add("login-mode");
         etiquetteInvitation.getStyleClass().add("role-nom");
         codeInvitation.setPromptText("PIN individuel à 8 chiffres fourni par l'administrateur");
@@ -82,6 +91,12 @@ public class VueConnexionServeur extends StackPane {
         etiquetteNom.getStyleClass().add("role-nom");
 
         Label etiquetteMotDePasse = new Label("Mot de passe");
+        etiquetteEmail.setLabelFor(email);
+        etiquetteMotDePasse.setLabelFor(motDePasse);
+        etiquetteNom.setLabelFor(nom);
+        etiquetteInvitation.setLabelFor(codeInvitation);
+        etiquetteConfirmation.setLabelFor(confirmationMotDePasse);
+        etiquetteCodeConnexion.setLabelFor(codeConnexion);
         etiquetteMotDePasse.getStyleClass().add("role-nom");
         motDePasse.setPromptText("Mot de passe du compte");
         motDePasse.getStyleClass().add("champ-adresse");
@@ -103,6 +118,12 @@ public class VueConnexionServeur extends StackPane {
         codeInvitation.setVisible(false);
         codeInvitation.setManaged(false);
 
+        connecter.setId("connexion-valider");
+        inscription.setId("connexion-inscription");
+        email.setId("connexion-email");
+        motDePasse.setId("connexion-mot-de-passe");
+        codeConnexion.setId("connexion-code");
+        etat.setId("connexion-etat");
         connecter.getStyleClass().add("btn-primary");
         connecter.setDefaultButton(true);
         connecter.setOnAction(e -> seConnecter());
@@ -141,24 +162,35 @@ public class VueConnexionServeur extends StackPane {
         aide.getStyleClass().add("login-mode");
         aide.setWrapText(true);
 
-        VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, ligne,
+        VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, adresseServeur,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
                 etiquetteMotDePasse, motDePasse,
                 etiquetteConfirmation, confirmationMotDePasse, etiquetteCodeConnexion, codeConnexion,
-                actionsCompte, etat, aide);
+                ligne, actionsCompte, etat, aide);
         carte.getStyleClass().addAll("card", "login-card", "carte-reseau");
         carte.setAlignment(Pos.CENTER);
         carte.setMaxWidth(560);
         carte.setMaxHeight(Region.USE_PREF_SIZE);
         actualiserModeInscription();
 
-        getChildren().add(carte);
+        // Le formulaire d'inscription doit rester accessible sur un petit portable.
+        carte.setMinHeight(Region.USE_PREF_SIZE);
+        StackPane contenu = new StackPane(carte);
+        contenu.setPadding(new javafx.geometry.Insets(24));
+        ScrollPane defilement = new ScrollPane(contenu);
+        defilement.setId("connexion-defilement");
+        defilement.getStyleClass().add("connexion-scroll");
+        defilement.setFitToWidth(true);
+        defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
+        getChildren().add(defilement);
         setAlignment(Pos.CENTER);
 
         // Entrée depuis la carte vaut « Se connecter ».
         carte.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
                 seConnecter();
+                e.consume(); // ne pas déclencher aussi le bouton par défaut
             }
         });
         // Filet d'affichage (v0.14.3) : si la fenêtre dépasse l'écran, une carte centrée sort à
@@ -207,6 +239,9 @@ public class VueConnexionServeur extends StackPane {
     }
 
     private void seConnecter() {
+        if (connecter.isDisabled()) {
+            return; // Entrée ne doit pas lancer une seconde requête pendant le traitement.
+        }
         if (modeInscription) {
             sInscrire();
             return;
@@ -215,6 +250,7 @@ public class VueConnexionServeur extends StackPane {
             confirmerConnexion();
             return;
         }
+        String adresse = adresseServeur.getText();
         String identifiant = email.getText();
         char[] secret = motDePasse.getText().toCharArray();
         if (identifiant == null || identifiant.isBlank() || secret.length == 0) {
@@ -227,10 +263,11 @@ public class VueConnexionServeur extends StackPane {
         inscription.setDisable(true);
         email.setDisable(true);
         motDePasse.setDisable(true);
-        etat.setText("Recherche automatique du serveur et envoi du code de sécurité…");
+        adresseServeur.setDisable(true);
+        etat.setText("Connexion au serveur central et envoi du code de sécurité…");
         TaskRunner.run(() -> {
             try {
-                String hote = ClientReseau.decouvrirServeur(IdentitePoste.port());
+                String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
                 var challenge = ClientAuthentificationHttps.demanderCodeConnexion(
                         hote, ClientAuthentificationHttps.portConfigure(), identifiant, secret);
                 return new DemandeCode(hote, challenge);
@@ -248,6 +285,7 @@ public class VueConnexionServeur extends StackPane {
             connecter.setText("Valider le code");
             inscription.setText("Annuler");
             definirChampsActifs(true);
+            adresseServeur.setDisable(true);
             email.setDisable(true);
             motDePasse.setDisable(true);
             codeConnexion.setDisable(false);
@@ -270,6 +308,7 @@ public class VueConnexionServeur extends StackPane {
             return;
         }
         connecter.setDisable(true);
+        inscription.setDisable(true);
         codeConnexion.setDisable(true);
         etat.setText("Vérification du code de sécurité…");
         TaskRunner.run(() -> {
@@ -278,7 +317,7 @@ public class VueConnexionServeur extends StackPane {
                     identifiantChallenge, code.strip());
             if (session.compte().role() != role) {
                 session.close();
-                throw new ClientAuthentificationHttps.ErreurAuthentification(
+                throw new CodeConsommeException(
                         "Cette demande de compte est associée au rôle « "
                                 + session.compte().role().label() + " », pas au rôle « "
                                 + role.label() + " » de ce poste.");
@@ -288,13 +327,25 @@ public class VueConnexionServeur extends StackPane {
                 return session;
             } catch (RuntimeException ex) {
                 session.close();
-                throw ex;
+                throw new CodeConsommeException(ex.getMessage());
             }
         }, session -> {
             Reseau.installerAuthentification(session);
             Session.setRole(session.compte().role());
             router.go(ecranDuRole());
         }, erreur -> {
+            inscription.setDisable(false);
+            if (erreur instanceof CodeConsommeException) {
+                attenteCodeConnexion = false;
+                identifiantChallenge = null;
+                hoteServeur = null;
+                actualiserModeInscription();
+                definirChampsActifs(true);
+                codeConnexion.clear();
+                etat.setText(erreur.getMessage() + " Recommencez la connexion pour recevoir un nouveau code.");
+                motDePasse.requestFocus();
+                return;
+            }
             connecter.setDisable(false);
             codeConnexion.setDisable(false);
             codeConnexion.clear();
@@ -306,7 +357,15 @@ public class VueConnexionServeur extends StackPane {
         });
     }
 
+    /** Le code a été consommé : une nouvelle authentification est nécessaire. */
+    private static final class CodeConsommeException extends RuntimeException {
+        private CodeConsommeException(String message) {
+            super(message);
+        }
+    }
+
     private void sInscrire() {
+        String adresse = adresseServeur.getText();
         String pin = codeInvitation.getText();
         String nomSaisi = nom.getText();
         String emailSaisi = email.getText();
@@ -342,10 +401,11 @@ public class VueConnexionServeur extends StackPane {
         email.setDisable(true);
         motDePasse.setDisable(true);
         confirmationMotDePasse.setDisable(true);
-        etat.setText("Recherche du serveur et vérification de votre PIN individuel…");
+        adresseServeur.setDisable(true);
+        etat.setText("Connexion au serveur central et vérification de votre PIN individuel…");
         TaskRunner.run(() -> {
             try {
-                String hote = ClientReseau.decouvrirServeur(IdentitePoste.port());
+                String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
                 return ClientAuthentificationHttps.inscrireCompte(
                         hote, ClientAuthentificationHttps.portConfigure(), pin.strip(),
                         nomSaisi, emailSaisi, secret, role);
@@ -400,6 +460,7 @@ public class VueConnexionServeur extends StackPane {
     }
 
     private void definirChampsActifs(boolean actifs) {
+        adresseServeur.setDisable(!actifs);
         connecter.setDisable(!actifs);
         inscription.setDisable(!actifs);
         codeInvitation.setDisable(!actifs);

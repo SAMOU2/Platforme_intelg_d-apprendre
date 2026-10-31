@@ -21,7 +21,7 @@ services:
       # échoue sur UnicodeDecodeError (constaté le 27/10/2026).
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
     ports:
-      - "${IHM_DB_PORT:-5433}:5432"
+      - "127.0.0.1:${IHM_DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro

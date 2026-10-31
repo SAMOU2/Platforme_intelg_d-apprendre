@@ -1,0 +1,3 @@
+Analyse syntaxique Tree-sitter Java : 104 fichiers
+Aucune erreur de syntaxe detectee.
+Ce controle ne remplace pas javac ni les tests JUnit.
