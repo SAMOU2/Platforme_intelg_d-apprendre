@@ -88,6 +88,14 @@ Pour une démonstration locale avec les données de `db\02-seed.sql`, les compte
 `amina.bouzid@univ.dz` (apprenant) ; leur mot de passe commun est `demo`. Ces identifiants sont
 réservés au jeu de données de développement : ne pas les conserver dans une base de production.
 
+Pour faciliter le double-clic sous Windows, copier
+`postes/configuration-PC1.exemple.cmd` vers `postes/configuration-PC1.local.cmd`,
+puis renseigner ce fichier **local uniquement**. Le lanceur HTTPS le charge automatiquement.
+Le fichier local et `postes/secrets/` sont exclus de Git : ne jamais y publier de secrets.
+Il faut toujours fournir un vrai magasin TLS et une configuration SMTP fonctionnelle.
+Le serveur de salle affiche maintenant les IPv4 candidates avant toute compilation ;
+choisir l'adresse de la carte du même réseau que les clients, pas une carte VPN ou Docker.
+
 Avant le lancement du service, configurer dans l'environnement Windows du compte qui l'exécute :
 `IHM_DB_URL`, `IHM_DB_USER`, `IHM_DB_PASSWORD`, `IHM_TLS_KEYSTORE`, `IHM_TLS_PASSWORD`,
 `IHM_SMTP_HOST` et `IHM_SMTP_FROM`. Pour un serveur SMTP authentifié, ajouter

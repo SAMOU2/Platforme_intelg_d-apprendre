@@ -80,6 +80,32 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertNotIn('-B -q', texte)
         self.assertNotIn('echo %IHM_DB_PASSWORD%', texte)
 
+    def test_configuration_privee_exclue_de_git(self):
+        for chemin in ('postes/configuration-PC1.local.cmd', 'postes/secrets/serveur.p12'):
+            resultat = subprocess.run(['git', 'check-ignore', '--no-index', chemin],
+                                      cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(0, resultat.returncode, chemin)
+
+    def test_configuration_locale_chargee_avant_controles(self):
+        texte = (ROOT / 'postes/authentification-PC1.bat').read_text()
+        self.assertLess(texte.index('call "%~dp0configuration-PC1.local.cmd"'),
+                        texte.index('for %%V in (IHM_DB_URL'))
+        self.assertIn('configuration-PC1.exemple.cmd', texte)
+        modele = (ROOT / 'postes/configuration-PC1.exemple.cmd').read_text()
+        # Pas de secret actif livre dans le modele.
+        actives = [l for l in modele.splitlines() if l.lower().startswith('set ')]
+        self.assertFalse(any('PASSWORD=' in l for l in actives))
+        self.assertFalse(any('IHM_TLS_KEYSTORE=' in l for l in actives))
+
+    def test_ip_affichee_avant_maven(self):
+        texte = (ROOT / 'postes/1-serveur-PC1.cmd').read_text()
+        self.assertLess(texte.index('call "%~dp0afficher-ip-PC1.cmd"'),
+                        texte.index('call "%~dp0environnement.cmd"'))
+        aide = (ROOT / 'postes/afficher-ip-PC1.cmd').read_text()
+        self.assertIn('afficher-ip-PC1.ps1', aide)
+        self.assertIn('ipconfig', aide)
+        self.assertIn('sans protocole ni port', aide)
+
     def test_tls_reste_obligatoire(self):
         serveur = (ROOT / 'src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java').read_text()
         client = (ROOT / 'src/main/java/fr/ihm2026/api/service/ClientAuthentificationHttps.java').read_text()

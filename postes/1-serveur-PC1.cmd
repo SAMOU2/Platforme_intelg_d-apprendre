@@ -15,6 +15,9 @@ REM  A lancer EN PREMIER. Laisser cette fenetre ouverte : la fermer
 REM  eteint le serveur, et les autres postes le signalent.
 REM =====================================================================
 
+REM Afficher les IP avant toute compilation ou telechargement Maven.
+call "%~dp0afficher-ip-PC1.cmd"
+
 call "%~dp0environnement.cmd"
 if not "%ENV_OK%"=="1" exit /b 1
 
@@ -46,9 +49,11 @@ if errorlevel 1 (
     echo.
     echo [ERREUR] Le serveur n'a pas demarre. Voir le message ci-dessus.
     pause
+    exit /b 1
 ) else (
     echo.
     echo Le serveur est arrete. La fenetre reste ouverte pour lire le journal.
     pause
 )
 endlocal
+exit /b 0
