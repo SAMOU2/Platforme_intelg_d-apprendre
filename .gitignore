@@ -9,3 +9,7 @@ target/
 .project
 .DS_Store
 db/pgdata/
+
+# Configuration privee du serveur : ne jamais publier les secrets ou cles TLS.
+postes/configuration-PC1.local.cmd
+postes/secrets/

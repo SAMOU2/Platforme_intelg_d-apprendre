@@ -2,7 +2,10 @@ test_auth_refuse_configuration_absente (__main__.DeploiementCentralTest.test_aut
 test_bat_auth_diagnostic_sans_affichage_des_secrets (__main__.DeploiementCentralTest.test_bat_auth_diagnostic_sans_affichage_des_secrets) ... ok
 test_clients_sans_docker_ni_postgres_local (__main__.DeploiementCentralTest.test_clients_sans_docker_ni_postgres_local) ... ok
 test_clients_windows_propagation_echec (__main__.DeploiementCentralTest.test_clients_windows_propagation_echec) ... ok
+test_configuration_locale_chargee_avant_controles (__main__.DeploiementCentralTest.test_configuration_locale_chargee_avant_controles) ... ok
+test_configuration_privee_exclue_de_git (__main__.DeploiementCentralTest.test_configuration_privee_exclue_de_git) ... ok
 test_formulaire_defilant_et_actions_apres_les_champs (__main__.DeploiementCentralTest.test_formulaire_defilant_et_actions_apres_les_champs) ... ok
+test_ip_affichee_avant_maven (__main__.DeploiementCentralTest.test_ip_affichee_avant_maven) ... ok
 test_ip_partagee_transmise_par_les_clients (__main__.DeploiementCentralTest.test_ip_partagee_transmise_par_les_clients) ... ok
 test_les_deux_parcours_utilisent_le_serveur_choisi (__main__.DeploiementCentralTest.test_les_deux_parcours_utilisent_le_serveur_choisi) ... ok
 test_pas_de_jdk21_force_sur_linux (__main__.DeploiementCentralTest.test_pas_de_jdk21_force_sur_linux) ... ok
@@ -12,6 +15,6 @@ test_tls_reste_obligatoire (__main__.DeploiementCentralTest.test_tls_reste_oblig
 test_wrappers_bat_conservent_role_et_code_retour (__main__.DeploiementCentralTest.test_wrappers_bat_conservent_role_et_code_retour) ... ok
 
 ----------------------------------------------------------------------
-Ran 12 tests in 0.014s
+Ran 15 tests in 0.018s
 
 OK

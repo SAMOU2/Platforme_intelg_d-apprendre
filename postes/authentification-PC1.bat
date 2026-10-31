@@ -1,8 +1,11 @@
 @echo off
 chcp 65001 >nul
 title IHM 2026 - service HTTPS d'authentification
-setlocal
+setlocal DisableDelayedExpansion
 cd /d "%~dp0.."
+
+REM Fichier local facultatif, jamais versionne : environnement herite sinon.
+if exist "%~dp0configuration-PC1.local.cmd" call "%~dp0configuration-PC1.local.cmd"
 
 call "%~dp0environnement.cmd"
 if not "%ENV_OK%"=="1" exit /b 1
@@ -63,7 +66,11 @@ endlocal
 exit /b 0
 
 :configuration_manquante
-echo [ERREUR] Configuration serveur absente. Definir IHM_DB_URL, IHM_DB_USER,
+echo [ERREUR] Configuration serveur absente.
+echo Copier postes\configuration-PC1.exemple.cmd vers postes\configuration-PC1.local.cmd
+echo puis renseigner les parametres dans le fichier local. Il est exclu de Git.
+echo Les variables peuvent aussi etre definies dans l'environnement Windows.
+echo Definir IHM_DB_URL, IHM_DB_USER,
 echo          IHM_DB_PASSWORD, IHM_TLS_KEYSTORE, IHM_TLS_PASSWORD,
 echo          IHM_SMTP_HOST et IHM_SMTP_FROM avant le lancement.
 echo          Ne pas inscrire les mots de passe dans ce fichier.

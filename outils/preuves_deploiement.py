@@ -23,19 +23,20 @@ def base(title, subtitle, height=1050):
 
 def tests():
     raw = (OUT / 'tests-deploiement.txt').read_text()
-    im, d = base('Contrôles de déploiement exécutés', 'Rendu du journal réel — ce PNG n’est pas une capture JavaFX', height=1350)
-    d.rounded_rectangle((65, 185, 1535, 1000), radius=18, fill='#18263a')
     lines = [l for l in raw.splitlines() if l.startswith('test_')]
+    bas = 310 + len(lines) * 59
+    im, d = base('Contrôles de déploiement exécutés', 'Rendu du journal réel — ce PNG n’est pas une capture JavaFX', height=bas + 350)
+    d.rounded_rectangle((65, 185, 1535, bas), radius=18, fill='#18263a')
     for i, line in enumerate(lines):
         name = line.split(' (', 1)[0]
         passed = line.endswith(' ... ok')
         d.text((95, 215 + i * 59), 'OK' if passed else 'ÉCHEC', font=font(23, True), fill='#71e5b2' if passed else '#ff8989')
         d.text((220, 215 + i * 59), name, font=font(22), fill='#eef4ff')
     summary = next((l for l in raw.splitlines() if l.startswith('Ran ')), '')
-    d.text((95, 955), summary + (' — OK' if raw.rstrip().endswith('OK') else ' — vérifier le journal'), font=font(22, True), fill='#71e5b2')
-    d.text((65, 1045), 'Non exécutés : JUnit, Docker/PostgreSQL, SMTP, affichage JavaFX.', font=font(25, True), fill='#ffc67f')
-    d.text((65, 1100), 'JDK et Docker absents ; téléchargement du JDK et accès Maven bloqués.', font=font(23), fill='#d4deed')
-    d.text((65, 1150), 'Source vérifiable : docs/preuves/tests-deploiement.txt', font=font(23), fill='#d4deed')
+    d.text((95, bas - 60), summary + (' — OK' if raw.rstrip().endswith('OK') else ' — vérifier le journal'), font=font(22, True), fill='#71e5b2')
+    d.text((65, bas + 45), 'Non exécutés : JUnit, Docker/PostgreSQL, SMTP, affichage JavaFX.', font=font(25, True), fill='#ffc67f')
+    d.text((65, bas + 100), 'JDK et Docker absents ; téléchargement du JDK et accès Maven bloqués.', font=font(23), fill='#d4deed')
+    d.text((65, bas + 150), 'Source vérifiable : docs/preuves/tests-deploiement.txt', font=font(23), fill='#d4deed')
     im.save(OUT / 'tests-deploiement.png')
 
 

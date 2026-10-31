@@ -2,7 +2,7 @@
 
 ## Résultats réellement obtenus
 
-`python3 outils/tests/test_deploiement_central.py` : **12 contrôles réussis**.
+`python3 outils/tests/test_deploiement_central.py` : **15 contrôles réussis**.
 Le journal brut est `tests-deploiement.txt` et son rendu PNG est `tests-deploiement.png`.
 Ces contrôles portent sur la syntaxe Bash, les contrats de configuration dans les fichiers,
 et le refus réel du lanceur HTTPS Linux lorsque sa configuration est absente.
@@ -10,6 +10,21 @@ Ce ne sont PAS des tests de connexion Java/HTTPS ni une validation de Windows.
 
 `architecture-serveur-central.png` est un **schéma explicatif**, pas une capture de l'application.
 Les PNG sont générés par `outils/preuves_deploiement.py` (Pillow requis).
+
+## Correction de la configuration PC1 et affichage des IP
+
+Le lanceur HTTPS accepte maintenant `postes/configuration-PC1.local.cmd` (facultatif),
+charge avant ses controles. Copier `postes/configuration-PC1.exemple.cmd` vers ce nom,
+puis le renseigner localement : le fichier local et `postes/secrets/` sont exclus de Git.
+Les variables d'environnement restent utilisables sans fichier local. Le modele ne contient
+aucun mot de passe actif et ne fabrique pas de certificat ni de configuration SMTP.
+Ne pas partager le fichier local : c'est un script CMD executable de confiance.
+
+Le serveur de salle appelle `afficher-ip-PC1.cmd` avant Java/Maven. Le script PowerShell
+liste les IPv4 des interfaces actives, en priorite celles avec passerelle et sans loopback/APIPA.
+S'il y en a plusieurs (VPN, Ethernet, Wi-Fi), choisir celle du reseau des clients.
+En cas d'echec, il invite a utiliser `ipconfig`. Une IP affichee n'est pas une preuve
+que le serveur est deja en ecoute. Les scripts Windows/PowerShell restent a tester sous Windows.
 
 ## Mise à jour interface et Windows
 
