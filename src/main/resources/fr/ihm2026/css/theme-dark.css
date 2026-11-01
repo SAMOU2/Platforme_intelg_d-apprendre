@@ -5,6 +5,10 @@
    syntaxique et fenêtre de connexion.
    ===================================================================== */
 .root {
+    /* Notifications et symboles sur les pastilles colorées de fenêtre. */
+    -color-texte-feu: #151515;
+    -color-notification-fond: #25272d;
+    -color-notification-texte: #f5f5f7;
     -color-fenetre: #0f0f10;
     -color-barre-titre: rgba(48, 48, 51, 0.92);
     -color-barre-laterale: rgba(38, 38, 41, 0.88);
@@ -74,5 +78,3 @@
     -fx-background-color: #176bb7;
     -fx-text-fill: #ffffff;
 }
-.notification { -fx-background-color: #25272d; }
-.notification .label { -fx-text-fill: #f5f5f7; }

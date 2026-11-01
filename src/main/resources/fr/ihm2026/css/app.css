@@ -968,14 +968,14 @@
 
 /* Actions de fenêtre identifiables sans dépendre de la couleur seule. */
 .feux .feu, .feux:hover .feu {
-    -fx-text-fill: #151515;
+    -fx-text-fill: -color-texte-feu;
     -fx-font-size: 10px;
 }
 .feu:focused { -fx-border-color: -color-accent; -fx-border-width: 2; }
 .champ-secret { -fx-alignment: center-left; }
 .secret-visibilite { -fx-min-width: 78; -fx-cursor: hand; }
 .notification {
-    -fx-background-color: #ffffff;
+    -fx-background-color: -color-notification-fond;
     -fx-padding: 16;
     -fx-background-radius: 10;
     -fx-border-radius: 10;
@@ -983,7 +983,7 @@
     -fx-border-color: -color-accent;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 12, 0, 0, 3);
 }
-.notification .label { -fx-text-fill: #202124; }
+.notification .label { -fx-text-fill: -color-notification-texte; }
 .notification-succes { -fx-border-color: -color-valide; }
 .notification-avertissement { -fx-border-color: -color-alerte; }
 .notification-erreur { -fx-border-color: -color-danger; }
