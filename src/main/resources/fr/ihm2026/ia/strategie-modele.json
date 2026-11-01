@@ -174,8 +174,9 @@
   },
   "etatIntegrationActuel": {
     "fournisseurCible": "NVIDIA",
-    "statut": "non intégré, IA désactivée par défaut",
+    "modele": "nvidia/nemotron-3.5-bolt-e4b",
+    "statut": "connecteur intégré au serveur HTTPS ; validation réelle en attente",
     "modelesLocaux": "retirés",
-    "note": "Les comparaisons et prix de cette stratégie sont historiques, pas une configuration NVIDIA validée."
+    "note": "Les comparaisons et prix ci-dessous sont historiques ; vérifier les quotas et conditions NVIDIA."
   }
 }

@@ -24,6 +24,7 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
     private ServeurAuthentificationHttps(int port, SSLContext tls,
             PostgresAuthentificationService authentification,
             PostgresCompteRepository comptes) throws IOException {
+        AideIaApi.utiliserModele(new fr.ihm2026.api.ia.ModeleNvidia());
         serveur = HttpsServer.create(new InetSocketAddress(port), 0);
         serveur.setHttpsConfigurator(new HttpsConfigurator(tls));
         serveur.createContext("/api/", new AuthentificationApiHttps(authentification, comptes));

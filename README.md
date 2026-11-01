@@ -1,4 +1,4 @@
-> **État IA actuel :** modèles locaux retirés, aide désactivée par défaut en attente de l’intégration NVIDIA. Les références aux anciennes versions et leurs captures ci-dessous sont historiques.
+> **État IA actuel :** modèles locaux retirés ; NVIDIA Nemotron intégré côté PC1, disponible uniquement avec une clé privée configurée sur le serveur HTTPS. Les références aux anciennes versions et leurs captures ci-dessous sont historiques.
 
 # Plateforme d'apprentissage Java · Python · C++ — client JavaFX
 
@@ -16,7 +16,7 @@ Application de bureau **JavaFX 25**, thèmes **AtlantaFX**, style **CSS3**, base
 | Apprenant | ✅ | poste dédié connecté au serveur ; parcours, cours, exercice, test et résultats |
 | Enseignant | ✅ | poste dédié connecté au serveur ; création des niveaux et consultation des résultats |
 | Administrateur | ✅ | poste dédié connecté au serveur ; comptes et rôles |
-| Agent d'IA | ✅ | **intégré aux 3 rôles** : apprenant (Cours + Exercice), enseignant (synthèse), administrateur (journal). Fournisseur désactivé en attente de NVIDIA ; corpus et protections conservés. Les modèles locaux ont été retirés. Fermé côté service pendant un test |
+| Agent d'IA | ✅ | **intégré aux 3 rôles** : apprenant (Cours + Exercice), enseignant (synthèse), administrateur (journal). NVIDIA Nemotron via PC1, indisponible sans clé ; corpus et protections conservés. Les modèles locaux ont été retirés. Fermé côté service pendant un test |
 | Authentification | ✅ | connexion par e-mail/mot de passe sur HTTPS ; inscription publique apprenant/enseignant sans PIN ; acceptation puis PIN d'activation ; comptes admin créés par l'administrateur |
 | Données | 🟡 simulées | `api/mock/MockBackend` — mêmes valeurs que `db/02-seed.sql` |
 | Base PostgreSQL | ✅ | `db/01` à `04` — **exécutés sur PostgreSQL 17 + pgvector**, pas seulement écrits |
@@ -452,8 +452,8 @@ est le minimum pour un cours de programmation.
 ### Modèle local retiré — préparation de NVIDIA
 
 Les modèles locaux v1/v2, leurs poids, leur entraînement et les tests spécifiques ont
-été retirés. L'aide IA est **désactivée par défaut** et répond par une indisponibilité
-jusqu'à l'intégration du fournisseur NVIDIA. Le connecteur distant historique reste
+été retirés. Le serveur HTTPS installe désormais NVIDIA Nemotron ; sans clé,
+l’aide répond par une indisponibilité. Les clients passent uniquement par PC1. Le connecteur distant historique reste
 accessible explicitement avec `-Dihm.modele=distant`, mais ce n'est pas une API NVIDIA.
 Les anciens sélecteurs `local`, `local-v2`, `simule` et `auto` n'activent plus de modèle.
 
@@ -885,3 +885,10 @@ et aucune affiche un diagnostic avec **Réessayer**. Le bouton **Ouvrir les para
 Wi-Fi Windows** laisse Windows gérer la connexion réseau ; cliquer ensuite sur Réessayer.
 La saisie IP reste disponible dans **Options avancées**. HTTPS reste obligatoire.
 Configuration et recette : [guide de découverte](docs/reseau/decouverte-serveurs.md).
+
+### Fournisseur NVIDIA Nemotron
+
+Le serveur HTTPS peut désormais appeler `nvidia/nemotron-3.5-bolt-e4b` avec
+`NVIDIA_API_KEY`, définie uniquement dans la configuration privée de PC1.
+Les interfaces authentifiées passent par PC1 ; aucun appel NVIDIA direct côté client.
+Sans clé, l'aide reste indisponible. [Configuration, limites et recette](docs/ia/nvidia-nemotron.md).
