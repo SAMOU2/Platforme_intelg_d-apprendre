@@ -33,6 +33,7 @@ services:
       - ./08-auth-sessions.sql:/docker-entrypoint-initdb.d/08-auth-sessions.sql:ro
       - ./09-inscriptions-et-codes.sql:/docker-entrypoint-initdb.d/09-inscriptions-et-codes.sql:ro
       - ./10-correction-enseignant.sql:/docker-entrypoint-initdb.d/10-correction-enseignant.sql:ro
+      - ./11-contenus-niveaux.sql:/docker-entrypoint-initdb.d/11-contenus-niveaux.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ihm2026 -d ihm2026"]
       interval: 5s

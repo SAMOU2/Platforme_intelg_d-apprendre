@@ -25,6 +25,9 @@ import javafx.scene.text.TextFlow;
 public class CoursView extends BorderPane {
 
     public CoursView(Router router) {
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
+            getStyleClass().add("vue");setCenter(new ContenuNiveauView(router, false));return;
+        }
         getStyleClass().add("vue");
         CoursVM cours = CoursApi.cours(Session.langage(), Session.rangNiveauCourant());
 

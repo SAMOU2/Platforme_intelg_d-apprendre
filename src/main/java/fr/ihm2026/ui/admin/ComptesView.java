@@ -113,7 +113,10 @@ public class ComptesView extends BorderPane {
         Button preparerTest = new Button("Configurer le sujet d'un test");
         preparerTest.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
         preparerTest.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.preparerTest(getScene().getWindow()));
-        VBox contenu = new VBox(12, resumeInscriptions, table, barre, affectations, preparerTest, note);
+        Button publierContenus = new Button("Publier le cours et l'entraînement d'un niveau");
+        publierContenus.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
+        publierContenus.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.publierContenus(getScene().getWindow()));
+        VBox contenu = new VBox(12, resumeInscriptions, table, barre, affectations, publierContenus, preparerTest, note);
         contenu.getStyleClass().add("colonne");
         setCenter(contenu);
         BorderPane.setMargin(contenu, new Insets(4, 0, 0, 0));

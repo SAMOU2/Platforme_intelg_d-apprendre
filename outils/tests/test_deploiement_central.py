@@ -70,6 +70,25 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertNotIn('MockBackend', test_reel)
         self.assertNotIn('bonneReponse', test_reel)
 
+    def test_etapes_pedagogiques_par_niveau(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        repo = (base / 'api/persistence/PostgresPedagogieRepository.java').read_text()
+        for champ in ['cours_pret', 'exercice_pret', 'test_pret', 'periode_ouverte', 'affecte']:
+            self.assertIn(champ, repo)
+        self.assertIn('Test en préparation', repo)
+        self.assertIn('Le test est en dehors de sa période', repo)
+        vue = (base / 'ui/apprenant/ParcoursServeurView.java').read_text()
+        for action in ['Cours et explications', 'Entraînement avec IA', 'Test final sans IA']:
+            self.assertIn(action, vue)
+        self.assertIn('!n.path("test_pret").asBoolean()', vue)
+        contenu = (base / 'ui/apprenant/ContenuNiveauView.java').read_text()
+        self.assertNotIn('MockBackend', contenu)
+        self.assertIn('PanneauAssistant(code::getText)', contenu)
+        self.assertIn('n.cree_par=?', repo)
+        for nom in ['CoursView','ExerciceView']:
+            self.assertIn('ContenuNiveauView', (base / f'ui/apprenant/{nom}.java').read_text())
+        self.assertIn('11-contenus-niveaux.sql', (ROOT / 'db/docker-compose.yml').read_text())
+
     def test_syntaxe_des_lanceurs_linux(self):
         for script in (ROOT / 'postes').glob('*.sh'):
             with self.subTest(script=script.name):

@@ -33,7 +33,10 @@ public class PanneauAssistant extends VBox {
     private final Label pied;
     private final java.util.List<Button> actions = new java.util.ArrayList<>();
 
-    public PanneauAssistant() {
+    private final java.util.function.Supplier<String> codeCourant;
+    public PanneauAssistant() { this(() -> ""); }
+    public PanneauAssistant(java.util.function.Supplier<String> codeCourant) {
+        this.codeCourant = java.util.Objects.requireNonNull(codeCourant);
         getStyleClass().addAll("card", "panel-ia");
         setPrefWidth(320);
         setSpacing(8);
@@ -127,7 +130,7 @@ public class PanneauAssistant extends VBox {
                 ? fr.ihm2026.ui.commun.Retro.demarrerRouet(pied, "consultation du cours…")
                 : null;
 
-        ContexteIa contexte = new ContexteIa(Session.rangNiveauCourant(), Session.langage(), question, "");
+        ContexteIa contexte = new ContexteIa(Session.rangNiveauCourant(), Session.langage(), question, codeCourant.get());
         fr.ihm2026.core.TaskRunner.run(() -> AideIaApi.demander(contexte), reponse -> {
             demandeEnCours = false;
             afficherReponse(reponse, rouet, piedAvant);

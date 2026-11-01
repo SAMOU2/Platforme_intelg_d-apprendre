@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.sql.*;
 import java.util.UUID;
 
-/** Nécessite migrations 01,07,08,09,10. Fixtures isolées et supprimées, pas de données utilisateur modifiées. */
+/** Nécessite migrations 01,07,08,09,10,11. Fixtures isolées et supprimées, pas de données utilisateur modifiées. */
 @EnabledIfEnvironmentVariable(named="IHM_DB_URL",matches="jdbc:postgresql://.+")
 class PostgresPedagogieRepositoryIntegrationTest {
     private static final ObjectMapper JSON=new ObjectMapper();
@@ -31,8 +31,20 @@ class PostgresPedagogieRepositoryIntegrationTest {
                 eleve=inserer(c,utilisateur,"Élève test","eleve-"+suffixe+"@example.org","APPRENANT");
                 long langage=inserer(c,"SELECT id FROM langages WHERE code='python'");
                 parcours=inserer(c,"INSERT INTO parcours(langage_id,libelle) VALUES(?,?) RETURNING id",langage,"fixture-"+suffixe);
-                long niveau=inserer(c,"INSERT INTO niveaux(parcours_id,rang,titre,seuil,statut) VALUES(?,1,'Test isolé',12,'PUBLIE') RETURNING id",parcours);
+                long niveau=inserer(c,"INSERT INTO niveaux(parcours_id,rang,titre,seuil,statut,cree_par) VALUES(?,1,'Test isolé',12,'PUBLIE',?) RETURNING id",parcours,prof);
                 long niveauSuivant=inserer(c,"INSERT INTO niveaux(parcours_id,rang,titre,seuil,statut) VALUES(?,2,'Niveau suivant isolé',12,'PUBLIE') RETURNING id",parcours);
+                final long responsable=prof,intrus=autre;
+                var contenu=d("publier-contenus").put("niveau",niveau).put("cours","Une variable associe un nom à une valeur.")
+                        .put("exercice","Déclare une variable entière.").put("code","nombre = 1");
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(intrus,Session.Role.ENSEIGNANT,contenu));
+                repo.traiter(responsable,Session.Role.ENSEIGNANT,contenu);
+                var lu=repo.traiter(eleve,Session.Role.APPRENANT,d("contenus").put("niveau",niveau).put("langage","python"));
+                assertEquals(1,lu.path("blocs").size());assertEquals(1,lu.path("exercices").size());
+                assertTrue(lu.path("niveau").path("cours_pret").asBoolean());
+                assertFalse(lu.path("niveau").path("test_pret").asBoolean());
+                final long apprenantTest=eleve;
+                assertThrows(IllegalStateException.class,() -> repo.traiter(apprenantTest,Session.Role.APPRENANT,
+                        d("contenus").put("niveau",niveauSuivant).put("langage","python")));
                 var sujet=d("preparer-test").put("niveau",niveau);sujet.putArray("questions").add("Explique une variable.");
                 repo.traiter(admin,Session.Role.ADMINISTRATEUR,sujet);
                 final long e=eleve,p=prof,a=autre;
