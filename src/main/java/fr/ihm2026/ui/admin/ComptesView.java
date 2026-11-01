@@ -187,7 +187,7 @@ public class ComptesView extends BorderPane {
         form.setVgap(10);
         form.addRow(0, new Label("Nom"), nom);
         form.addRow(1, new Label("E-mail"), email);
-        form.addRow(2, new Label("Mot de passe temporaire"), motDePasse);
+        form.addRow(2, new Label("Mot de passe temporaire"), fr.ihm2026.ui.commun.ChampSecret.envelopper(motDePasse));
         form.addRow(3, new Label("Rôle"), role);
         form.addRow(4, new Label("État"), actif);
 
@@ -203,6 +203,8 @@ public class ComptesView extends BorderPane {
                 email.getText(), motDePasse.getText().toCharArray(), role.getValue(),
                 actif.isSelected()) : null);
 
+        dialogue.initOwner(getScene().getWindow());
+        Dialogue.appliquerTheme(dialogue.getDialogPane(), getScene().getWindow());
         dialogue.showAndWait().ifPresent(resultat -> {
             if (resultat.nom() == null || resultat.nom().isBlank() || resultat.email() == null
                     || resultat.email().isBlank()) {
@@ -262,6 +264,8 @@ public class ComptesView extends BorderPane {
                         javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE));
         dialogue.setResultConverter(b -> b == boutonCreer
                 ? new ButtonTypeResultatInvitation(email.getText(), role.getValue()) : null);
+        dialogue.initOwner(getScene().getWindow());
+        Dialogue.appliquerTheme(dialogue.getDialogPane(), getScene().getWindow());
         dialogue.showAndWait().ifPresent(resultat -> {
             if (resultat.email() == null || resultat.email().isBlank() || resultat.role() == null) {
                 Dialogue.erreur(getScene().getWindow(), "Informations manquantes",

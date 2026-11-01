@@ -61,6 +61,16 @@ public class VueConnexionServeur extends StackPane {
         this.role = java.util.Objects.requireNonNull(role,
                 "Un rôle de poste doit être configuré avant la connexion.");
         getStyleClass().add("login-view");
+        etat.textProperty().addListener((o, ancien, message) -> {
+            if (getScene() == null || message == null) return;
+            if (message.startsWith("Compte activé") || message.startsWith("Demande de compte"))
+                Notifications.afficher(getScene().getWindow(), Notifications.Type.SUCCES,
+                        "Votre demande a abouti. Consultez les indications du formulaire.");
+            else if (message.startsWith("Les mots de passe ne correspondent")
+                    || message.startsWith("Le mot de passe doit") || message.startsWith("Le nom et l'e-mail"))
+                Notifications.afficher(getScene().getWindow(), Notifications.Type.AVERTISSEMENT,
+                        "Vérifiez les champs du formulaire.");
+        });
 
         Label marque = new Label("IHM 2026");
         marque.getStyleClass().add("login-marque");
@@ -260,8 +270,8 @@ public class VueConnexionServeur extends StackPane {
 
         VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, etatDecouverte, serveurs, actualiserServeurs, parametresWifi, avance,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
-                etiquetteMotDePasse, motDePasse,
-                etiquetteConfirmation, confirmationMotDePasse, etiquetteCodeConnexion, codeConnexion,
+                etiquetteMotDePasse, ChampSecret.envelopper(motDePasse),
+                etiquetteConfirmation, ChampSecret.envelopper(confirmationMotDePasse), etiquetteCodeConnexion, codeConnexion,
                 ligne, actionsCompte, etat, aide);
         carte.getStyleClass().addAll("card", "login-card", "carte-reseau");
         carte.setAlignment(Pos.CENTER);

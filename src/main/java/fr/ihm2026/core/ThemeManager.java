@@ -43,6 +43,9 @@ public final class ThemeManager {
         Animations.basculerApparence(scene.getRoot(), () -> {
             dark = sombre;
             apply(scene);
+            fr.ihm2026.ui.commun.Notifications.afficher(scene.getWindow(),
+                    fr.ihm2026.ui.commun.Notifications.Type.INFORMATION,
+                    sombre ? "Thème sombre activé." : "Thème clair activé.");
         });
     }
 

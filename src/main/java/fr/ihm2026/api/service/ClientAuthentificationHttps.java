@@ -371,6 +371,10 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
 
     private static JsonNode envoyer(HttpRequest requete) throws IOException, InterruptedException {
         HttpResponse<String> reponse = HTTP.send(requete, HttpResponse.BodyHandlers.ofString());
+        if ("/api/ia/aide".equals(requete.uri().getPath()) && reponse.statusCode() != 200) {
+            LOGGER.warning("[ia-pc1] HTTP " + reponse.statusCode()
+                    + " : consulter le service HTTPS (session, contexte, quota ou version serveur).");
+        }
         JsonNode resultat;
         try {
             resultat = MAPPER.readTree(reponse.body());

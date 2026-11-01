@@ -35,6 +35,20 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('put("stream", false)', fournisseur)
         self.assertIn('TaskRunner.run(() -> AideIaApi.demander(contexte)', panneau)
 
+    def test_ui_commune_secret_theme_et_notifications(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        connexion = (base / 'ui/commun/VueConnexionServeur.java').read_text()
+        self.assertIn('ChampSecret.envelopper(motDePasse)', connexion)
+        self.assertIn('ChampSecret.envelopper(confirmationMotDePasse)', connexion)
+        secret = (base / 'ui/commun/ChampSecret.java').read_text()
+        self.assertIn('bindBidirectional(secret.textProperty())', secret)
+        self.assertIn('voir.setSelected(false)', secret)
+        self.assertIn('appliquerTheme(alert.getDialogPane(), owner)', (base / 'ui/commun/Dialogue.java').read_text())
+        self.assertIn('Notifications.erreurActive()', (base / 'core/TaskRunner.java').read_text())
+        css = (ROOT / 'src/main/resources/fr/ihm2026/css/theme-dark.css').read_text()
+        self.assertIn('-fx-prompt-text-fill: #b8bcc6', css)
+        self.assertIn('.combo-box-popup .list-cell', css)
+
     def test_syntaxe_des_lanceurs_linux(self):
         for script in (ROOT / 'postes').glob('*.sh'):
             with self.subTest(script=script.name):

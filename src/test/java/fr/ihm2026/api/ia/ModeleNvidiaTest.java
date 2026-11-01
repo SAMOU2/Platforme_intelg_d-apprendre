@@ -40,6 +40,19 @@ class ModeleNvidiaTest {
         assertTrue(new ModeleNvidia((u,c,d) -> new TransportModele.Reponse(200, "texte libre"))
                 .repondre(CONTEXTE).estRefus());
     }
+    @Test void diagnosticNeDivulguePasLeCorpsFournisseur() {
+        var ancien = System.err;
+        var octets = new java.io.ByteArrayOutputStream();
+        try (var capture = new java.io.PrintStream(octets, true, java.nio.charset.StandardCharsets.UTF_8)) {
+            System.setErr(capture);
+            new ModeleNvidia((u,c,d) -> new TransportModele.Reponse(401, "SECRET_NE_PAS_AFFICHER"))
+                    .repondre(CONTEXTE);
+            String journal = octets.toString(java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(journal.contains("HTTP_401"));
+            assertFalse(journal.contains("SECRET_NE_PAS_AFFICHER"));
+            assertFalse(journal.contains(CONTEXTE.question()));
+        } finally { System.setErr(ancien); }
+    }
     @Test void sansClePasDeReseau() {
         assertTrue(new ModeleNvidia(new TransportHttp("")).repondre(CONTEXTE).estRefus());
     }
