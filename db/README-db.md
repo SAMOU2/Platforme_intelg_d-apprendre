@@ -180,3 +180,10 @@ Anomalie réelle trouvée par les tests de propriété : la première règle de 
 - **Trois toolchains épinglés** : `langages.version` + `langages.image_execution` (Python 3.12, OpenJDK 21 LTS, C++20) — RG-24, BNF-L5.
 - **L'IA ne note pas** : aucune colonne de note dans `aides_ia` ; l'agent n'a pas de chemin vers `tentatives`/`progressions` (RG-13).
 - **Traçabilité** : `journal_audit` en JSONB + index sur la date (BNF-06).
+
+## Migration 10 — correction humaine
+
+`10-correction-enseignant.sql` ajoute les affectations et métadonnées de copie sans
+réinitialiser les tables existantes. Sauvegarder la base, arrêter HTTPS puis appliquer
+avec `psql -v ON_ERROR_STOP=1 -f ...` sur les volumes existants. Instructions et recette :
+[parcours de correction](../docs/parcours-correction-enseignant.md).

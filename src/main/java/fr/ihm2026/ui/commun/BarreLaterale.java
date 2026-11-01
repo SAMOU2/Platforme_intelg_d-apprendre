@@ -76,6 +76,7 @@ public class BarreLaterale extends VBox {
                 getChildren().add(entree("Parcours", Router.PARCOURS, ICONE_PARCOURS));
                 getChildren().add(entree("Cours", Router.COURS, ICONE_COURS));
                 getChildren().add(entree("Exercice", Router.EXERCICE, ICONE_EXERCICE));
+                getChildren().add(entree("Mes copies et décisions", Router.RESULTAT, ICONE_RESULTATS));
                 getChildren().add(entree("Tableau de bord", Router.TABLEAU_BORD, ICONE_BORD));
                 getChildren().addAll(entete("Parcours"), sectionParcours);
                 for (Session.Langage langage : Session.Langage.values()) {
@@ -84,8 +85,8 @@ public class BarreLaterale extends VBox {
             }
             case ENSEIGNANT -> {
                 getChildren().add(entete("Enseigner"));
-                getChildren().add(entree("Créer un niveau", Router.CONDITIONS, ICONE_ENSEIGNER));
-                getChildren().add(entree("Résultats", Router.RESULTATS, ICONE_RESULTATS));
+                getChildren().add(entree(fr.ihm2026.reseau.Reseau.sessionCompteInstallee() ? "Créer un niveau (démo)" : "Créer un niveau", Router.CONDITIONS, ICONE_ENSEIGNER));
+                getChildren().add(entree("Mes apprenants et copies", Router.RESULTATS, ICONE_RESULTATS));
                 getChildren().addAll(entete("Parcours"), sectionParcours);
                 for (Session.Langage langage : Session.Langage.values()) {
                     sectionParcours.getChildren().add(ligneParcours(langage));

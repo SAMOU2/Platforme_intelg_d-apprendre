@@ -25,11 +25,14 @@ import javafx.scene.layout.VBox;
 public class TestView extends BorderPane {
 
     private final List<ToggleGroup> groupes = new ArrayList<>();
-    private final List<TestApi.Question> questions = TestApi.questions();
+    private final List<TestApi.Question> questions = fr.ihm2026.reseau.Reseau.sessionCompteInstallee() ? List.of() : TestApi.questions();
     private final ConsoleSortie console = new ConsoleSortie();
     private final Button soumettre = new Button("Soumettre le test");
 
     public TestView(Router router) {
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
+            getStyleClass().add("vue");setCenter(new TestServeurView(router));return;
+        }
         getStyleClass().add("vue");
         Session.demarrerEvaluation();   // l'assistance est fermée tant que ce test dure
         setTop(new EnteteVue("Test de validation — niveau 3",

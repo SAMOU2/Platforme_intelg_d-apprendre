@@ -54,6 +54,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
             }
             String chemin = exchange.getRequestURI().getPath();
             switch (chemin) {
+                case "/api/pedagogie" -> pedagogie(exchange);
                 case "/api/ia/aide" -> aideIa(exchange);
                 case "/api/auth/connexion" -> connexion(exchange);
                 case "/api/auth/code" -> confirmerCodeConnexion(exchange);
@@ -67,10 +68,15 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 case "/api/admin/invitations" -> creerInvitation(exchange);
                 default -> envoyerJson(exchange, 404, erreur("Route inconnue."));
             }
+        } catch (fr.ihm2026.api.persistence.PostgresPedagogieRepository.AccesRefuse ex) {
+            envoyerJson(exchange, 403, erreur("Accès pédagogique refusé."));
         } catch (PostgresAuthentificationService.AuthentificationRefuseeException ex) {
             envoyerJson(exchange, 401, erreur(REFUS));
         } catch (SQLException ex) {
-            if ("23505".equals(ex.getSQLState())) {
+            if (("/api/pedagogie".equals(exchange.getRequestURI().getPath()) || "/api/ia/aide".equals(exchange.getRequestURI().getPath()))
+                    && ("42P01".equals(ex.getSQLState()) || "42703".equals(ex.getSQLState()))) {
+                envoyerJson(exchange, 503, erreur("Mise à jour de la base nécessaire : appliquer la migration 10 sur PC1."));
+            } else if ("23505".equals(ex.getSQLState())) {
                 envoyerJson(exchange, 409, erreur("Un compte utilise déjà cette adresse e-mail."));
             } else {
                 envoyerJson(exchange, 503, erreur("Service d'authentification indisponible."));
@@ -82,6 +88,23 @@ public final class AuthentificationApiHttps implements HttpHandler {
         } finally {
             exchange.close();
         }
+    }
+
+    private fr.ihm2026.api.persistence.PostgresPedagogieRepository pedagogieRepository() {
+        return new fr.ihm2026.api.persistence.PostgresPedagogieRepository(
+                fr.ihm2026.api.persistence.PostgresConfiguration.depuisEnvironnement());
+    }
+    private void pedagogie(HttpExchange exchange) throws IOException, SQLException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            envoyerJson(exchange, 405, erreur("Méthode non autorisée.")); return;
+        }
+        var acteur = authentification.valider(jeton(exchange));
+        if (acteur.isEmpty()) { envoyerJson(exchange, 401, erreur(REFUS)); return; }
+        if (!typeJson(exchange.getRequestHeaders())) { envoyerJson(exchange, 415, erreur("JSON requis.")); return; }
+        JsonNode demande;
+        try { demande=lireCorps(exchange); }
+        catch(IOException ex) { envoyerJson(exchange,400,erreur("JSON invalide.")); return; }
+        envoyerJson(exchange,200,pedagogieRepository().traiter(acteur.get().utilisateurId(),acteur.get().role(),demande));
     }
 
     private void aideIa(HttpExchange exchange) throws IOException, SQLException {
@@ -107,6 +130,12 @@ public final class AuthentificationApiHttps implements HttpHandler {
         var contexte = new fr.ihm2026.api.ia.ContexteIa(corps.path("rangNiveau").asInt(),
                 Session.Langage.valueOf(corps.path("langage").asText()),
                 corps.path("question").asText(), corps.path("code").asText(""));
+        if (acteur.get().role() == Session.Role.APPRENANT
+                && pedagogieRepository().evaluationEnCours(acteur.get().utilisateurId())) {
+            envoyerJson(exchange, 200, MAPPER.readTree(fr.ihm2026.api.ia.SortieIa.enJson(
+                    fr.ihm2026.api.ia.ReponseIa.refus(fr.ihm2026.api.ia.MotifRefus.TEST_EN_COURS,
+                            fr.ihm2026.api.ia.ModeleSimule.VERSION_PROMPT)))); return;
+        }
         if (!placeIa.tryAcquire()) { envoyerJson(exchange, 429, erreur("IA occupée, réessayez plus tard.")); return; }
         try {
             if (!jourIa.equals(java.time.LocalDate.now())) {
@@ -462,8 +491,9 @@ public final class AuthentificationApiHttps implements HttpHandler {
 
     private static JsonNode lireCorps(HttpExchange exchange) throws IOException {
         try (InputStream corps = exchange.getRequestBody()) {
-            byte[] donnees = corps.readNBytes(TAILLE_MAX_CORPS + 1);
-            if (donnees.length > TAILLE_MAX_CORPS) {
+            int limite = "/api/pedagogie".equals(exchange.getRequestURI().getPath()) ? 64 * 1024 : TAILLE_MAX_CORPS;
+            byte[] donnees = corps.readNBytes(limite + 1);
+            if (donnees.length > limite) {
                 throw new IllegalArgumentException("La requête est trop volumineuse.");
             }
             return MAPPER.readTree(donnees);

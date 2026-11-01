@@ -49,6 +49,27 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('-fx-prompt-text-fill: #b8bcc6', css)
         self.assertIn('.combo-box-popup .list-cell', css)
 
+    def test_correction_humaine_centralisee(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        repo = (base / 'api/persistence/PostgresPedagogieRepository.java').read_text()
+        migration = (ROOT / 'db/10-correction-enseignant.sql').read_text()
+        self.assertIn('WHERE t.enseignant_id IS NOT NULL AND', repo)
+        self.assertIn('t.apprenant_id=?', repo)
+        self.assertIn('t.enseignant_id=?', repo)
+        self.assertIn('FOR UPDATE OF t', repo)
+        self.assertIn('CASE WHEN t.publie_le IS NOT NULL THEN t.note END', repo)
+        self.assertIn('uq_copie_ouverte', migration)
+        self.assertIn('ON CONFLICT(apprenant_id,niveau_id)', repo)
+        self.assertNotIn('DROP TABLE', migration)
+        self.assertIn('10-correction-enseignant.sql', (ROOT / 'db/docker-compose.yml').read_text())
+        serveur = (base / 'api/service/AuthentificationApiHttps.java').read_text()
+        self.assertIn('pedagogieRepository().evaluationEnCours', serveur)
+        for fichier in ['ui/apprenant/TestView.java','ui/apprenant/ParcoursView.java','ui/apprenant/ResultatView.java','ui/enseignant/ResultatsView.java']:
+            self.assertIn('Reseau.sessionCompteInstallee()', (base / fichier).read_text())
+        test_reel = (base / 'ui/apprenant/TestServeurView.java').read_text()
+        self.assertNotIn('MockBackend', test_reel)
+        self.assertNotIn('bonneReponse', test_reel)
+
     def test_syntaxe_des_lanceurs_linux(self):
         for script in (ROOT / 'postes').glob('*.sh'):
             with self.subTest(script=script.name):

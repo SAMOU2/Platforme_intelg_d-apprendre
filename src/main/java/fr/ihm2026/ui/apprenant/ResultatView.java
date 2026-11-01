@@ -17,6 +17,13 @@ public class ResultatView extends BorderPane {
 
     public ResultatView(Router router) {
         getStyleClass().add("vue");
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
+            setTop(new EnteteVue("Mes copies et corrections", "En attente de correction ou décision publiée par votre enseignant."));
+            var suivi = new javafx.scene.control.ScrollPane(new fr.ihm2026.ui.commun.SuiviPedagogique(false));
+            suivi.setFitToWidth(true); setCenter(suivi);
+            Button retour = new Button("Revenir au parcours");retour.setOnAction(e -> router.go(Router.PARCOURS));setBottom(retour);
+            return;
+        }
         ResultatVM resultat = Session.dernierResultat();
 
         if (resultat == null) {

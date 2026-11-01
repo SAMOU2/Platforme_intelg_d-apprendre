@@ -335,7 +335,7 @@ public class VueConnexionServeur extends StackPane {
     /** Écran d'accueil du rôle : c'est le seul endroit où le rôle choisit une destination. */
     public static String ecranDuRole(Session.Role role) {
         return switch (role) {
-            case ENSEIGNANT -> Router.CONDITIONS;
+            case ENSEIGNANT -> Router.RESULTATS;
             case ADMINISTRATEUR -> Router.COMPTES;
             default -> Router.PARCOURS;
         };

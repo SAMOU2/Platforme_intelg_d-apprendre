@@ -107,7 +107,13 @@ public class ComptesView extends BorderPane {
         Label note = new Label("Les comptes en attente ne peuvent pas se connecter. Toute décision est journalisée.");
         note.getStyleClass().add("texte-secondaire");
 
-        VBox contenu = new VBox(12, resumeInscriptions, table, barre, note);
+        Button affectations = new Button("Affecter un apprenant à un enseignant");
+        affectations.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.affecter(getScene().getWindow()));
+        affectations.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
+        Button preparerTest = new Button("Configurer le sujet d'un test");
+        preparerTest.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
+        preparerTest.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.preparerTest(getScene().getWindow()));
+        VBox contenu = new VBox(12, resumeInscriptions, table, barre, affectations, preparerTest, note);
         contenu.getStyleClass().add("colonne");
         setCenter(contenu);
         BorderPane.setMargin(contenu, new Insets(4, 0, 0, 0));

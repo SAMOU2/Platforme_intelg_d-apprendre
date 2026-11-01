@@ -51,7 +51,7 @@ public final class Router {
             Map.entry(RESULTAT, "Résultat du test"),
             Map.entry(TABLEAU_BORD, "Tableau de bord"),
             Map.entry(CONDITIONS, "Créer un niveau"),
-            Map.entry(RESULTATS, "Résultats du niveau"),
+            Map.entry(RESULTATS, "Mes apprenants et corrections"),
             Map.entry(COMPTES, "Comptes et rôles"));
 
     private final Map<String, Supplier<Parent>> routes = new LinkedHashMap<>();
@@ -238,7 +238,7 @@ public final class Router {
             return;
         }
         switch (Session.role()) {
-            case ENSEIGNANT -> go(CONDITIONS);
+            case ENSEIGNANT -> go(RESULTATS);
             case ADMINISTRATEUR -> go(COMPTES);
             default -> go(PARCOURS);
         }
@@ -288,7 +288,7 @@ public final class Router {
         }
         if (!autorise(rolePoste, route)) {
             return switch (rolePoste) {
-                case ENSEIGNANT -> CONDITIONS;
+                case ENSEIGNANT -> RESULTATS;
                 case ADMINISTRATEUR -> COMPTES;
                 case APPRENANT -> PARCOURS;
             };
