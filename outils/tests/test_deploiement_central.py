@@ -7,6 +7,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DeploiementCentralTest(unittest.TestCase):
+    def test_editeurs_signalent_un_catalogue_vide(self):
+        texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/SuiviPedagogique.java').read_text()
+        self.assertEqual(2, texte.count('if (catalogueVide(owner, niveaux)) return;'))
+        self.assertIn('Aucun niveau disponible', texte)
+        self.assertIn('1 · Créer un niveau', texte)
+        self.assertEqual(2, texte.count('choix.setMaxWidth(Double.MAX_VALUE)'))
+        self.assertEqual(2, texte.count('choix.getItems().size() == 1'))
+
     def test_connexion_automatique_sans_scan_wifi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
         self.assertNotIn('ChoixWifi', texte)
