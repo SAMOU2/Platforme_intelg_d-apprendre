@@ -68,7 +68,40 @@ public class VueConnexionServeur extends StackPane {
         Label sousTitre = new Label("Se connecter avec un compte autorisé pour ce rôle.");
         sousTitre.getStyleClass().add("login-soustitre");
 
-        Label decouverteServeur = new Label("Adresse IP du PC serveur — vide : découverte automatique");
+        Label decouverteServeur = new Label("Choisissez votre serveur local");
+        javafx.scene.control.ComboBox<fr.ihm2026.reseau.DecouverteServeurs.Serveur> serveurs =
+                new javafx.scene.control.ComboBox<>();
+        serveurs.setId("serveurs-locaux");
+        serveurs.setPromptText("Sélectionner un serveur…");
+        serveurs.setMaxWidth(Double.MAX_VALUE);
+        Button actualiserServeurs = new Button("Actualiser");
+        Label etatDecouverte = new Label();
+        etatDecouverte.setWrapText(true);
+        javafx.scene.control.TitledPane avance = new javafx.scene.control.TitledPane(
+                "Connexion avancée — adresse manuelle", adresseServeur);
+        avance.setExpanded(false);
+        serveurs.disableProperty().bind(adresseServeur.disableProperty());
+        avance.disableProperty().bind(adresseServeur.disableProperty());
+        serveurs.setOnAction(e -> {
+            var choix = serveurs.getValue();
+            if (choix != null) adresseServeur.setText(choix.hote());
+        });
+        Runnable rechercher = () -> {
+            actualiserServeurs.setDisable(true);
+            etatDecouverte.setText("Recherche des serveurs sur le réseau local…");
+            TaskRunner.run(() -> fr.ihm2026.reseau.DecouverteServeurs.chercher(IdentitePoste.port()),
+                    liste -> {
+                        actualiserServeurs.setDisable(false);
+                        serveurs.getItems().setAll(liste);
+                        etatDecouverte.setText(liste.isEmpty()
+                                ? "Aucun serveur trouvé. Vérifiez PC1 ou utilisez la connexion avancée."
+                                : "Choisissez un serveur. Son nom ne garantit pas son identité : HTTPS reste vérifié.");
+                    }, erreur -> {
+                        actualiserServeurs.setDisable(false);
+                        etatDecouverte.setText("Recherche impossible. Utilisez la connexion avancée.");
+                    });
+        };
+        actualiserServeurs.setOnAction(e -> rechercher.run());
         adresseServeur.setText(System.getProperty("ihm.serveur", ""));
         adresseServeur.setPromptText("Exemple : 192.168.1.10 (Docker uniquement sur PC1)");
         adresseServeur.setMaxWidth(Double.MAX_VALUE);
@@ -182,7 +215,7 @@ public class VueConnexionServeur extends StackPane {
         aide.getStyleClass().add("login-mode");
         aide.setWrapText(true);
 
-        VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, adresseServeur,
+        VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, serveurs, actualiserServeurs, etatDecouverte, avance,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
                 etiquetteMotDePasse, motDePasse,
                 etiquetteConfirmation, confirmationMotDePasse, etiquetteCodeConnexion, codeConnexion,
@@ -204,6 +237,7 @@ public class VueConnexionServeur extends StackPane {
         defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
         getChildren().add(defilement);
+        rechercher.run();
         setAlignment(Pos.CENTER);
 
         // Entrée depuis la carte vaut « Se connecter ».
@@ -275,6 +309,10 @@ public class VueConnexionServeur extends StackPane {
             return;
         }
         String adresse = adresseServeur.getText();
+        if (adresse == null || adresse.isBlank()) {
+            etat.setText("Choisissez un serveur dans la liste ou renseignez la connexion avancée.");
+            return;
+        }
         String identifiant = email.getText();
         char[] secret = motDePasse.getText().toCharArray();
         if (identifiant == null || identifiant.isBlank() || secret.length == 0) {
@@ -394,6 +432,10 @@ public class VueConnexionServeur extends StackPane {
 
     private void activerCompte() {
         String adresse = adresseServeur.getText();
+        if (adresse == null || adresse.isBlank()) {
+            etat.setText("Choisissez un serveur dans la liste ou renseignez la connexion avancée.");
+            return;
+        }
         String emailSaisi = email.getText();
         String pin = codeInvitation.getText().strip();
         if (emailSaisi.isBlank() || !pin.matches("[0-9]{8}")) {
@@ -422,6 +464,10 @@ public class VueConnexionServeur extends StackPane {
 
     private void sInscrire() {
         String adresse = adresseServeur.getText();
+        if (adresse == null || adresse.isBlank()) {
+            etat.setText("Choisissez un serveur dans la liste ou renseignez la connexion avancée.");
+            return;
+        }
         String nomSaisi = nom.getText();
         String emailSaisi = email.getText();
         char[] secret = motDePasse.getText().toCharArray();

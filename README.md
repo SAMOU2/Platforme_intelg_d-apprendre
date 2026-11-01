@@ -930,3 +930,9 @@ et utilise JavaFX 25.0.5. Définir `JAVA_HOME` sur le JDK 25 avant de lancer un 
 | `Architecture-des-fichiers.pdf` | arborescence cible et règles de rangement |
 | `ia/Note-de-cadrage-agent-IA.pdf` | étape 1 : contrat d'usage de l'agent (15 cas, 8 libellés) |
 | `ia/Corpus-v1-rapport-de-couverture.pdf` | étape 2 : corpus v1, nettoyage, jeu de 60 questions gelé, mesures |
+
+### Découverte des serveurs par leur nom
+
+La connexion propose désormais les serveurs locaux détectés et un bouton **Actualiser**.
+La saisie IP reste disponible dans **Connexion avancée**. Configuration, sécurité HTTPS
+et protocole de test : [guide de découverte](docs/reseau/decouverte-serveurs.md).
