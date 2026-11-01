@@ -54,6 +54,7 @@ public class VueConnexionServeur extends StackPane {
     private boolean attenteCodeConnexion;
     private String identifiantChallenge;
     private String hoteServeur;
+    private long generationDecouverte;
 
     public VueConnexionServeur(Router router, Session.Role role) {
         this.router = router;
@@ -87,27 +88,39 @@ public class VueConnexionServeur extends StackPane {
             if (choix != null) adresseServeur.setText(choix.hote());
         });
         Runnable rechercher = () -> {
+            long generation = ++generationDecouverte;
             actualiserServeurs.setDisable(true);
             etatDecouverte.setText("Recherche des serveurs sur le réseau local…");
             TaskRunner.run(() -> fr.ihm2026.reseau.DecouverteServeurs.chercher(IdentitePoste.port()),
                     liste -> {
+                        if (generation != generationDecouverte) return;
                         actualiserServeurs.setDisable(false);
                         serveurs.getItems().setAll(liste);
                         etatDecouverte.setText(liste.isEmpty()
                                 ? "Aucun serveur trouvé. Vérifiez PC1 ou utilisez la connexion avancée."
                                 : "Choisissez un serveur. Son nom ne garantit pas son identité : HTTPS reste vérifié.");
                     }, erreur -> {
+                        if (generation != generationDecouverte) return;
                         actualiserServeurs.setDisable(false);
                         etatDecouverte.setText("Recherche impossible. Utilisez la connexion avancée.");
                     });
         };
         actualiserServeurs.setOnAction(e -> rechercher.run());
+        ChoixWifi choixWifi = new ChoixWifi(rechercher, () -> {
+            generationDecouverte++;
+            actualiserServeurs.setDisable(false);
+            serveurs.getSelectionModel().clearSelection();
+            serveurs.getItems().clear();
+            adresseServeur.clear();
+            etatDecouverte.setText("En attente de la connexion Wi-Fi par Windows…");
+        });
+        choixWifi.disableProperty().bind(adresseServeur.disableProperty());
         adresseServeur.setText(System.getProperty("ihm.serveur", ""));
         adresseServeur.setPromptText("Exemple : 192.168.1.10 (Docker uniquement sur PC1)");
         adresseServeur.setMaxWidth(Double.MAX_VALUE);
         adresseServeur.getStyleClass().add("champ-adresse");
         adresseServeur.setId("serveur-ip");
-        decouverteServeur.setLabelFor(adresseServeur);
+        decouverteServeur.setLabelFor(serveurs);
         adresseServeur.setAccessibleText("Adresse IP ou nom du PC serveur. Vide pour la découverte automatique.");
         decouverteServeur.getStyleClass().add("login-mode");
         etiquetteInvitation.getStyleClass().add("role-nom");
@@ -215,7 +228,7 @@ public class VueConnexionServeur extends StackPane {
         aide.getStyleClass().add("login-mode");
         aide.setWrapText(true);
 
-        VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, serveurs, actualiserServeurs, etatDecouverte, avance,
+        VBox carte = new VBox(10, marque, titre, sousTitre, choixWifi, decouverteServeur, serveurs, actualiserServeurs, etatDecouverte, avance,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
                 etiquetteMotDePasse, motDePasse,
                 etiquetteConfirmation, confirmationMotDePasse, etiquetteCodeConnexion, codeConnexion,
