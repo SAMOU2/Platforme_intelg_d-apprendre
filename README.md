@@ -15,7 +15,7 @@ Application de bureau **JavaFX 25**, thèmes **AtlantaFX**, style **CSS3**, base
 | Enseignant | ✅ | poste dédié connecté au serveur ; création des niveaux et consultation des résultats |
 | Administrateur | ✅ | poste dédié connecté au serveur ; comptes et rôles |
 | Agent d'IA | ✅ | **intégré aux 3 rôles** : apprenant (Cours + Exercice), enseignant (synthèse), administrateur (journal). Modèle local v1 + corpus de 36 fragments ; modèle v2 expérimental. Ce modèle local de classement/récupération n'est pas un LLM génératif. Fermé côté service pendant un test |
-| Authentification | ✅ | connexion par e-mail/mot de passe sur HTTPS ; inscription publique apprenant uniquement ; comptes enseignant/admin créés par l'administrateur |
+| Authentification | ✅ | connexion par e-mail/mot de passe sur HTTPS ; inscription publique apprenant/enseignant sans PIN ; acceptation puis PIN d'activation ; comptes admin créés par l'administrateur |
 | Données | 🟡 simulées | `api/mock/MockBackend` — mêmes valeurs que `db/02-seed.sql` |
 | Base PostgreSQL | ✅ | `db/01` à `04` — **exécutés sur PostgreSQL 17 + pgvector**, pas seulement écrits |
 | API métier REST | ❌ v0.3 | les données métier utilisent encore `api/mock/MockBackend`; les contrats existants ne sont pas encore branchés au client |
@@ -105,15 +105,23 @@ doivent être injectés dans l'environnement du serveur, jamais enregistrés dan
 et peut être changé avec `IHM_TLS_KEYSTORE_TYPE`. Le fichier batch ne contient aucun secret.
 Laisser la fenêtre du service ouverte. Le port HTTPS doit être autorisé dans le pare-feu.
 
-Chaque poste de rôle propose « Créer un compte » et « Se connecter ». Pour une inscription,
-l'administrateur crée dans « Comptes et rôles » un PIN individuel lié à l'e-mail et au rôle du
-futur compte. Le serveur l'envoie automatiquement à cette adresse par e-mail. Le PIN expire après
-48 heures, ne peut être utilisé qu'une fois et n'est jamais affiché dans l'interface administrateur.
-PostgreSQL conserve uniquement son empreinte bcrypt, jamais le PIN en clair. Toute demande reste
-**en attente** jusqu'à la décision d'un administrateur; seuls les comptes acceptés peuvent se
-connecter. L'acceptation ou le refus est notifié par e-mail. Après acceptation, une connexion avec
-e-mail et mot de passe déclenche l'envoi d'un code à usage unique par e-mail. Ce code expire après
-10 minutes et doit être saisi pour terminer la connexion.
+Les postes **apprenant et enseignant** proposent « Créer un compte » sans demander de PIN.
+La demande (nom, e-mail, mot de passe, rôle fixé par le poste) est enregistrée **en attente** et
+inactive. L'administrateur accepte ou refuse dans « Comptes et rôles ». Une acceptation génère
+un **PIN d'activation à huit chiffres**, envoyé avec la décision par e-mail ; le compte reste
+inactif. Le demandeur choisit ensuite **« Activer mon compte avec le PIN reçu »**, saisit son
+e-mail et le PIN, puis peut se connecter. Le PIN expire après 48 heures, est à usage unique et
+limité à cinq essais. Seule son empreinte bcrypt est conservée. En cas d'expiration, de blocage
+ou d'échec SMTP, l'administrateur peut **renvoyer le PIN d'activation** d'un compte accepté inactif ;
+le précédent est invalidé. L'acceptation et la création du PIN sont atomiques ; l'envoi SMTP
+est effectué après validation de la transaction. En cas d'échec e-mail, la décision reste enregistrée.
+Les demandes refusées ne peuvent ni être activées ni se connecter. L'inscription publique d'un
+administrateur est interdite côté serveur.
+
+Après activation, chaque connexion avec e-mail/mot de passe envoie un **autre code à six chiffres**,
+valable dix minutes, à saisir pour terminer la connexion. Ce code n'est pas le PIN d'activation.
+Voir [le protocole de validation du nouveau parcours](docs/preuves/activation-sans-pin.md).
+
 Le mot de passe doit contenir au moins 12 caractères et au plus 72 octets UTF-8; PostgreSQL le
 conserve haché. La découverte utilise UDP sur le port local du serveur; autoriser ce port UDP ainsi
 que les ports HTTP local et HTTPS dans le pare-feu. `db\02-seed.sql` fournit des comptes de

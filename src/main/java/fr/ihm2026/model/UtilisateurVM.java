@@ -50,6 +50,7 @@ public class UtilisateurVM {
         return switch (statutInscription) {
             case "EN_ATTENTE" -> "En attente";
             case "REFUSE" -> "Refusé";
+            case "ACCEPTE" -> actif ? "Actif" : "Accepté, inactif";
             default -> actif ? "Actif" : "Désactivé";
         };
     }

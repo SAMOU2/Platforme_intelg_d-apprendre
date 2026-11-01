@@ -30,9 +30,9 @@ class DeploiementCentralTest(unittest.TestCase):
                 self.assertIn('IHM_SERVEUR', texte)
                 self.assertIn('--serveur=', texte)
 
-    def test_les_deux_parcours_utilisent_le_serveur_choisi(self):
+    def test_les_trois_parcours_utilisent_le_serveur_choisi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
-        self.assertEqual(2, texte.count('ClientReseau.choisirHote(adresse, IdentitePoste.port())'))
+        self.assertEqual(3, texte.count('ClientReseau.choisirHote(adresse, IdentitePoste.port())'))
         self.assertIn('adresseServeur.setDisable(true)', texte)
 
     def test_auth_refuse_configuration_absente(self):
@@ -105,6 +105,16 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('afficher-ip-PC1.ps1', aide)
         self.assertIn('ipconfig', aide)
         self.assertIn('sans protocole ni port', aide)
+
+    def test_pin_uniquement_dans_le_mode_activation(self):
+        vue = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
+        self.assertIn('codeInvitation.setVisible(modeActivation)', vue)
+        inscription = vue.split('private void sInscrire()', 1)[1].split('private void actualiserModeInscription()', 1)[0]
+        self.assertNotIn('String pin', inscription)
+        self.assertNotIn('pin.strip()', inscription)
+        api = (ROOT / 'src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java').read_text()
+        self.assertIn('case "/api/auth/activation"', api)
+        self.assertNotIn('texte(corps, "pinInvitation")', api)
 
     def test_tls_reste_obligatoire(self):
         serveur = (ROOT / 'src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java').read_text()

@@ -92,7 +92,7 @@ après sauvegarde. Ne pas supprimer le volume de données.
 
 ## Périmètre
 
-Cette mise à jour centralise la configuration de connexion. Elle ne change pas le parcours
-PIN/inscription : le PIN préalable reste requis. Le parcours proposé « demande sans PIN,
-puis PIN après acceptation » reste à définir et implémenter séparément.
+Le présent rapport et les PNG ci-dessus décrivent les contrôles de déploiement précédents.
+Le parcours d'inscription a depuis été modifié : demande sans PIN, acceptation puis activation.
+Voir [activation-sans-pin.md](activation-sans-pin.md) pour le périmètre et la validation de ce changement.
 Les données pédagogiques restent simulées comme indiqué dans le README principal.

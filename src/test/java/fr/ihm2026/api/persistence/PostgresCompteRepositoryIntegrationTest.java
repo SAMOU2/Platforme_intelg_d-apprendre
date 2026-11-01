@@ -18,42 +18,103 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 @EnabledIfEnvironmentVariable(named = "IHM_DB_URL", matches = "jdbc:postgresql://.+")
 class PostgresCompteRepositoryIntegrationTest {
 
-    @Test
-    @DisplayName("L'inscription reste en attente et journalise le rôle demandé")
-    void inscriptionCreeUnApprenantEtJournalise() throws Exception {
-        PostgresConfiguration configuration = PostgresConfiguration.depuis(System.getenv());
-        PostgresCompteRepository depot = new PostgresCompteRepository(configuration);
-        String email = "inscription-" + UUID.randomUUID() + "@example.org";
-        PostgresCompteRepository.Compte cree = null;
-        PostgresCompteRepository.Invitation invitation = null;
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = Session.Role.class, names = {"APPRENANT", "ENSEIGNANT"})
+    void inscriptionSansPinPuisActivation(Session.Role role) throws Exception {
+        var configuration = PostgresConfiguration.depuis(System.getenv());
+        var depot = new PostgresCompteRepository(configuration);
+        var auth = new PostgresAuthentificationService(configuration);
+        String email = "activation-" + UUID.randomUUID() + "@example.org";
+        long admin = administrateurId(configuration);
         try {
-            invitation = depot.creerInvitation(email, Session.Role.APPRENANT,
-                    administrateurId(configuration));
-            cree = depot.inscrireCompte("Apprenant inscrit", email,
-                    "mot-de-passe-inscription-2026".toCharArray(),
-                    Session.Role.APPRENANT, invitation.pin());
-            String pinConsomme = invitation.pin();
-
-            assertEquals(Session.Role.APPRENANT, cree.role());
-            assertFalse(cree.actif());
-            assertEquals("EN_ATTENTE", cree.statutInscription());
+            char[] secret = "mot-de-passe-inscription-2026".toCharArray();
+            var compte = depot.inscrireCompte("Compte en attente", email, secret, role);
+            assertTrue(secret[0] == '\0');
+            assertFalse(compte.actif());
+            assertEquals("EN_ATTENTE", compte.statutInscription());
             assertTrue(inscriptionJournalisee(configuration, email));
-            assertThrows(IllegalArgumentException.class, () -> depot.inscrireCompte(
-                    "Apprenant inscrit", email, "autre-mot-de-passe-2026".toCharArray(),
-                    Session.Role.APPRENANT, pinConsomme),
-                    "Un PIN déjà consommé ne peut pas servir une seconde fois.");
+            assertThrows(IllegalArgumentException.class, () -> depot.activerCompte(email, "12345678", role));
+            assertThrows(IllegalStateException.class, () -> depot.definirActif(email, true, admin));
+            var decision = depot.deciderInscription(email, true, admin);
+            assertEquals("ACCEPTE", decision.compte().statutInscription());
+            assertFalse(decision.compte().actif());
+            assertTrue(decision.activation().pin().matches("[0-9]{8}"));
+            assertThrows(PostgresAuthentificationService.AuthentificationRefuseeException.class,
+                    () -> auth.demanderCodeConnexion(email, "mot-de-passe-inscription-2026".toCharArray(), "192.0.2.1"));
+            assertThrows(IllegalStateException.class, () -> depot.definirActif(email, true, admin));
+            assertThrows(IllegalArgumentException.class, () -> depot.activerCompte(email,
+                    decision.activation().pin(), role == Session.Role.APPRENANT ? Session.Role.ENSEIGNANT : Session.Role.APPRENANT));
+            depot.activerCompte(email.toUpperCase(Locale.ROOT), decision.activation().pin(), role);
+            assertThrows(IllegalArgumentException.class, () -> depot.activerCompte(email, decision.activation().pin(), role));
+            var codeConnexion = auth.demanderCodeConnexion(email, "mot-de-passe-inscription-2026".toCharArray(), "192.0.2.1");
+            var session = auth.confirmerCodeConnexion(codeConnexion.identifiant(), codeConnexion.code());
+            assertEquals(role, session.session().role());
         } finally {
-            try (var connexion = DriverManager.getConnection(configuration.url(),
-                    configuration.utilisateur(), configuration.motDePasse());
-                 PreparedStatement suppressionInvitations = connexion.prepareStatement(
-                         "DELETE FROM invitations_inscription WHERE lower(email_cible) = lower(?)");
-                 PreparedStatement suppressionCompte = connexion.prepareStatement(
-                         "DELETE FROM utilisateurs WHERE lower(email) = lower(?)")) {
-                suppressionInvitations.setString(1, email);
-                suppressionInvitations.executeUpdate();
-                if (cree != null) {
-                    suppressionCompte.setString(1, email);
-                    suppressionCompte.executeUpdate();
+            nettoyerActivation(configuration, email);
+        }
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = Session.Role.class, names = {"APPRENANT", "ENSEIGNANT"})
+    void pinLimiteExpireEtRenvoi(Session.Role role) throws Exception {
+        var configuration = PostgresConfiguration.depuis(System.getenv());
+        var depot = new PostgresCompteRepository(configuration);
+        String email = "pin-" + UUID.randomUUID() + "@example.org";
+        long admin = administrateurId(configuration);
+        try {
+            depot.inscrireCompte("PIN", email, "mot-de-passe-inscription-2026".toCharArray(), role);
+            var decision = depot.deciderInscription(email, true, admin);
+            String pin = decision.activation().pin();
+            String faux = pin.equals("00000000") ? "00000001" : "00000000";
+            for (int i = 0; i < 5; i++) {
+                assertThrows(IllegalArgumentException.class, () -> depot.activerCompte(email, faux, role));
+            }
+            assertThrows(IllegalArgumentException.class, () -> depot.activerCompte(email, pin, role));
+            var nouveau = depot.creerInvitation(email, role, admin);
+            try (var c = DriverManager.getConnection(configuration.url(), configuration.utilisateur(), configuration.motDePasse());
+                 var q = c.prepareStatement("UPDATE invitations_inscription SET expire_le = now() - interval '1 second' WHERE email_cible = ? AND utilise_le IS NULL")) {
+                q.setString(1, email);
+                q.executeUpdate();
+            }
+            assertThrows(IllegalArgumentException.class, () -> depot.activerCompte(email, nouveau.pin(), role));
+            var dernier = depot.creerInvitation(email, role, admin);
+            depot.activerCompte(email, dernier.pin(), role);
+            assertThrows(IllegalArgumentException.class, () -> depot.creerInvitation(email, role, admin));
+        } finally {
+            nettoyerActivation(configuration, email);
+        }
+    }
+
+    @Test
+    void refusEtInscriptionAdminInterdite() throws Exception {
+        var configuration = PostgresConfiguration.depuis(System.getenv());
+        var depot = new PostgresCompteRepository(configuration);
+        String email = "refus-" + UUID.randomUUID() + "@example.org";
+        long admin = administrateurId(configuration);
+        char[] secret = "mot-de-passe-inscription-2026".toCharArray();
+        assertThrows(IllegalArgumentException.class, () -> depot.inscrireCompte("Admin public", email, secret, Session.Role.ADMINISTRATEUR));
+        assertTrue(secret[0] == '\0');
+        try {
+            depot.inscrireCompte("Refus", email, "mot-de-passe-inscription-2026".toCharArray(), Session.Role.APPRENANT);
+            var refus = depot.deciderInscription(email, false, admin);
+            assertEquals("REFUSE", refus.compte().statutInscription());
+            assertFalse(refus.compte().actif());
+            assertEquals(null, refus.activation());
+            assertThrows(IllegalStateException.class, () -> depot.definirActif(email, true, admin));
+            assertThrows(IllegalArgumentException.class, () -> depot.creerInvitation(email, Session.Role.APPRENANT, admin));
+        } finally {
+            nettoyerActivation(configuration, email);
+        }
+    }
+
+    private static void nettoyerActivation(PostgresConfiguration configuration, String email) throws SQLException {
+        try (var c = DriverManager.getConnection(configuration.url(), configuration.utilisateur(), configuration.motDePasse())) {
+            for (String sql : new String[]{"DELETE FROM invitations_inscription WHERE email_cible = ?",
+                    "DELETE FROM tentatives_authentification WHERE email_normalise = ?",
+                    "DELETE FROM utilisateurs WHERE lower(email) = ?"}) {
+                try (var q = c.prepareStatement(sql)) {
+                    q.setString(1, email);
+                    q.executeUpdate();
                 }
             }
         }

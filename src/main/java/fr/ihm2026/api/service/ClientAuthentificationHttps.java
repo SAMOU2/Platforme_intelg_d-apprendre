@@ -41,7 +41,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         this.compte = compte;
     }
 
-    public static CompteInscrit inscrireCompte(String hote, int port, String pinInvitation,
+    public static CompteInscrit inscrireCompte(String hote, int port,
             String nom, String email, char[] motDePasse, Session.Role role) {
         if (motDePasse == null) {
             throw new ErreurAuthentification("Saisir un mot de passe.");
@@ -52,7 +52,6 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
                     "nom", nom == null ? "" : nom,
                     "email", email == null ? "" : email,
                     "motDePasse", new String(motDePasse),
-                    "pinInvitation", pinInvitation == null ? "" : pinInvitation,
                     "role", role == null ? "" : role.name()));
             JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/inscription"))
                     .timeout(DELAI_REQUETE)
@@ -82,6 +81,20 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             throw new ErreurAuthentification("Réponse invalide du service d'authentification.", ex);
         } finally {
             Arrays.fill(motDePasse, '\0');
+        }
+    }
+
+    public static void activerCompte(String hote, int port, String email, String pin, Session.Role role) {
+        try {
+            String corps = MAPPER.writeValueAsString(Map.of("email", email, "pin", pin, "role", role.name()));
+            envoyer(HttpRequest.newBuilder(base(hote, port).resolve("/api/auth/activation"))
+                    .timeout(DELAI_REQUETE).header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(corps)).build());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ErreurAuthentification("Activation interrompue.", ex);
+        } catch (IOException ex) {
+            throw new ErreurAuthentification("Activation impossible : vérifier HTTPS et le serveur.", ex);
         }
     }
 
