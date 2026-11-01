@@ -33,9 +33,12 @@ public class ExerciceView extends BorderPane {
 
     private final TextArea editeur = new TextArea(CODE_DEPART);
     private final ConsoleSortie console = new ConsoleSortie();
-    private final PanneauAssistant assistant = new PanneauAssistant();
+    private final PanneauAssistant assistant = fr.ihm2026.reseau.Reseau.sessionCompteInstallee() ? null : new PanneauAssistant();
 
     public ExerciceView(Router router) {
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
+            getStyleClass().add("vue");setCenter(new ContenuNiveauView(router, true));return;
+        }
         getStyleClass().add("vue");
 
         setTop(new EnteteVue("Exercice 3.2 — calculer une moyenne",

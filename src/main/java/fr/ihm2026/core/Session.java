@@ -73,6 +73,7 @@ public final class Session {
     }
 
     public static void setLangage(Langage l) {
+        if (langage != l) niveauServeurId = 0;
         langage = l;
     }
 

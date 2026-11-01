@@ -901,3 +901,11 @@ et d'une progression fondée sur cette décision. **Migration 10 obligatoire** a
 redémarrage de HTTPS et mise à jour des interfaces. Les autres écrans de contenus
 historiques ne sont pas tous migrés hors du backend de démonstration.
 [Configuration, sécurité, limites et recette Windows](docs/parcours-correction-enseignant.md).
+
+### Étapes pédagogiques de chaque niveau
+
+En session connectée, chaque niveau propose **Cours → Entraînement avec IA → Test final
+sans IA**, puis soumission, correction humaine et progression après validation publiée.
+Les boutons indisponibles indiquent les contenus en préparation. **Migration 11 requise**
+en plus de 10 ; aucun cours/test fictif n'est créé pour masquer un contenu manquant.
+[Publication des contenus, droits, limites et recette](docs/parcours-par-niveau.md).

@@ -187,3 +187,9 @@ Anomalie réelle trouvée par les tests de propriété : la première règle de 
 réinitialiser les tables existantes. Sauvegarder la base, arrêter HTTPS puis appliquer
 avec `psql -v ON_ERROR_STOP=1 -f ...` sur les volumes existants. Instructions et recette :
 [parcours de correction](../docs/parcours-correction-enseignant.md).
+
+## Migration 11 — entraînements associés aux niveaux
+
+`11-contenus-niveaux.sql` ajoute les énoncés et codes de départ d'entraînement, sans
+modifier les comptes ni les copies existantes. Appliquer après 10, sur base sauvegardée.
+Voir [les étapes par niveau](../docs/parcours-par-niveau.md).

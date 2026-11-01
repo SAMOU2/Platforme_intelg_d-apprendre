@@ -27,6 +27,13 @@ public final class SuiviPedagogique extends VBox {
     public static JsonNode appeler(JsonNode d) { return Reseau.sessionAuthentification().pedagogie(d); }
     public SuiviPedagogique(boolean enseignant) {
         super(10);
+        if (enseignant) {
+            Button contenus = new Button("Publier cours et entraînement (mes niveaux)");
+            contenus.setOnAction(e -> publierContenus(getScene().getWindow()));
+            Button sujet = new Button("Préparer le test final (mes niveaux)");
+            sujet.setOnAction(e -> preparerTest(getScene().getWindow()));
+            getChildren().add(new HBox(8, contenus, sujet));
+        }
         getChildren().add(new Label(enseignant ? "Mes apprenants et leurs copies" : "Mes copies et décisions publiées"));
         etat.setWrapText(true);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
@@ -118,6 +125,32 @@ public final class SuiviPedagogique extends VBox {
                 .append("\nCorrection : ").append(copie.path("commentaire").asText());
         return b.toString();
     }
+    public static void publierContenus(javafx.stage.Window owner) {
+        TaskRunner.run(() -> appeler(demande("catalogue-tests")), niveaux -> {
+            ComboBox<JsonNode> choix=new ComboBox<>();niveaux.forEach(choix.getItems()::add);
+            choix.setConverter(new javafx.util.StringConverter<>() {
+                public String toString(JsonNode n){return n==null?"":n.path("langage").asText()+" · Niveau "+n.path("rang").asText()+" · "+n.path("titre").asText();}
+                public JsonNode fromString(String s){return null;}
+            });
+            TextArea cours=new TextArea(),exercice=new TextArea(),code=new TextArea();
+            cours.setPrefRowCount(6);exercice.setPrefRowCount(4);code.setPrefRowCount(4);
+            cours.setWrapText(true);exercice.setWrapText(true);
+            Label avertissement=new Label("Publication pour tous les apprenants de ce niveau. Remplace les contenus actifs, sans supprimer leurs anciennes versions. Les copies et tests sont conservés.");avertissement.setWrapText(true);
+            VBox form=new VBox(8,avertissement,choix,new Label("Cours et explications"),cours,new Label("Énoncé d'entraînement"),exercice,new Label("Code de départ (facultatif)"),code);
+            ScrollPane scroll=new ScrollPane(form);scroll.setFitToWidth(true);scroll.setPrefViewportHeight(500);scroll.setPrefViewportWidth(620);
+            Dialog<ButtonType> dialogue=new Dialog<>();dialogue.initOwner(owner);dialogue.setTitle("Publier le cours et l'entraînement");
+            dialogue.getDialogPane().setContent(scroll);dialogue.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
+            Dialogue.appliquerTheme(dialogue.getDialogPane(),owner);
+            dialogue.getDialogPane().lookupButton(ButtonType.OK).disableProperty().bind(choix.valueProperty().isNull().or(cours.textProperty().isEmpty()).or(exercice.textProperty().isEmpty()));
+            dialogue.showAndWait().filter(b -> b==ButtonType.OK).ifPresent(b -> {
+                ObjectNode d=demande("publier-contenus").put("niveau",choix.getValue().path("id").asLong())
+                        .put("cours",cours.getText()).put("exercice",exercice.getText()).put("code",code.getText());
+                TaskRunner.run(() -> appeler(d),ok -> Notifications.afficher(owner,Notifications.Type.SUCCES,"Cours et entraînement publiés. Actualisez le parcours apprenant."),
+                        erreur -> Dialogue.erreur(owner,"Publication impossible",erreur.getMessage()));
+            });
+        },erreur -> Dialogue.erreur(owner,"Catalogue inaccessible",erreur.getMessage()));
+    }
+
     public static void preparerTest(javafx.stage.Window owner) {
         TaskRunner.run(() -> appeler(demande("catalogue-tests")), niveaux -> {
             ComboBox<JsonNode> choix=new ComboBox<>();niveaux.forEach(choix.getItems()::add);

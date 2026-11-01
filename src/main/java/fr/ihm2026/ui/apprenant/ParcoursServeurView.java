@@ -24,10 +24,31 @@ final class ParcoursServeurView extends VBox {
                 liste.forEach(n -> {
                     Label titre=new Label("Niveau "+n.path("rang").asInt()+" — "+n.path("titre").asText()+" · "+n.path("etat").asText());titre.setWrapText(true);
                     Label note=new Label("Meilleure note : "+n.path("meilleure_note").asText("—")+" /20 · seuil "+n.path("seuil").asInt());
-                    Button test=new Button("Passer / reprendre le test");
-                    test.setDisable("VERROUILLE".equals(n.path("etat").asText()));
-                    test.setOnAction(e -> {Session.setNiveauServeurId(n.path("id").asLong());Session.setRangNiveauCourant(n.path("rang").asInt());router.go(Router.TEST);});
-                    VBox carte=new VBox(8,titre,note,test);carte.getStyleClass().add("card");niveaux.getChildren().add(carte);
+                    boolean verrouille="VERROUILLE".equals(n.path("etat").asText());
+                    Button cours=new Button("1 · Cours et explications");
+                    Button exercices=new Button("2 · Entraînement avec IA");
+                    Button test=new Button("3 · Test final sans IA");
+                    cours.setDisable(verrouille || !n.path("cours_pret").asBoolean());
+                    exercices.setDisable(verrouille || !n.path("exercice_pret").asBoolean());
+                    test.setDisable(verrouille || !n.path("cours_pret").asBoolean() || !n.path("exercice_pret").asBoolean() || !n.path("test_pret").asBoolean()
+                            || !n.path("periode_ouverte").asBoolean() || !n.path("affecte").asBoolean());
+                    java.util.function.Consumer<String> ouvrir=route -> {
+                        Session.setNiveauServeurId(n.path("id").asLong());
+                        Session.setRangNiveauCourant(n.path("rang").asInt());router.go(route);
+                    };
+                    cours.setOnAction(e -> ouvrir.accept(Router.COURS));
+                    exercices.setOnAction(e -> ouvrir.accept(Router.EXERCICE));
+                    test.setOnAction(e -> ouvrir.accept(Router.TEST));
+                    Label disponibilite=new Label(
+                            (n.path("cours_pret").asBoolean()?"Cours disponible":"Cours en préparation")+" · "
+                            +(n.path("exercice_pret").asBoolean()?"Entraînement disponible":"Entraînement en préparation")+" · "
+                            +(n.path("test_pret").asBoolean()?"Test prêt":"Test en préparation")
+                            +(!n.path("periode_ouverte").asBoolean()?" · Hors période":"")
+                            +(!n.path("affecte").asBoolean()?" · Affectation à un enseignant requise":""));
+                    disponibilite.setWrapText(true);
+                    Label suite=new Label("Test → soumission → correction de l'enseignant → note et décision publiées → niveau suivant si validé.");suite.setWrapText(true);
+                    javafx.scene.layout.FlowPane actions=new javafx.scene.layout.FlowPane(8,8,cours,exercices,test);
+                    VBox carte=new VBox(8,titre,note,disponibilite,actions,suite);carte.getStyleClass().add("card");niveaux.getChildren().add(carte);
                 });
             },erreur -> {actualiser.setDisable(false);etat.setText(erreur.getMessage());});
         };

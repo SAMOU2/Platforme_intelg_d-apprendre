@@ -75,7 +75,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
         } catch (SQLException ex) {
             if (("/api/pedagogie".equals(exchange.getRequestURI().getPath()) || "/api/ia/aide".equals(exchange.getRequestURI().getPath()))
                     && ("42P01".equals(ex.getSQLState()) || "42703".equals(ex.getSQLState()))) {
-                envoyerJson(exchange, 503, erreur("Mise à jour de la base nécessaire : appliquer la migration 10 sur PC1."));
+                envoyerJson(exchange, 503, erreur("Mise à jour de la base nécessaire : appliquer les migrations 10 et 11 sur PC1."));
             } else if ("23505".equals(ex.getSQLState())) {
                 envoyerJson(exchange, 409, erreur("Un compte utilise déjà cette adresse e-mail."));
             } else {
