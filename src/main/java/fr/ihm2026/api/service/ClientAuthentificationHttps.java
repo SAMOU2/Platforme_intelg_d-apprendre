@@ -169,6 +169,18 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         }
     }
 
+    public JsonNode pedagogie(JsonNode demande) {
+        if (!actif()) throw new ErreurAuthentification("Session expirée.");
+        try {
+            return envoyer(HttpRequest.newBuilder(base.resolve("/api/pedagogie"))
+                    .timeout(Duration.ofSeconds(20)).header("Authorization", "Bearer " + jeton)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(demande.toString())).build());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt(); throw new ErreurAuthentification("Opération interrompue.", ex);
+        } catch (IOException ex) { throw new ErreurAuthentification("Service pédagogique inaccessible.", ex); }
+    }
+
     /** Seul le serveur PC1 possède la clé du fournisseur. */
     public fr.ihm2026.api.ia.ReponseIa demanderIa(fr.ihm2026.api.ia.ContexteIa contexte) {
         try {

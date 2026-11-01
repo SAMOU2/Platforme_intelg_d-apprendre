@@ -892,3 +892,12 @@ Le serveur HTTPS peut désormais appeler `nvidia/nemotron-3.5-bolt-e4b` avec
 `NVIDIA_API_KEY`, définie uniquement dans la configuration privée de PC1.
 Les interfaces authentifiées passent par PC1 ; aucun appel NVIDIA direct côté client.
 Sans clé, l'aide reste indisponible. [Configuration, limites et recette](docs/ia/nvidia-nemotron.md).
+
+### Parcours connecté : correction par l'enseignant
+
+Les comptes connectés disposent maintenant d'une affectation administrée, de copies
+réelles persistées sur PC1, d'une correction en brouillon puis publication humaine,
+et d'une progression fondée sur cette décision. **Migration 10 obligatoire** avant
+redémarrage de HTTPS et mise à jour des interfaces. Les autres écrans de contenus
+historiques ne sont pas tous migrés hors du backend de démonstration.
+[Configuration, sécurité, limites et recette Windows](docs/parcours-correction-enseignant.md).

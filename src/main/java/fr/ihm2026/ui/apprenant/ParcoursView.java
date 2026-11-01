@@ -22,6 +22,9 @@ import javafx.scene.layout.VBox;
 public class ParcoursView extends BorderPane {
 
     public ParcoursView(Router router) {
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
+            getStyleClass().add("vue");setCenter(new ParcoursServeurView(router));return;
+        }
         getStyleClass().add("vue");
         List<NiveauVM> niveaux = CoursApi.niveaux(Session.langage());
 

@@ -9,6 +9,7 @@ import fr.ihm2026.api.ia.SyntheseIa;
 import fr.ihm2026.ui.commun.Dialogue;
 import fr.ihm2026.ui.commun.KpiCard;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -26,6 +27,12 @@ import javafx.scene.layout.VBox;
 public class ResultatsView extends BorderPane {
 
     public ResultatsView() {
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
+            getStyleClass().add("vue");
+            setTop(new EnteteVue("Mes apprenants et corrections", "Copies réelles reçues sur PC1. La publication est une décision humaine."));
+            ScrollPane scroll = new ScrollPane(new fr.ihm2026.ui.commun.SuiviPedagogique(true));
+            scroll.setFitToWidth(true); setCenter(scroll); return;
+        }
         getStyleClass().add("vue");
         setTop(new EnteteVue("Résultats du niveau 3 — " + Session.langage().label(),
                 "Les apprenants en difficulté sont mis en évidence : ce sont eux qui ont besoin d'aide."));

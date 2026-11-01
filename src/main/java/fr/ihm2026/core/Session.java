@@ -4,6 +4,10 @@ import fr.ihm2026.model.ResultatVM;
 
 /** Session courante : rôle, utilisateur, parcours (langage) et dernier résultat. */
 public final class Session {
+    private static long niveauServeurId;
+    public static long niveauServeurId() { return niveauServeurId; }
+    public static void setNiveauServeurId(long id) { niveauServeurId = id; }
+
 
     private Session() {
     }
