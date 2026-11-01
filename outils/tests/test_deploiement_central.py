@@ -20,6 +20,21 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('adresseServeur.isDisabled()', texte)
         self.assertIn('generation != generationDecouverte', texte)
 
+    def test_nvidia_centralise_sur_https(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        client = (base / 'api/service/ClientAuthentificationHttps.java').read_text()
+        serveur = (base / 'api/service/AuthentificationApiHttps.java').read_text()
+        fournisseur = (base / 'api/ia/ModeleNvidia.java').read_text()
+        panneau = (base / 'ui/ia/PanneauAssistant.java').read_text()
+        self.assertIn('/api/ia/aide', client)
+        self.assertNotIn('NVIDIA_API_KEY', client)
+        self.assertIn('authentification.valider(jeton(exchange))', serveur)
+        self.assertIn('placeIa.tryAcquire()', serveur)
+        self.assertIn('quotasIa.getOrDefault(id, 0) >= 30', serveur)
+        self.assertIn('nvidia/nemotron-3.5-bolt-e4b', fournisseur)
+        self.assertIn('put("stream", false)', fournisseur)
+        self.assertIn('TaskRunner.run(() -> AideIaApi.demander(contexte)', panneau)
+
     def test_syntaxe_des_lanceurs_linux(self):
         for script in (ROOT / 'postes').glob('*.sh'):
             with self.subTest(script=script.name):

@@ -1,3 +1,7 @@
+> Mise à jour : le connecteur NVIDIA est maintenant intégré au service HTTPS de PC1.
+> Sans clé, il reste indisponible. Voir [le guide NVIDIA](nvidia-nemotron.md).
+> Le texte ci-dessous décrit le retrait initial des modèles locaux.
+
 # Retrait des modèles locaux
 
 ## Supprimé

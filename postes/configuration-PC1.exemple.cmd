@@ -31,4 +31,7 @@ REM set "IHM_BOOTSTRAP_ADMIN_NAME=Votre nom"
 REM set "IHM_BOOTSTRAP_ADMIN_EMAIL=votre-adresse@example.org"
 REM Mot de passe : au moins 12 caracteres et au plus 72 octets UTF-8.
 REM set "IHM_BOOTSTRAP_ADMIN_PASSWORD=REMPLACER_PAR_VOTRE_SECRET"
+REM IA NVIDIA : uniquement dans configuration-PC1.local.cmd sur PC1.
+REM Ne jamais envoyer cette cle aux postes clients ni la publier dans Git.
+REM set "NVIDIA_API_KEY=REMPLACER_PAR_VOTRE_CLE_PRIVEE"
 exit /b 0

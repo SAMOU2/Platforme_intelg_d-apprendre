@@ -63,6 +63,8 @@ public final class AideIaApi {
     }
 
     public static String identifiantModele() {
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee())
+            return fr.ihm2026.api.ia.ModeleNvidia.MODELE + " via PC1";
         return modele.identifiant();
     }
 
@@ -85,6 +87,12 @@ public final class AideIaApi {
 
     /** Point d'entrée unique de l'assistance. */
     public static ReponseIa demander(ContexteIa contexte) {
+        if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
+            if (fr.ihm2026.core.Session.evaluationEnCours())
+                return ReponseIa.refus(MotifRefus.TEST_EN_COURS, ModeleSimule.VERSION_PROMPT);
+            try { return fr.ihm2026.reseau.Reseau.sessionAuthentification().demanderIa(contexte); }
+            catch (RuntimeException ex) { return ReponseIa.refus(MotifRefus.INDISPONIBLE, ModeleSimule.VERSION_PROMPT); }
+        }
         long debut = System.currentTimeMillis();
 
         // Fermeture côté service : l'écran de test masque déjà le panneau, mais une règle

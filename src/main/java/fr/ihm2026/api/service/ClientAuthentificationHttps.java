@@ -169,6 +169,26 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         }
     }
 
+    /** Seul le serveur PC1 possède la clé du fournisseur. */
+    public fr.ihm2026.api.ia.ReponseIa demanderIa(fr.ihm2026.api.ia.ContexteIa contexte) {
+        try {
+            if (!actif()) throw new ErreurAuthentification("Session expirée.");
+            JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/ia/aide"))
+                    .timeout(Duration.ofSeconds(55))
+                    .header("Authorization", "Bearer " + jeton)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(contexte))).build());
+            return fr.ihm2026.api.ia.SortieIa.lire(reponse.toString())
+                    .map(fr.ihm2026.api.ia.SortieIa::versReponse)
+                    .orElseThrow(() -> new ErreurAuthentification("Réponse IA invalide."));
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ErreurAuthentification("Demande IA interrompue.", ex);
+        } catch (IOException ex) {
+            throw new ErreurAuthentification("Service IA indisponible.", ex);
+        }
+    }
+
     public Compte compte() {
         return compte;
     }

@@ -27,6 +27,7 @@ import javafx.scene.layout.VBox;
  */
 public class PanneauAssistant extends VBox {
 
+    private boolean demandeEnCours;
     private final VBox messages = new VBox(8);
     private final TextField champ = new TextField();
     private final Label pied;
@@ -39,7 +40,7 @@ public class PanneauAssistant extends VBox {
 
         Label titre = new Label("Assistant IA");
         titre.getStyleClass().add("titre-panneau");
-        Label mention = new Label("Aide optionnelle · ne note pas, ne valide pas");
+        Label mention = new Label("Aide NVIDIA via PC1 · ne note pas, ne valide pas. Ne transmettez aucune donnée privée.");
         mention.getStyleClass().add("mention-ia");
         mention.setWrapText(true);
 
@@ -61,7 +62,7 @@ public class PanneauAssistant extends VBox {
         champ.setOnAction(e -> envoyerLibre());
 
         pied = new Label("Modèle : " + AideIaApi.identifiantModele()
-                + " · quota " + AideIaApi.quota() + " questions/jour");
+                + " · via PC1 : 30 demandes/jour par compte, quota partagé 200.");
         pied.getStyleClass().add("mention-ia");
         pied.setWrapText(true);
 
@@ -77,7 +78,7 @@ public class PanneauAssistant extends VBox {
      */
     private void rafraichirEtat() {
         EtatAgent etat = AideIaApi.etatAgent();
-        boolean dispo = etat.disponible();
+        boolean dispo = etat.disponible() && !demandeEnCours;
         champ.setDisable(!dispo);
         actions.forEach(b -> b.setDisable(!dispo));
         if (!dispo) {
@@ -115,6 +116,9 @@ public class PanneauAssistant extends VBox {
 
     /** Un seul chemin : tout passe par le service, donc par les garde-fous. */
     private void echanger(String question) {
+        if (demandeEnCours) return;
+        demandeEnCours = true;
+        rafraichirEtat();
         ajouter(bulle(question, "ia-utilisateur"));
 
         // Style rétro : un rouet de patience en monospace, comme avant les animations en pixels.
@@ -124,7 +128,17 @@ public class PanneauAssistant extends VBox {
                 : null;
 
         ContexteIa contexte = new ContexteIa(Session.rangNiveauCourant(), Session.langage(), question, "");
-        ReponseIa reponse = AideIaApi.demander(contexte);
+        fr.ihm2026.core.TaskRunner.run(() -> AideIaApi.demander(contexte), reponse -> {
+            demandeEnCours = false;
+            afficherReponse(reponse, rouet, piedAvant);
+        }, erreur -> {
+            demandeEnCours = false;
+            afficherReponse(ReponseIa.refus(MotifRefus.INDISPONIBLE,
+                    fr.ihm2026.api.ia.ModeleSimule.VERSION_PROMPT), rouet, piedAvant);
+        });
+    }
+
+    private void afficherReponse(ReponseIa reponse, javafx.animation.Timeline rouet, String piedAvant) {
 
         fr.ihm2026.ui.commun.Retro.arreterRouet(rouet);
         if (piedAvant != null) {
@@ -143,8 +157,9 @@ public class PanneauAssistant extends VBox {
             ajouter(lien);
         }
         if (pied != null) {
-            pied.setText("Modèle : " + AideIaApi.identifiantModele()
-                    + " · " + AideIaApi.appelsDuJour() + "/" + AideIaApi.quota() + " aujourd'hui");
+            pied.setText(fr.ihm2026.reseau.Reseau.sessionCompteInstallee()
+                    ? "NVIDIA via PC1 · limite de 30 demandes/jour par compte (quota partagé : 200)."
+                    : "Modèle : " + AideIaApi.identifiantModele());
         }
         rafraichirEtat();
         if (!AideIaApi.etatAgent().disponible()) {

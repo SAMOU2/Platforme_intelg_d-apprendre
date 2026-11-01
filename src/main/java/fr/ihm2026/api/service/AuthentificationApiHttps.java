@@ -27,6 +27,9 @@ public final class AuthentificationApiHttps implements HttpHandler {
     private final PostgresAuthentificationService authentification;
     private final PostgresCompteRepository comptes;
     private final ServiceEmail email;
+    private final java.util.concurrent.Semaphore placeIa = new java.util.concurrent.Semaphore(1);
+    private final java.util.Map<Long, Integer> quotasIa = new java.util.HashMap<>();
+    private java.time.LocalDate jourIa = java.time.LocalDate.now();
 
     public AuthentificationApiHttps(PostgresAuthentificationService authentification,
             PostgresCompteRepository comptes) {
@@ -51,6 +54,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
             }
             String chemin = exchange.getRequestURI().getPath();
             switch (chemin) {
+                case "/api/ia/aide" -> aideIa(exchange);
                 case "/api/auth/connexion" -> connexion(exchange);
                 case "/api/auth/code" -> confirmerCodeConnexion(exchange);
                 case "/api/auth/activation" -> activerCompte(exchange);
@@ -78,6 +82,44 @@ public final class AuthentificationApiHttps implements HttpHandler {
         } finally {
             exchange.close();
         }
+    }
+
+    private void aideIa(HttpExchange exchange) throws IOException, SQLException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            envoyerJson(exchange, 405, erreur("Méthode non autorisée.")); return;
+        }
+        var acteur = authentification.valider(jeton(exchange));
+        if (acteur.isEmpty()) { envoyerJson(exchange, 401, erreur(REFUS)); return; }
+        if (!typeJson(exchange.getRequestHeaders())) {
+            envoyerJson(exchange, 415, erreur("JSON obligatoire.")); return;
+        }
+        JsonNode corps;
+        try { corps = lireCorps(exchange); }
+        catch (IOException ex) { envoyerJson(exchange, 400, erreur("JSON invalide.")); return; }
+        if (corps == null || !corps.path("question").isTextual()
+                || corps.path("question").asText().isBlank() || corps.path("question").asText().length() > 2000
+                || !corps.path("rangNiveau").canConvertToInt() || corps.path("rangNiveau").asInt() < 1
+                || corps.path("rangNiveau").asInt() > 100 || !corps.path("langage").isTextual()
+                || (corps.has("code") && !corps.path("code").isTextual())
+                || corps.path("code").asText("").length() > 8000) {
+            envoyerJson(exchange, 400, erreur("Contexte IA invalide.")); return;
+        }
+        var contexte = new fr.ihm2026.api.ia.ContexteIa(corps.path("rangNiveau").asInt(),
+                Session.Langage.valueOf(corps.path("langage").asText()),
+                corps.path("question").asText(), corps.path("code").asText(""));
+        if (!placeIa.tryAcquire()) { envoyerJson(exchange, 429, erreur("IA occupée, réessayez plus tard.")); return; }
+        try {
+            if (!jourIa.equals(java.time.LocalDate.now())) {
+                quotasIa.clear(); jourIa = java.time.LocalDate.now(); AideIaApi.reinitialiserQuota();
+            }
+            long id = acteur.get().utilisateurId();
+            if (quotasIa.getOrDefault(id, 0) >= 30) {
+                envoyerJson(exchange, 429, erreur("Quota IA quotidien atteint.")); return;
+            }
+            quotasIa.merge(id, 1, Integer::sum);
+            var sortie = fr.ihm2026.api.ia.SortieIa.enJson(AideIaApi.demander(contexte));
+            envoyerJson(exchange, 200, MAPPER.readTree(sortie));
+        } finally { placeIa.release(); }
     }
 
     private void connexion(HttpExchange exchange) throws IOException, SQLException {

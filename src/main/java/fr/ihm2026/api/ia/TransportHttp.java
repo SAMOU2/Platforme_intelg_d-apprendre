@@ -54,6 +54,7 @@ public final class TransportHttp implements TransportModele {
                 .build();
         HttpResponse<String> reponse = client.send(requete,
                 HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (reponse.body().length() > 256 * 1024) throw new java.io.IOException("Réponse fournisseur trop volumineuse");
         return new Reponse(reponse.statusCode(), reponse.body());
     }
 }
