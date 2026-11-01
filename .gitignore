@@ -13,3 +13,38 @@ db/pgdata/
 # Configuration privee du serveur : ne jamais publier les secrets ou cles TLS.
 postes/configuration-PC1.local.cmd
 postes/secrets/
+
+# Variables privees (NVIDIA_API_KEY, SMTP, PostgreSQL, etc.).
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.exemple
+!.env.*.exemple
+!.env.sample
+!.env.*.sample
+
+# Sauvegardes locales de bases : ne jamais publier des donnees de comptes.
+*.dump
+*.backup
+*.sql.gz
+*.sql.zip
+
+# Cles privees et magasins de certificats (les certificats publics .crt restent visibles).
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Modeles locaux volumineux : aucun poids IA n'est necessaire pour l'API NVIDIA.
+*.gguf
+*.gguf.*
+*.safetensors
+
+# Fichiers temporaires des outils Python.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
