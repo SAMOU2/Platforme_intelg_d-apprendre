@@ -98,3 +98,34 @@ ou de calendrier de publication dans le nouvel écran. Les limites IA/exécution
 d'entraînement décrites dans `parcours-par-niveau.md` restent applicables. Un changement
 ultérieur d'enseignant affiche le parcours du nouvel enseignant sans transférer les validations
 entre parcours ; les anciennes copies restent dans le suivi de leurs correcteurs historiques.
+
+## Actualisation automatique côté apprenant
+
+Les vues connectées Parcours, Cours et Exercice interrogent PC1 toutes les cinq secondes
+pendant qu'elles sont affichées. L'ouverture de la vue déclenche aussi une lecture immédiate.
+Le bouton manuel du parcours reste disponible mais n'est plus nécessaire pour détecter
+une publication, une affectation ou une validation publiée. Le mécanisme est du polling,
+pas une notification poussée : la détection dépend du réseau et du délai de réponse de PC1.
+
+Les réponses identiques ne reconstruisent pas la page. Une seule lecture par vue peut être
+en cours ; les réponses reçues après navigation/fermeture sont ignorées, et le minuteur est
+arrêté quand la vue quitte la scène ou que sa fenêtre est fermée. Les erreurs de connexion
+apparaissent dans la vue et sont retentées automatiquement, sans notification répétée.
+
+Si le niveau ouvert n'appartient plus au parcours actif (par exemple publication du parcours
+enseignant remplaçant les niveaux historiques), l'apprenant retourne automatiquement au
+parcours à jour. Un brouillon d'entraînement modifié empêche cette navigation automatique :
+il reste affiché avec un avertissement invitant à le copier avant de revenir au parcours ;
+le test est désactivé et le panneau IA retiré pour ce niveau obsolète. Le code saisi n'est
+pas écrasé par la republication d'un entraînement. Il reste un brouillon local non sauvegardé.
+
+Ce polling n'est pas installé dans le test final : il ne recharge pas les questions d'une
+copie en cours et n'efface pas les réponses. Il ne couvre pas encore toutes les autres vues
+(notamment la liste des copies). Il ne publie aucun contenu, ne corrige aucune affectation et
+ne débloque pas un niveau non validé.
+
+Recette Windows : laisser Parcours/Exercice ouvert pendant qu'un enseignant publie ; vérifier
+l'apparition automatique sous quelques secondes, la bascule de l'ancien niveau sans brouillon,
+la conservation d'un code modifié, l'absence de doublons de requêtes lors d'un réseau lent,
+l'arrêt après fermeture/navigation et la reprise après reconnexion. Essais JavaFX à effectuer ;
+les contrôles Python sont structurels et ne remplacent pas cette recette.
