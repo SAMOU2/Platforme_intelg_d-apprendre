@@ -15,6 +15,23 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertEqual(2, texte.count('choix.setMaxWidth(Double.MAX_VALUE)'))
         self.assertEqual(2, texte.count('choix.getItems().size() == 1'))
 
+    def test_actualisation_automatique_des_vues_apprenantes(self):
+        base = ROOT / 'src/main/java/fr/ihm2026/ui'
+        suivi = (base / 'commun/ActualisationVue.java').read_text()
+        for garde in ['Duration.seconds(5)', 'if(!active || occupe)return;',
+                      'requete!=generation', 'minuterie.stop()', 'windowProperty().removeListener',
+                      'showingProperty().removeListener', 'Objects.equals(precedent,resultat)']:
+            self.assertIn(garde, suivi)
+        self.assertNotIn('TaskRunner.run', suivi)
+        for nom in ['ParcoursServeurView', 'ContenuNiveauView']:
+            self.assertIn('ActualisationVue', (base / f'apprenant/{nom}.java').read_text())
+        contenu = (base / 'apprenant/ContenuNiveauView.java').read_text()
+        self.assertIn('niveau-obsolete', contenu)
+        self.assertIn('if(modifie[0])', contenu)
+        self.assertIn('if(!modifie[0])', contenu)
+        self.assertIn('Session.setNiveauServeurId(0)', contenu)
+        self.assertIn('setDisable(true)', contenu)
+
     def test_connexion_automatique_sans_scan_wifi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
         self.assertNotIn('ChoixWifi', texte)

@@ -16,9 +16,9 @@ final class ParcoursServeurView extends VBox {
         getChildren().addAll(new EnteteVue("Mon parcours — "+Session.langage().label(),
                 "L'enseignant corrige vos réponses et publie la décision. Aucune note automatique."),new HBox(8,actualiser,copies),etat,scroll);
         VBox.setVgrow(scroll,Priority.ALWAYS);
-        Runnable charger=() -> {
-            actualiser.setDisable(true);
-            TaskRunner.run(() -> SuiviPedagogique.appeler(SuiviPedagogique.demande("niveaux").put("langage",Session.langage().code())),liste -> {
+        String langage=Session.langage().code();
+        ActualisationVue<com.fasterxml.jackson.databind.JsonNode> suivi=new ActualisationVue<>(this,
+                () -> SuiviPedagogique.appeler(SuiviPedagogique.demande("niveaux").put("langage",langage)),liste -> {
                 niveaux.getChildren().clear();actualiser.setDisable(false);
                 etat.setText(liste.isEmpty()?"Aucun niveau publié pour ce langage. Contactez votre enseignant/administrateur.":"La validation d'un niveau débloque le suivant après publication.");
                 liste.forEach(n -> {
@@ -50,8 +50,7 @@ final class ParcoursServeurView extends VBox {
                     javafx.scene.layout.FlowPane actions=new javafx.scene.layout.FlowPane(8,8,cours,exercices,test);
                     VBox carte=new VBox(8,titre,note,disponibilite,actions,suite);carte.getStyleClass().add("card");niveaux.getChildren().add(carte);
                 });
-            },erreur -> {actualiser.setDisable(false);etat.setText(erreur.getMessage());});
-        };
-        actualiser.setOnAction(e -> charger.run());charger.run();
+            },erreur -> etat.setText("Connexion interrompue. Nouvelle tentative automatique… " + erreur.getMessage()));
+        actualiser.setOnAction(e -> suivi.actualiser());
     }
 }
