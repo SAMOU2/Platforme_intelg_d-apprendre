@@ -126,18 +126,30 @@ public final class SuiviPedagogique extends VBox {
                 .append("\nCorrection : ").append(copie.path("commentaire").asText());
         return b.toString();
     }
+    private static boolean catalogueVide(javafx.stage.Window owner, JsonNode niveaux) {
+        if (!niveaux.isEmpty()) return false;
+        Dialogue.info(owner, "Aucun niveau disponible",
+                "Aucun niveau modifiable n'est disponible pour ce compte. Si vous êtes enseignant, fermez cette fenêtre, puis ouvrez « Mes niveaux et contenus » → « 1 · Créer un niveau ». Le niveau créé en brouillon pourra ensuite recevoir son cours, son entraînement et son test. Les niveaux des autres enseignants ne sont pas modifiables.");
+        return true;
+    }
+
     public static void publierContenus(javafx.stage.Window owner) {
         TaskRunner.run(() -> appeler(demande("catalogue-tests")), niveaux -> {
+            if (catalogueVide(owner, niveaux)) return;
             ComboBox<JsonNode> choix=new ComboBox<>();niveaux.forEach(choix.getItems()::add);
             choix.setConverter(new javafx.util.StringConverter<>() {
                 public String toString(JsonNode n){return n==null?"":n.path("langage").asText()+" · Niveau "+n.path("rang").asText()+" · "+n.path("titre").asText()+" · "+n.path("statut").asText();}
                 public JsonNode fromString(String s){return null;}
             });
+            choix.setPromptText("Sélectionnez le niveau à préparer");
+            choix.setMaxWidth(Double.MAX_VALUE);
+            choix.setPrefWidth(620);
+            if (choix.getItems().size() == 1) choix.getSelectionModel().selectFirst();
             TextArea cours=new TextArea(),exercice=new TextArea(),code=new TextArea();
             cours.setPrefRowCount(6);exercice.setPrefRowCount(4);code.setPrefRowCount(4);
             cours.setWrapText(true);exercice.setWrapText(true);
             Label avertissement=new Label("Publication pour tous les apprenants de ce niveau. Remplace les contenus actifs, sans supprimer leurs anciennes versions. Les copies et tests sont conservés.");avertissement.setWrapText(true);
-            VBox form=new VBox(8,avertissement,choix,new Label("Cours et explications"),cours,new Label("Énoncé d'entraînement"),exercice,new Label("Code de départ (facultatif)"),code);
+            VBox form=new VBox(8,avertissement,new Label("Niveau à préparer"),choix,new Label("Cours et explications"),cours,new Label("Énoncé d'entraînement"),exercice,new Label("Code de départ (facultatif)"),code);
             ScrollPane scroll=new ScrollPane(form);scroll.setFitToWidth(true);scroll.setPrefViewportHeight(500);scroll.setPrefViewportWidth(620);
             Dialog<ButtonType> dialogue=new Dialog<>();dialogue.initOwner(owner);dialogue.setTitle("Publier le cours et l'entraînement");
             dialogue.getDialogPane().setContent(scroll);dialogue.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
@@ -154,15 +166,20 @@ public final class SuiviPedagogique extends VBox {
 
     public static void preparerTest(javafx.stage.Window owner) {
         TaskRunner.run(() -> appeler(demande("catalogue-tests")), niveaux -> {
+            if (catalogueVide(owner, niveaux)) return;
             ComboBox<JsonNode> choix=new ComboBox<>();niveaux.forEach(choix.getItems()::add);
             choix.setConverter(new javafx.util.StringConverter<>() {
                 public String toString(JsonNode n){return n==null?"":n.path("langage").asText()+" · Niveau "+n.path("rang").asText()+" · "+n.path("titre").asText()+" · "+n.path("statut").asText();}
                 public JsonNode fromString(String s){return null;}
             });
+            choix.setPromptText("Sélectionnez le niveau à préparer");
+            choix.setMaxWidth(Double.MAX_VALUE);
+            choix.setPrefWidth(620);
+            if (choix.getItems().size() == 1) choix.getSelectionModel().selectFirst();
             TextArea questions=new TextArea();questions.setPromptText("Une question à réponse libre par ligne (1 à 20). Pas de corrigé ici.");questions.setPrefRowCount(8);questions.setWrapText(true);
             Label aide=new Label("Ce sujet remplacera les questions actives du niveau pour les futures tentatives. Les anciennes copies restent conservées. Correction manuelle par l'enseignant affecté.");aide.setWrapText(true);
             Dialog<ButtonType> dialog=new Dialog<>();dialog.initOwner(owner);dialog.setTitle("Configurer un sujet de test");
-            dialog.getDialogPane().setContent(new VBox(10,aide,choix,questions));dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
+            dialog.getDialogPane().setContent(new VBox(10,aide,new Label("Niveau à préparer"),choix,questions));dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
             Dialogue.appliquerTheme(dialog.getDialogPane(),owner);
             dialog.getDialogPane().lookupButton(ButtonType.OK).disableProperty().bind(choix.valueProperty().isNull().or(questions.textProperty().isEmpty()));
             dialog.showAndWait().filter(b -> b==ButtonType.OK).ifPresent(b -> {
