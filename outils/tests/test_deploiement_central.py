@@ -71,7 +71,7 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('new ScrollPane(contenu)', texte)
         self.assertIn('defilement.setFitToWidth(true)', texte)
         self.assertIn('ligne, actionsCompte, etat, aide', texte)
-        self.assertIn('decouverteServeur.setLabelFor(adresseServeur)', texte)
+        self.assertIn('decouverteServeur.setLabelFor(serveurs)', texte)
 
     def test_bat_auth_diagnostic_sans_affichage_des_secrets(self):
         texte = (ROOT / 'postes/authentification-PC1.bat').read_text()

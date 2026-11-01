@@ -41,3 +41,41 @@ de confiance ; ne jamais désactiver la vérification HTTPS.
 Les tests JUnit couvrent les annonces invalides et les réponses UDP anciennes/nouvelles.
 Ils ne remplacent pas les tests JavaFX, Windows et multi-PC. Aucun de ces tests Java
 n'a été exécuté dans le sandbox, qui ne dispose pas de JDK/Maven.
+
+## Choix du Wi-Fi sous Windows
+
+Le formulaire affiche maintenant une étape Wi-Fi avant la liste des serveurs.
+`netsh wlan show networks mode=ssid` liste les SSID ; `netsh wlan show interfaces`
+indique les réseaux connectés. Aucun profil enregistré et aucun mot de passe ne sont lus.
+Les appels passent par PowerShell, hors du thread JavaFX, avec délai maximal de 12 s.
+Aucun SSID n'est incorporé dans une commande shell.
+
+1. Choisir le Wi-Fi du serveur, puis **Utiliser ce Wi-Fi**.
+2. Si Windows confirme que ce SSID est connecté, la recherche du serveur démarre.
+3. Sinon, les paramètres Wi-Fi Windows s'ouvrent. Windows gère la connexion et le secret.
+4. La plateforme vérifie la connexion toutes les quatre secondes pendant environ deux minutes.
+5. Après connexion, choisir le serveur puis se connecter au compte (OTP inchangé).
+
+Le scan Windows peut dépendre des autorisations de localisation, du service WLAN,
+du pilote et de la présence d'une carte Wi-Fi. Une erreur ou l'absence de Wi-Fi ne
+bloque pas la recherche classique sur le réseau actuel ni la connexion avancée.
+Sur les autres OS, le choix Wi-Fi est désactivé ; la découverte LAN reste disponible.
+Le bouton Actualiser de la liste des serveurs permet aussi un usage Ethernet.
+La découverte LAN existante interroge toutes les interfaces actives, pas exclusivement
+la carte Wi-Fi choisie : avec plusieurs réseaux simultanés (Ethernet/VPN), elle peut
+également afficher des serveurs accessibles par ces interfaces. Un SSID ne prouve
+pas l'identité d'un serveur, qui reste vérifiée via HTTPS.
+
+### Recette complémentaire Windows (à exécuter)
+
+- Wi-Fi déjà connecté : sélectionner son SSID, vérifier la recherche du serveur.
+- Autre Wi-Fi : vérifier l'ouverture de Windows, se connecter via Windows et attendre
+  la découverte ; aucun champ de mot de passe Wi-Fi ne doit apparaître dans JavaFX.
+- Annuler la connexion : aucun serveur ne doit être sélectionné automatiquement ;
+  attendre la fin de surveillance ou sélectionner à nouveau un réseau.
+- Localisation refusée, WLAN arrêté, aucune carte Wi-Fi : message explicite et
+  recherche LAN/connexion manuelle toujours utilisables.
+- Tester SSID accentués et Windows français/anglais : leur encodage dépend de netsh
+  et du système ; les tests unitaires de parsing ne prouvent pas cette compatibilité réelle.
+
+Tests JUnit de parsing ajoutés, mais non exécutés dans le sandbox sans Java/Maven.

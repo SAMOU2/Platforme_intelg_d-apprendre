@@ -936,3 +936,10 @@ et utilise JavaFX 25.0.5. Définir `JAVA_HOME` sur le JDK 25 avant de lancer un 
 La connexion propose désormais les serveurs locaux détectés et un bouton **Actualiser**.
 La saisie IP reste disponible dans **Connexion avancée**. Configuration, sécurité HTTPS
 et protocole de test : [guide de découverte](docs/reseau/decouverte-serveurs.md).
+
+Sous Windows, une étape **Choisir le réseau Wi-Fi** précède la sélection du serveur.
+La plateforme affiche les SSID visibles ; Windows reste seul responsable de la connexion
+et des mots de passe. Après validation du réseau connecté, une recherche LAN est lancée.
+Sans Wi-Fi (Ethernet, autres OS, restrictions Windows), la recherche sur le réseau actuel
+et la connexion avancée restent accessibles. Voir le guide ci-dessus pour les limites
+multi-interface et le protocole de validation Windows.
