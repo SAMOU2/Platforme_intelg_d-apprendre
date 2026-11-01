@@ -7,6 +7,19 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DeploiementCentralTest(unittest.TestCase):
+    def test_connexion_automatique_sans_scan_wifi(self):
+        texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
+        self.assertNotIn('ChoixWifi', texte)
+        self.assertNotIn('WifiWindows::lire', texte)
+        self.assertIn('if (liste.size() == 1)', texte)
+        self.assertIn('serveurs.getSelectionModel().selectFirst()', texte)
+        self.assertIn('else if (liste.size() > 1)', texte)
+        self.assertIn('serveurs.setVisible(false)', texte)
+        self.assertIn('if (!avance.isExpanded()) adresseServeur.clear()', texte)
+        self.assertIn('WifiWindows.ouvrirParametres()', texte)
+        self.assertIn('adresseServeur.isDisabled()', texte)
+        self.assertIn('generation != generationDecouverte', texte)
+
     def test_syntaxe_des_lanceurs_linux(self):
         for script in (ROOT / 'postes').glob('*.sh'):
             with self.subTest(script=script.name):

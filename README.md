@@ -931,15 +931,12 @@ et utilise JavaFX 25.0.5. Définir `JAVA_HOME` sur le JDK 25 avant de lancer un 
 | `ia/Note-de-cadrage-agent-IA.pdf` | étape 1 : contrat d'usage de l'agent (15 cas, 8 libellés) |
 | `ia/Corpus-v1-rapport-de-couverture.pdf` | étape 2 : corpus v1, nettoyage, jeu de 60 questions gelé, mesures |
 
-### Découverte des serveurs par leur nom
+### Connexion automatique à la plateforme du réseau
 
-La connexion propose désormais les serveurs locaux détectés et un bouton **Actualiser**.
-La saisie IP reste disponible dans **Connexion avancée**. Configuration, sécurité HTTPS
-et protocole de test : [guide de découverte](docs/reseau/decouverte-serveurs.md).
-
-Sous Windows, une étape **Choisir le réseau Wi-Fi** précède la sélection du serveur.
-La plateforme affiche les SSID visibles ; Windows reste seul responsable de la connexion
-et des mots de passe. Après validation du réseau connecté, une recherche LAN est lancée.
-Sans Wi-Fi (Ethernet, autres OS, restrictions Windows), la recherche sur le réseau actuel
-et la connexion avancée restent accessibles. Voir le guide ci-dessus pour les limites
-multi-interface et le protocole de validation Windows.
+Windows gère le Wi-Fi ; l'application n'affiche plus de liste de Wi-Fi et ne demande
+aucune autorisation de localisation. Elle recherche la plateforme sur le réseau actuel :
+une seule plateforme est sélectionnée automatiquement, plusieurs imposent un choix,
+et aucune affiche un diagnostic avec **Réessayer**. Le bouton **Ouvrir les paramètres
+Wi-Fi Windows** laisse Windows gérer la connexion réseau ; cliquer ensuite sur Réessayer.
+La saisie IP reste disponible dans **Options avancées**. HTTPS reste obligatoire.
+Configuration et recette : [guide de découverte](docs/reseau/decouverte-serveurs.md).
