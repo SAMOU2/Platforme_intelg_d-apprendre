@@ -131,6 +131,21 @@ class StyleTest {
     }
 
     @Test
+    @DisplayName("Notifications et actions de fenêtre utilisent les palettes clair et sombre")
+    void notificationsEtActionsFenetreUtilisentLesJetons() throws Exception {
+        String app = lire(APP);
+        assertTrue(app.contains("-fx-text-fill: -color-texte-feu;"));
+        assertTrue(app.contains("-fx-background-color: -color-notification-fond;"));
+        assertTrue(app.contains(".notification .label { -fx-text-fill: -color-notification-texte; }"));
+        for (String theme : List.of(CLAIR, SOMBRE)) {
+            Set<String> jetons = declarees(lire(theme));
+            assertTrue(jetons.containsAll(Set.of("-color-texte-feu",
+                    "-color-notification-fond", "-color-notification-texte")),
+                    "Palette notifications/fenêtre incomplète : " + theme);
+        }
+    }
+
+    @Test
     @DisplayName("Les signes distinctifs de la direction macOS sont présents")
     void signaturesMacOs() throws Exception {
         String app = lire(APP);
