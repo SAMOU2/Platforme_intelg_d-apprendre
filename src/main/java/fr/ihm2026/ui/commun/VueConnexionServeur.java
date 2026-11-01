@@ -69,59 +69,89 @@ public class VueConnexionServeur extends StackPane {
         Label sousTitre = new Label("Se connecter avec un compte autorisé pour ce rôle.");
         sousTitre.getStyleClass().add("login-soustitre");
 
-        Label decouverteServeur = new Label("Choisissez votre serveur local");
+        Label decouverteServeur = new Label("Connexion à la plateforme du réseau");
         javafx.scene.control.ComboBox<fr.ihm2026.reseau.DecouverteServeurs.Serveur> serveurs =
                 new javafx.scene.control.ComboBox<>();
         serveurs.setId("serveurs-locaux");
-        serveurs.setPromptText("Sélectionner un serveur…");
+        serveurs.setPromptText("Plusieurs plateformes : choisissez celle de votre établissement…");
         serveurs.setMaxWidth(Double.MAX_VALUE);
-        Button actualiserServeurs = new Button("Actualiser");
+        serveurs.setVisible(false);
+        serveurs.setManaged(false);
+        Button actualiserServeurs = new Button("Réessayer");
+        Button parametresWifi = new Button("Ouvrir les paramètres Wi-Fi Windows");
+        parametresWifi.setVisible(fr.ihm2026.reseau.WifiWindows.disponible());
+        parametresWifi.setManaged(parametresWifi.isVisible());
         Label etatDecouverte = new Label();
         etatDecouverte.setWrapText(true);
         javafx.scene.control.TitledPane avance = new javafx.scene.control.TitledPane(
-                "Connexion avancée — adresse manuelle", adresseServeur);
+                "Options avancées — adresse manuelle", adresseServeur);
         avance.setExpanded(false);
         serveurs.disableProperty().bind(adresseServeur.disableProperty());
         avance.disableProperty().bind(adresseServeur.disableProperty());
+        parametresWifi.disableProperty().bind(adresseServeur.disableProperty());
+        javafx.beans.property.BooleanProperty rechercheEnCours =
+                new javafx.beans.property.SimpleBooleanProperty(false);
+        actualiserServeurs.disableProperty().bind(rechercheEnCours.or(adresseServeur.disableProperty()));
         serveurs.setOnAction(e -> {
             var choix = serveurs.getValue();
-            if (choix != null) adresseServeur.setText(choix.hote());
+            if (choix != null && !adresseServeur.isDisabled()) {
+                adresseServeur.setText(choix.hote());
+                etatDecouverte.setText("Plateforme sélectionnée : " + choix.nom()
+                        + ". Connectez-vous à votre compte. L'identité sera vérifiée par HTTPS.");
+            }
         });
         Runnable rechercher = () -> {
+            if (adresseServeur.isDisabled() || rechercheEnCours.get()) return;
             long generation = ++generationDecouverte;
-            actualiserServeurs.setDisable(true);
-            etatDecouverte.setText("Recherche des serveurs sur le réseau local…");
+            rechercheEnCours.set(true);
+            // Ne pas conserver une ancienne sélection automatique après un changement réseau.
+            if (!avance.isExpanded()) adresseServeur.clear();
+            serveurs.getSelectionModel().clearSelection();
+            serveurs.getItems().clear();
+            serveurs.setVisible(false);
+            serveurs.setManaged(false);
+            etatDecouverte.setText("Recherche de la plateforme sur votre réseau…");
             TaskRunner.run(() -> fr.ihm2026.reseau.DecouverteServeurs.chercher(IdentitePoste.port()),
                     liste -> {
                         if (generation != generationDecouverte) return;
-                        actualiserServeurs.setDisable(false);
+                        rechercheEnCours.set(false);
+                        if (adresseServeur.isDisabled()) return;
+                        if (avance.isExpanded() && !adresseServeur.getText().isBlank()) {
+                            etatDecouverte.setText("Adresse manuelle conservée. Connectez-vous à votre compte.");
+                            return;
+                        }
                         serveurs.getItems().setAll(liste);
-                        etatDecouverte.setText(liste.isEmpty()
-                                ? "Aucun serveur trouvé. Vérifiez PC1 ou utilisez la connexion avancée."
-                                : "Choisissez un serveur. Son nom ne garantit pas son identité : HTTPS reste vérifié.");
+                        if (liste.size() == 1) {
+                            serveurs.getSelectionModel().selectFirst();
+                        } else if (liste.size() > 1) {
+                            serveurs.setVisible(true);
+                            serveurs.setManaged(true);
+                            etatDecouverte.setText("Plusieurs plateformes détectées. Choisissez celle de votre établissement.");
+                        } else {
+                            etatDecouverte.setText("Aucun serveur de plateforme trouvé. Vérifiez votre connexion réseau "
+                                    + "et que PC1 est démarré, puis cliquez sur Réessayer.");
+                        }
                     }, erreur -> {
                         if (generation != generationDecouverte) return;
-                        actualiserServeurs.setDisable(false);
-                        etatDecouverte.setText("Recherche impossible. Utilisez la connexion avancée.");
+                        rechercheEnCours.set(false);
+                        etatDecouverte.setText("Recherche impossible. Vérifiez votre réseau, puis réessayez "
+                                + "ou utilisez les options avancées.");
                     });
         };
         actualiserServeurs.setOnAction(e -> rechercher.run());
-        ChoixWifi choixWifi = new ChoixWifi(rechercher, () -> {
-            generationDecouverte++;
-            actualiserServeurs.setDisable(false);
-            serveurs.getSelectionModel().clearSelection();
-            serveurs.getItems().clear();
-            adresseServeur.clear();
-            etatDecouverte.setText("En attente de la connexion Wi-Fi par Windows…");
-        });
-        choixWifi.disableProperty().bind(adresseServeur.disableProperty());
+        parametresWifi.setOnAction(e -> TaskRunner.run(() -> {
+            fr.ihm2026.reseau.WifiWindows.ouvrirParametres();
+            return true;
+        }, ok -> etatDecouverte.setText("Windows gère votre connexion Wi-Fi. Une fois connecté, cliquez sur Réessayer."),
+                erreur -> etatDecouverte.setText("Ouvrez les paramètres réseau dans Windows, puis cliquez sur Réessayer.")));
         adresseServeur.setText(System.getProperty("ihm.serveur", ""));
+        avance.setExpanded(!adresseServeur.getText().isBlank());
         adresseServeur.setPromptText("Exemple : 192.168.1.10 (Docker uniquement sur PC1)");
         adresseServeur.setMaxWidth(Double.MAX_VALUE);
         adresseServeur.getStyleClass().add("champ-adresse");
         adresseServeur.setId("serveur-ip");
         decouverteServeur.setLabelFor(serveurs);
-        adresseServeur.setAccessibleText("Adresse IP ou nom du PC serveur. Vide pour la découverte automatique.");
+        adresseServeur.setAccessibleText("Adresse IP ou nom du PC serveur, uniquement pour la connexion manuelle de secours.");
         decouverteServeur.getStyleClass().add("login-mode");
         etiquetteInvitation.getStyleClass().add("role-nom");
         codeInvitation.setPromptText("PIN à 8 chiffres reçu après acceptation");
@@ -228,7 +258,7 @@ public class VueConnexionServeur extends StackPane {
         aide.getStyleClass().add("login-mode");
         aide.setWrapText(true);
 
-        VBox carte = new VBox(10, marque, titre, sousTitre, choixWifi, decouverteServeur, serveurs, actualiserServeurs, etatDecouverte, avance,
+        VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, etatDecouverte, serveurs, actualiserServeurs, parametresWifi, avance,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
                 etiquetteMotDePasse, motDePasse,
                 etiquetteConfirmation, confirmationMotDePasse, etiquetteCodeConnexion, codeConnexion,
@@ -323,7 +353,7 @@ public class VueConnexionServeur extends StackPane {
         }
         String adresse = adresseServeur.getText();
         if (adresse == null || adresse.isBlank()) {
-            etat.setText("Choisissez un serveur dans la liste ou renseignez la connexion avancée.");
+            etat.setText("Attendez la détection de la plateforme, cliquez sur Réessayer ou utilisez les options avancées.");
             return;
         }
         String identifiant = email.getText();
@@ -446,7 +476,7 @@ public class VueConnexionServeur extends StackPane {
     private void activerCompte() {
         String adresse = adresseServeur.getText();
         if (adresse == null || adresse.isBlank()) {
-            etat.setText("Choisissez un serveur dans la liste ou renseignez la connexion avancée.");
+            etat.setText("Attendez la détection de la plateforme, cliquez sur Réessayer ou utilisez les options avancées.");
             return;
         }
         String emailSaisi = email.getText();
@@ -478,7 +508,7 @@ public class VueConnexionServeur extends StackPane {
     private void sInscrire() {
         String adresse = adresseServeur.getText();
         if (adresse == null || adresse.isBlank()) {
-            etat.setText("Choisissez un serveur dans la liste ou renseignez la connexion avancée.");
+            etat.setText("Attendez la détection de la plateforme, cliquez sur Réessayer ou utilisez les options avancées.");
             return;
         }
         String nomSaisi = nom.getText();
