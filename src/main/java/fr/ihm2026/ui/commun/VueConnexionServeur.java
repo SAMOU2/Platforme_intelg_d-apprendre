@@ -23,8 +23,8 @@ import javafx.scene.layout.VBox;
  * Écran d'entrée d'un poste du réseau local (v0.13.0).
  *
  * <p>Chaque poste humain ouvre sa <b>propre</b> fenêtre, avec son rôle déjà fixé par son fichier de
- * lancement. Le serveur est découvert automatiquement sur le réseau local. L'inscription exige
- * un PIN individuel remis par l'administrateur ; la connexion est confirmée par e-mail.</p>
+ * lancement. Le serveur est découvert automatiquement sur le réseau local. L'inscription ne demande aucun PIN ; le compte accepté
+ * est ensuite activé par un PIN envoyé par e-mail ; la connexion est confirmée par e-mail.</p>
  *
  * <p>L'authentification HTTPS et l'annonce du poste se font hors du fil d'affichage
  * ({@link TaskRunner}) afin que l'interface reste réactive en cas de problème réseau.</p>
@@ -41,12 +41,15 @@ public class VueConnexionServeur extends StackPane {
     private final PasswordField motDePasse = new PasswordField();
     private final PasswordField confirmationMotDePasse = new PasswordField();
     private final Label etiquetteNom = new Label("Nom et prénom");
-    private final Label etiquetteInvitation = new Label("PIN individuel d'inscription");
+    private final Label etiquetteInvitation = new Label("PIN d'activation après acceptation");
     private final Label etiquetteConfirmation = new Label("Confirmer le mot de passe");
     private final Label etiquetteCodeConnexion = new Label("Code reçu par e-mail");
     private final Label etat = new Label();
     private final Button connecter = new Button("Se connecter");
     private final Button inscription = new Button("Créer un compte");
+    private boolean modeActivation;
+    private final Button activation = new Button("Activer mon compte avec le PIN reçu");
+    private final Label etiquetteMotDePasse = new Label("Mot de passe");
     private boolean modeInscription;
     private boolean attenteCodeConnexion;
     private String identifiantChallenge;
@@ -75,7 +78,7 @@ public class VueConnexionServeur extends StackPane {
         adresseServeur.setAccessibleText("Adresse IP ou nom du PC serveur. Vide pour la découverte automatique.");
         decouverteServeur.getStyleClass().add("login-mode");
         etiquetteInvitation.getStyleClass().add("role-nom");
-        codeInvitation.setPromptText("PIN individuel à 8 chiffres fourni par l'administrateur");
+        codeInvitation.setPromptText("PIN à 8 chiffres reçu après acceptation");
         codeInvitation.getStyleClass().add("champ-adresse");
         codeInvitation.setMaxWidth(Double.MAX_VALUE);
 
@@ -90,7 +93,6 @@ public class VueConnexionServeur extends StackPane {
         nom.setMaxWidth(Double.MAX_VALUE);
         etiquetteNom.getStyleClass().add("role-nom");
 
-        Label etiquetteMotDePasse = new Label("Mot de passe");
         etiquetteEmail.setLabelFor(email);
         etiquetteMotDePasse.setLabelFor(motDePasse);
         etiquetteNom.setLabelFor(nom);
@@ -120,6 +122,10 @@ public class VueConnexionServeur extends StackPane {
 
         connecter.setId("connexion-valider");
         inscription.setId("connexion-inscription");
+        inscription.setVisible(role != Session.Role.ADMINISTRATEUR);
+        inscription.setManaged(role != Session.Role.ADMINISTRATEUR);
+        activation.setId("compte-activation");
+        codeInvitation.setId("compte-pin-activation");
         email.setId("connexion-email");
         motDePasse.setId("connexion-mot-de-passe");
         codeConnexion.setId("connexion-code");
@@ -127,7 +133,21 @@ public class VueConnexionServeur extends StackPane {
         connecter.getStyleClass().add("btn-primary");
         connecter.setDefaultButton(true);
         connecter.setOnAction(e -> seConnecter());
+        activation.setOnAction(e -> {
+            modeActivation = !modeActivation;
+            modeInscription = false;
+            motDePasse.clear();
+            confirmationMotDePasse.clear();
+            codeInvitation.clear();
+            actualiserModeInscription();
+        });
         inscription.setOnAction(e -> {
+            if (modeActivation) {
+                modeActivation = false;
+                codeInvitation.clear();
+                actualiserModeInscription();
+                return;
+            }
             if (attenteCodeConnexion) {
                 attenteCodeConnexion = false;
                 identifiantChallenge = null;
@@ -149,7 +169,7 @@ public class VueConnexionServeur extends StackPane {
 
         HBox ligne = new HBox(10, connecter);
         ligne.setAlignment(Pos.CENTER);
-        HBox actionsCompte = new HBox(10, inscription);
+        VBox actionsCompte = new VBox(8, inscription, activation);
         actionsCompte.setAlignment(Pos.CENTER);
 
         etat.getStyleClass().add("login-mode");
@@ -157,8 +177,8 @@ public class VueConnexionServeur extends StackPane {
         etat.setText("version " + fr.ihm2026.core.Config.VERSION + " · poste " + IdentitePoste.nom()
                 + " · rôle fixé : " + this.role.label());
 
-        Label aide = new Label("À l'inscription, utilisez le PIN individuel remis par l'administrateur."
-                + " Après acceptation du compte, un code de sécurité sera envoyé par e-mail à chaque connexion.");
+        Label aide = new Label("Envoyez votre demande sans PIN. Après acceptation, un PIN d'activation "
+                + "vous sera envoyé par e-mail. Un code distinct est envoyé à chaque connexion.");
         aide.getStyleClass().add("login-mode");
         aide.setWrapText(true);
 
@@ -242,6 +262,10 @@ public class VueConnexionServeur extends StackPane {
         if (connecter.isDisabled()) {
             return; // Entrée ne doit pas lancer une seconde requête pendant le traitement.
         }
+        if (modeActivation) {
+            activerCompte();
+            return;
+        }
         if (modeInscription) {
             sInscrire();
             return;
@@ -259,6 +283,7 @@ public class VueConnexionServeur extends StackPane {
             return;
         }
         motDePasse.clear();
+        activation.setDisable(true);
         connecter.setDisable(true);
         inscription.setDisable(true);
         email.setDisable(true);
@@ -284,6 +309,8 @@ public class VueConnexionServeur extends StackPane {
             etiquetteCodeConnexion.setManaged(true);
             connecter.setText("Valider le code");
             inscription.setText("Annuler");
+            inscription.setVisible(true);
+            inscription.setManaged(true);
             definirChampsActifs(true);
             adresseServeur.setDisable(true);
             email.setDisable(true);
@@ -307,6 +334,7 @@ public class VueConnexionServeur extends StackPane {
             etat.setText("Saisissez le code de sécurité à six chiffres reçu par e-mail.");
             return;
         }
+        activation.setDisable(true);
         connecter.setDisable(true);
         inscription.setDisable(true);
         codeConnexion.setDisable(true);
@@ -364,20 +392,46 @@ public class VueConnexionServeur extends StackPane {
         }
     }
 
+    private void activerCompte() {
+        String adresse = adresseServeur.getText();
+        String emailSaisi = email.getText();
+        String pin = codeInvitation.getText().strip();
+        if (emailSaisi.isBlank() || !pin.matches("[0-9]{8}")) {
+            etat.setText("Saisissez votre e-mail et le PIN d'activation à 8 chiffres reçu après acceptation.");
+            return;
+        }
+        definirChampsActifs(false);
+        TaskRunner.run(() -> {
+            String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
+            ClientAuthentificationHttps.activerCompte(hote, ClientAuthentificationHttps.portConfigure(),
+                    emailSaisi, pin, role);
+            return true;
+        }, resultat -> {
+            modeActivation = false;
+            codeInvitation.clear();
+            definirChampsActifs(true);
+            actualiserModeInscription();
+            etat.setText("Compte activé. Connectez-vous avec votre e-mail et votre mot de passe.");
+            motDePasse.requestFocus();
+        }, erreur -> {
+            definirChampsActifs(true);
+            codeInvitation.clear();
+            etat.setText(erreur.getMessage());
+        });
+    }
+
     private void sInscrire() {
         String adresse = adresseServeur.getText();
-        String pin = codeInvitation.getText();
         String nomSaisi = nom.getText();
         String emailSaisi = email.getText();
         char[] secret = motDePasse.getText().toCharArray();
         char[] confirmation = confirmationMotDePasse.getText().toCharArray();
         motDePasse.clear();
         confirmationMotDePasse.clear();
-        if (nomSaisi == null || nomSaisi.isBlank() || emailSaisi == null || emailSaisi.isBlank()
-                || pin == null || !pin.strip().matches("[0-9]{8}")) {
+        if (nomSaisi == null || nomSaisi.isBlank() || emailSaisi == null || emailSaisi.isBlank()) {
             java.util.Arrays.fill(secret, '\0');
             java.util.Arrays.fill(confirmation, '\0');
-            etat.setText("Le nom, l'e-mail et le PIN individuel à huit chiffres sont obligatoires.");
+            etat.setText("Le nom et l'e-mail sont obligatoires.");
             return;
         }
         if (!java.util.Arrays.equals(secret, confirmation)) {
@@ -394,6 +448,7 @@ public class VueConnexionServeur extends StackPane {
             etat.setText("Le mot de passe doit contenir au moins 12 caractères et au plus 72 octets UTF-8.");
             return;
         }
+        activation.setDisable(true);
         connecter.setDisable(true);
         inscription.setDisable(true);
         codeInvitation.setDisable(true);
@@ -402,12 +457,12 @@ public class VueConnexionServeur extends StackPane {
         motDePasse.setDisable(true);
         confirmationMotDePasse.setDisable(true);
         adresseServeur.setDisable(true);
-        etat.setText("Connexion au serveur central et vérification de votre PIN individuel…");
+        etat.setText("Envoi de la demande au serveur central…");
         TaskRunner.run(() -> {
             try {
                 String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
                 return ClientAuthentificationHttps.inscrireCompte(
-                        hote, ClientAuthentificationHttps.portConfigure(), pin.strip(),
+                        hote, ClientAuthentificationHttps.portConfigure(),
                         nomSaisi, emailSaisi, secret, role);
             } finally {
                 java.util.Arrays.fill(secret, '\0');
@@ -430,10 +485,17 @@ public class VueConnexionServeur extends StackPane {
     }
 
     private void actualiserModeInscription() {
-        etiquetteInvitation.setVisible(modeInscription);
-        etiquetteInvitation.setManaged(modeInscription);
-        codeInvitation.setVisible(modeInscription);
-        codeInvitation.setManaged(modeInscription);
+        inscription.setVisible(role != Session.Role.ADMINISTRATEUR || attenteCodeConnexion || modeActivation);
+        inscription.setManaged(inscription.isVisible());
+        etiquetteInvitation.setVisible(modeActivation);
+        etiquetteInvitation.setManaged(modeActivation);
+        codeInvitation.setVisible(modeActivation);
+        codeInvitation.setManaged(modeActivation);
+        motDePasse.setVisible(!modeActivation);
+        motDePasse.setManaged(!modeActivation);
+        etiquetteMotDePasse.setVisible(!modeActivation);
+        etiquetteMotDePasse.setManaged(!modeActivation);
+        activation.setText(modeActivation ? "Retour à la connexion" : "Activer mon compte avec le PIN reçu");
         nom.setVisible(modeInscription);
         nom.setManaged(modeInscription);
         etiquetteNom.setVisible(modeInscription);
@@ -446,14 +508,14 @@ public class VueConnexionServeur extends StackPane {
         etiquetteCodeConnexion.setManaged(attenteCodeConnexion && !modeInscription);
         codeConnexion.setVisible(attenteCodeConnexion && !modeInscription);
         codeConnexion.setManaged(attenteCodeConnexion && !modeInscription);
-        inscription.setText(modeInscription ? "J'ai déjà un compte" : "Créer un compte");
+        inscription.setText(modeActivation ? "Retour à la connexion" : modeInscription ? "J'ai déjà un compte" : "Créer un compte");
         if (attenteCodeConnexion) {
             inscription.setText("Annuler");
         }
-        connecter.setText(modeInscription ? "Envoyer ma demande"
+        connecter.setText(modeActivation ? "Activer mon compte" : modeInscription ? "Envoyer ma demande"
                 : attenteCodeConnexion ? "Valider le code" : "Se connecter");
         connecter.setDefaultButton(true);
-        etat.setText(modeInscription
+        etat.setText(modeActivation ? "Après acceptation : saisissez votre e-mail et le PIN reçu (48 heures)." : modeInscription
                 ? "Votre demande sera en attente jusqu'à la décision d'un administrateur."
                 : "version " + fr.ihm2026.core.Config.VERSION + " · poste " + IdentitePoste.nom()
                         + " · rôle fixé : " + role.label());
@@ -463,6 +525,7 @@ public class VueConnexionServeur extends StackPane {
         adresseServeur.setDisable(!actifs);
         connecter.setDisable(!actifs);
         inscription.setDisable(!actifs);
+        activation.setDisable(!actifs || attenteCodeConnexion);
         codeInvitation.setDisable(!actifs);
         nom.setDisable(!actifs);
         email.setDisable(!actifs);

@@ -46,7 +46,7 @@ if not exist "target\authentification-classpath.txt" (
 )
 
 set "DEPENDENCIES="
-set /p "DEPENDENCIES="<"target\authentification-classpath.txt"
+for /f "usebackq delims=" %%L in ("target\authentification-classpath.txt") do set "DEPENDENCIES=%%L"
 if not defined DEPENDENCIES (
     echo [ERREUR] Le classpath des dependances est vide.
     goto :echec

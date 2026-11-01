@@ -53,6 +53,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
             switch (chemin) {
                 case "/api/auth/connexion" -> connexion(exchange);
                 case "/api/auth/code" -> confirmerCodeConnexion(exchange);
+                case "/api/auth/activation" -> activerCompte(exchange);
                 case "/api/auth/inscription" -> inscrireApprenant(exchange);
                 case "/api/auth/session" -> session(exchange);
                 case "/api/auth/deconnexion" -> deconnexion(exchange);
@@ -141,16 +142,35 @@ public final class AuthentificationApiHttps implements HttpHandler {
         }
         if (corps == null || !corps.isObject()
                 || !texte(corps, "nom") || !texte(corps, "email")
-                || !texte(corps, "motDePasse") || !texte(corps, "role")
-                || !texte(corps, "pinInvitation")) {
+                || !texte(corps, "motDePasse") || !texte(corps, "role")) {
             envoyerJson(exchange, 400, erreur("Requête invalide."));
             return;
         }
         Session.Role role = Session.Role.valueOf(corps.path("role").asText());
         var compte = comptes.inscrireCompte(corps.path("nom").asText(),
                 corps.path("email").asText(), corps.path("motDePasse").asText().toCharArray(),
-                role, corps.path("pinInvitation").asText());
+                role);
         envoyerJson(exchange, 201, ReponseCompte.depuis(compte));
+    }
+
+    private void activerCompte(HttpExchange exchange) throws IOException, SQLException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            envoyerJson(exchange, 405, erreur("Méthode non autorisée."));
+            return;
+        }
+        if (!typeJson(exchange.getRequestHeaders())) {
+            envoyerJson(exchange, 415, erreur("Type de contenu non pris en charge."));
+            return;
+        }
+        JsonNode corps = lireCorps(exchange);
+        if (corps == null || !corps.isObject() || !texte(corps, "email")
+                || !texte(corps, "pin") || !texte(corps, "role")) {
+            envoyerJson(exchange, 400, erreur("Requête invalide."));
+            return;
+        }
+        comptes.activerCompte(corps.path("email").asText(), corps.path("pin").asText(),
+                Session.Role.valueOf(corps.path("role").asText()));
+        envoyerJson(exchange, 200, java.util.Map.of("message", "Compte activé. Vous pouvez vous connecter."));
     }
 
     private void creerInvitation(HttpExchange exchange) throws IOException, SQLException {
@@ -176,12 +196,12 @@ public final class AuthentificationApiHttps implements HttpHandler {
         var invitation = comptes.creerInvitation(corps.path("email").asText(),
                 role, acteur.utilisateurId());
         try {
-            email.envoyer(invitation.email(), "Votre invitation IHM 2026",
+            email.envoyer(invitation.email(), "Votre PIN d’activation IHM 2026",
                     "Bonjour,\n\n"
-                            + "Vous avez été invité(e) à créer un compte IHM 2026.\n"
+                            + "Votre demande a été acceptée. Activez votre compte IHM 2026.\n"
                             + "Adresse e-mail : " + invitation.email() + "\n"
                             + "Rôle autorisé : " + invitation.role().label() + "\n"
-                            + "PIN d'inscription : " + invitation.pin() + "\n\n"
+                            + "PIN d'activation : " + invitation.pin() + "\n\n"
                             + "Ce PIN est valable jusqu'au " + invitation.expireLe()
                             + ", ne peut être utilisé qu'une fois et est limité à cinq essais.\n"
                             + "Ne le communiquez à personne.");
@@ -335,15 +355,21 @@ public final class AuthentificationApiHttps implements HttpHandler {
             return;
         }
         boolean acceptee = corps.path("acceptee").asBoolean();
-        var compte = comptes.deciderInscription(corps.path("email").asText(),
+        var resultat = comptes.deciderInscription(corps.path("email").asText(),
                 acceptee, acteur.utilisateurId());
-        String decision = acceptee ? "acceptée" : "refusée";
-        email.envoyer(compte.email(), "Décision sur votre compte IHM 2026",
-                "Bonjour " + compte.nom() + ",\n\n"
-                        + "Votre demande de création de compte a été " + decision + "."
-                        + (acceptee
-                                ? "\nVous pouvez maintenant vous connecter. Un code de sécurité vous sera envoyé par e-mail."
-                                : "\nContactez l'administration si vous pensez qu'il s'agit d'une erreur."));
+        var compte = resultat.compte();
+        try {
+            email.envoyer(compte.email(), "Décision sur votre compte IHM 2026",
+                    "Bonjour " + compte.nom() + ",\n\nVotre demande a été "
+                            + (acceptee ? "acceptée." : "refusée.")
+                            + (acceptee ? "\nVotre PIN d'activation : " + resultat.activation().pin()
+                                    + "\nValable 48 heures et une seule fois. Cliquez sur Activer mon compte."
+                                    : "\nContactez l'administration pour plus d'informations."));
+        } catch (IllegalStateException ex) {
+            envoyerJson(exchange, 503, erreur("Décision enregistrée, mais e-mail non envoyé. "
+                    + "Actualisez les comptes. Après acceptation, utilisez Renvoyer le PIN d'activation."));
+            return;
+        }
         envoyerJson(exchange, 200, ReponseCompte.depuis(compte));
     }
 

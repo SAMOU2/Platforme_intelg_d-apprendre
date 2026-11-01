@@ -60,144 +60,118 @@ public final class PostgresCompteRepository {
         return creer(nom, email, motDePasse, role, actif, Long.valueOf(acteurId), "CREATION_COMPTE");
     }
 
-    public Compte inscrireCompte(String nom, String email, char[] motDePasse, Session.Role role,
-            String pinInvitation) throws SQLException {
+    /** Demande publique : aucun PIN avant la décision, jamais de rôle administrateur. */
+    public Compte inscrireCompte(String nom, String email, char[] motDePasse, Session.Role role)
+            throws SQLException {
         Objects.requireNonNull(motDePasse, "motDePasse");
         try {
             validerCompte(nom, email, motDePasse, role);
-            try (Connection connexion = ouvrir();
-                 PreparedStatement verrou = connexion.prepareStatement("""
-                         SELECT id, empreinte_pin
-                         FROM invitations_inscription
-                         WHERE lower(email_cible) = ? AND role_cible = ?
-                           AND utilise_le IS NULL AND expire_le > now() AND echecs < 5
-                         ORDER BY cree_le DESC
-                         LIMIT 1
-                         FOR UPDATE
-                         """)) {
-                connexion.setAutoCommit(false);
-                String empreinte;
-                verrou.setString(1, normaliserEmail(email));
-                verrou.setString(2, role.name());
-                try (ResultSet resultat = verrou.executeQuery()) {
-                    if (!resultat.next()) {
-                        throw new IllegalArgumentException(
-                                "PIN d'inscription invalide, expiré ou associé à un autre compte.");
-                    }
-                    empreinte = resultat.getString("empreinte_pin");
-                    UUID idInvitation = resultat.getObject("id", UUID.class);
-                    try (PreparedStatement verifier = connexion.prepareStatement(
-                            "SELECT crypt(?, ?) = ?")) {
-                        verifier.setString(1, pinInvitation == null ? "" : pinInvitation);
-                        verifier.setString(2, empreinte);
-                        verifier.setString(3, empreinte);
-                        try (ResultSet verification = verifier.executeQuery()) {
-                            if (!verification.next() || !verification.getBoolean(1)) {
-                                try (PreparedStatement incr = connexion.prepareStatement("""
-                                        UPDATE invitations_inscription
-                                        SET echecs = echecs + 1
-                                        WHERE id = ?::uuid
-                                        """)) {
-                                    incr.setObject(1, idInvitation);
-                                    incr.executeUpdate();
-                                }
-                                connexion.commit();
-                                throw new IllegalArgumentException(
-                                        "PIN d'inscription invalide, expiré ou associé à un autre compte.");
-                            }
-                        }
-                    }
-                    try (PreparedStatement inserer = connexion.prepareStatement("""
-                            INSERT INTO utilisateurs
-                                (nom, email, mot_de_passe, role, actif, statut_inscription)
-                            VALUES (?, ?, crypt(?, gen_salt('bf', 12)), ?::role_utilisateur,
-                                    false, 'EN_ATTENTE')
-                            RETURNING id, nom, email, role::text AS role, actif, statut_inscription
-                            """)) {
-                        inserer.setString(1, nom.strip());
-                        inserer.setString(2, normaliserEmail(email));
-                        inserer.setString(3, new String(motDePasse));
-                        inserer.setString(4, role.name());
-                        try (ResultSet compteResultat = inserer.executeQuery()) {
-                            if (!compteResultat.next()) {
-                                throw new SQLException(
-                                        "PostgreSQL n'a retourné aucun compte après inscription.");
-                            }
-                            Compte compte = lireCompte(compteResultat);
-                            try (PreparedStatement consommer = connexion.prepareStatement("""
-                                    UPDATE invitations_inscription
-                                    SET utilise_le = now()
-                                    WHERE id = ?::uuid AND utilise_le IS NULL
-                                    """)) {
-                                consommer.setObject(1, idInvitation);
-                                if (consommer.executeUpdate() != 1) {
-                                    throw new IllegalStateException(
-                                            "Le PIN d'inscription a déjà été utilisé.");
-                                }
-                            }
-                            journaliser(connexion, null, "INSCRIPTION_COMPTE", compte.email(),
-                                    compte.role().name(), compte.actif());
-                            connexion.commit();
-                            return compte;
-                        }
-                    }
-                } catch (SQLException | RuntimeException ex) {
-                    if (!connexion.isClosed() && !connexion.getAutoCommit()) {
-                        connexion.rollback();
-                    }
-                    throw ex;
-                }
+            if (role != Session.Role.APPRENANT && role != Session.Role.ENSEIGNANT) {
+                throw new IllegalArgumentException("L'inscription publique est réservée aux apprenants et enseignants.");
             }
+            return creer(nom, email, motDePasse, role, false, null, "INSCRIPTION_COMPTE", "EN_ATTENTE");
         } finally {
-            java.util.Arrays.fill(motDePasse, '\0');
+            Arrays.fill(motDePasse, '\0');
         }
     }
 
-    public Invitation creerInvitation(String email, Session.Role role, long acteurId)
-            throws SQLException {
-        String cible = normaliserEmail(email);
-        if (role == null) {
-            throw new IllegalArgumentException("Le rôle de l'invitation est obligatoire.");
-        }
-        String pin = String.format(java.util.Locale.ROOT, "%08d", ALEA.nextInt(100_000_000));
-        UUID id = UUID.randomUUID();
+    /** Renvoi réservé à un compte accepté qui attend encore son activation. */
+    public Invitation creerInvitation(String email, Session.Role role, long acteurId) throws SQLException {
         try (Connection connexion = ouvrir()) {
             connexion.setAutoCommit(false);
-            try {
-                try (PreparedStatement invalider = connexion.prepareStatement("""
-                        UPDATE invitations_inscription
-                        SET utilise_le = now()
-                        WHERE lower(email_cible) = ? AND role_cible = ? AND utilise_le IS NULL
-                        """)) {
-                    invalider.setString(1, cible);
-                    invalider.setString(2, role.name());
-                    invalider.executeUpdate();
-                }
-                try (PreparedStatement inserer = connexion.prepareStatement("""
-                        INSERT INTO invitations_inscription
-                            (id, email_cible, role_cible, empreinte_pin, expire_le, cree_par)
-                        VALUES (?::uuid, ?, ?, crypt(?, gen_salt('bf', 12)),
-                                now() + interval '48 hours', ?)
-                        RETURNING expire_le
-                        """)) {
-                    inserer.setObject(1, id);
-                    inserer.setString(2, cible);
-                    inserer.setString(3, role.name());
-                    inserer.setString(4, pin);
-                    inserer.setLong(5, acteurId);
-                    try (ResultSet resultat = inserer.executeQuery()) {
-                        if (!resultat.next()) {
-                            throw new SQLException("L'invitation n'a pas pu être créée.");
-                        }
-                        java.time.Instant expireLe = resultat.getTimestamp("expire_le").toInstant();
-                        journaliser(connexion, acteurId, "CREATION_INVITATION",
-                                cible, role.name(), true);
-                        connexion.commit();
-                        return new Invitation(cible, role, pin, expireLe);
+            try (PreparedStatement q = connexion.prepareStatement("""
+                    SELECT id, nom, email, role::text AS role, actif, statut_inscription
+                    FROM utilisateurs WHERE lower(email) = ? FOR UPDATE
+                    """)) {
+                q.setString(1, normaliserEmail(email));
+                try (ResultSet r = q.executeQuery()) {
+                    if (!r.next()) throw new IllegalArgumentException("Compte introuvable.");
+                    Compte compte = lireCompte(r);
+                    if (compte.role() != role || compte.actif() || !"ACCEPTE".equals(compte.statutInscription())) {
+                        throw new IllegalArgumentException("Le renvoi exige un compte accepté en attente d'activation.");
                     }
+                    Invitation invitation = creerPinActivation(connexion, compte, acteurId);
+                    connexion.commit();
+                    return invitation;
                 }
             } catch (SQLException | RuntimeException ex) {
                 connexion.rollback();
+                throw ex;
+            }
+        }
+    }
+
+    private Invitation creerPinActivation(Connection connexion, Compte compte, long acteurId) throws SQLException {
+        String pin = String.format(Locale.ROOT, "%08d", ALEA.nextInt(100_000_000));
+        try (PreparedStatement q = connexion.prepareStatement("""
+                UPDATE invitations_inscription SET utilise_le = now()
+                WHERE lower(email_cible) = ? AND role_cible = ? AND utilise_le IS NULL
+                """)) {
+            q.setString(1, compte.email());
+            q.setString(2, compte.role().name());
+            q.executeUpdate();
+        }
+        try (PreparedStatement q = connexion.prepareStatement("""
+                INSERT INTO invitations_inscription
+                    (id, email_cible, role_cible, empreinte_pin, expire_le, cree_par)
+                VALUES (?, ?, ?, crypt(?, gen_salt('bf', 12)), now() + interval '48 hours', ?)
+                RETURNING expire_le
+                """)) {
+            q.setObject(1, UUID.randomUUID());
+            q.setString(2, compte.email());
+            q.setString(3, compte.role().name());
+            q.setString(4, pin);
+            q.setLong(5, acteurId);
+            try (ResultSet r = q.executeQuery()) {
+                if (!r.next()) throw new SQLException("Création du PIN impossible.");
+                journaliser(connexion, acteurId, "CREATION_PIN_ACTIVATION", compte.email(), compte.role().name(), false);
+                return new Invitation(compte.email(), compte.role(), pin, r.getTimestamp(1).toInstant());
+            }
+        }
+    }
+
+    public void activerCompte(String email, String pin, Session.Role role) throws SQLException {
+        if (pin == null || !pin.matches("[0-9]{8}") || role == null) {
+            throw new IllegalArgumentException("PIN d'activation invalide, expiré ou déjà utilisé.");
+        }
+        try (Connection c = ouvrir()) {
+            c.setAutoCommit(false);
+            try (PreparedStatement q = c.prepareStatement("""
+                    SELECT u.id AS utilisateur_id, i.id, crypt(?, i.empreinte_pin) = i.empreinte_pin AS valide
+                    FROM utilisateurs u JOIN invitations_inscription i
+                      ON lower(i.email_cible) = lower(u.email) AND i.role_cible = u.role::text
+                    WHERE lower(u.email) = ? AND u.role::text = ?
+                      AND u.statut_inscription = 'ACCEPTE' AND NOT u.actif
+                      AND i.utilise_le IS NULL AND i.expire_le > now() AND i.echecs < 5
+                    FOR UPDATE OF u, i
+                    """)) {
+                q.setString(1, pin);
+                q.setString(2, normaliserEmail(email));
+                q.setString(3, role.name());
+                try (ResultSet r = q.executeQuery()) {
+                    if (!r.next()) throw new IllegalArgumentException("PIN d'activation invalide, expiré ou déjà utilisé.");
+                    UUID id = r.getObject("id", UUID.class);
+                    if (!r.getBoolean("valide")) {
+                        try (PreparedStatement e = c.prepareStatement("UPDATE invitations_inscription SET echecs = echecs + 1 WHERE id = ?")) {
+                            e.setObject(1, id);
+                            e.executeUpdate();
+                        }
+                        c.commit();
+                        throw new IllegalArgumentException("PIN d'activation invalide, expiré ou déjà utilisé.");
+                    }
+                    try (PreparedStatement e = c.prepareStatement("UPDATE invitations_inscription SET utilise_le = now() WHERE id = ?")) {
+                        e.setObject(1, id);
+                        e.executeUpdate();
+                    }
+                    try (PreparedStatement e = c.prepareStatement("UPDATE utilisateurs SET actif = true WHERE id = ?")) {
+                        e.setLong(1, r.getLong("utilisateur_id"));
+                        e.executeUpdate();
+                    }
+                    journaliser(c, null, "ACTIVATION_PAR_PIN", normaliserEmail(email), role.name(), true);
+                    c.commit();
+                }
+            } catch (SQLException | RuntimeException ex) {
+                c.rollback();
                 throw ex;
             }
         }
@@ -278,14 +252,18 @@ public final class PostgresCompteRepository {
 
     private Compte creer(String nom, String email, char[] motDePasse, Session.Role role, boolean actif,
             Long acteurId, String actionAudit) throws SQLException {
+        return creer(nom, email, motDePasse, role, actif, acteurId, actionAudit, "ACCEPTE");
+    }
+
+    private Compte creer(String nom, String email, char[] motDePasse, Session.Role role, boolean actif,
+            Long acteurId, String actionAudit, String statut) throws SQLException {
         Objects.requireNonNull(motDePasse, "motDePasse");
         try {
             validerCompte(nom, email, motDePasse, role);
             String sql = """
                     INSERT INTO utilisateurs
                         (nom, email, mot_de_passe, role, actif, statut_inscription)
-                    VALUES (?, ?, crypt(?, gen_salt('bf', 12)), ?::role_utilisateur, ?,
-                            'ACCEPTE')
+                    VALUES (?, ?, crypt(?, gen_salt('bf', 12)), ?::role_utilisateur, ?, ?)
                     RETURNING id, nom, email, role::text AS role, actif, statut_inscription
                     """;
             try (Connection connexion = ouvrir();
@@ -296,6 +274,7 @@ public final class PostgresCompteRepository {
                 requete.setString(3, new String(motDePasse));
                 requete.setString(4, role.name());
                 requete.setBoolean(5, actif);
+                requete.setString(6, statut);
                 try (ResultSet resultat = requete.executeQuery()) {
                     if (!resultat.next()) {
                         throw new SQLException("PostgreSQL n'a retourné aucun compte après création.");
@@ -344,6 +323,22 @@ public final class PostgresCompteRepository {
                     }
                 }
 
+                if (actif) {
+                    if (!"ACCEPTE".equals(existant.statutInscription())) {
+                        throw new IllegalStateException("Acceptez d'abord la demande d'inscription.");
+                    }
+                    try (PreparedStatement q = connexion.prepareStatement("""
+                            SELECT 1 FROM invitations_inscription
+                            WHERE lower(email_cible) = ? AND role_cible = ? AND utilise_le IS NULL
+                            """)) {
+                        q.setString(1, existant.email());
+                        q.setString(2, existant.role().name());
+                        try (ResultSet r = q.executeQuery()) {
+                            if (r.next()) throw new IllegalStateException("Le compte doit être activé par son PIN.");
+                        }
+                    }
+                }
+
                 if (!actif && existant.actif()
                         && existant.role() == Session.Role.ADMINISTRATEUR
                         && nombreAdministrateursActifs(connexion) <= 1) {
@@ -378,7 +373,7 @@ public final class PostgresCompteRepository {
         }
     }
 
-    public Compte deciderInscription(String email, boolean acceptee, long acteurId) throws SQLException {
+    public DecisionInscription deciderInscription(String email, boolean acceptee, long acteurId) throws SQLException {
         String normalise = normaliserEmail(email);
         try (Connection connexion = ouvrir()) {
             connexion.setAutoCommit(false);
@@ -391,7 +386,7 @@ public final class PostgresCompteRepository {
                         RETURNING id, nom, email, role::text AS role, actif, statut_inscription
                         """)) {
                     requete.setString(1, statut);
-                    requete.setBoolean(2, acceptee);
+                    requete.setBoolean(2, false);
                     requete.setString(3, normalise);
                     try (ResultSet resultat = requete.executeQuery()) {
                         if (!resultat.next()) {
@@ -402,8 +397,9 @@ public final class PostgresCompteRepository {
                         journaliser(connexion, acteurId,
                                 acceptee ? "ACCEPTATION_INSCRIPTION" : "REFUS_INSCRIPTION",
                                 compte.email(), compte.role().name(), compte.actif());
+                        Invitation activation = acceptee ? creerPinActivation(connexion, compte, acteurId) : null;
                         connexion.commit();
-                        return compte;
+                        return new DecisionInscription(compte, activation);
                     }
                 }
             } catch (SQLException | RuntimeException ex) {
@@ -412,6 +408,8 @@ public final class PostgresCompteRepository {
             }
         }
     }
+
+    public record DecisionInscription(Compte compte, Invitation activation) {}
 
     public static String normaliserEmail(String email) {
         if (email == null) {

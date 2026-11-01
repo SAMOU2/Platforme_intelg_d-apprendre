@@ -3,6 +3,7 @@ package fr.ihm2026.ui.admin;
 import fr.ihm2026.api.service.AdminApi;
 import fr.ihm2026.api.service.ClientAuthentificationHttps;
 import fr.ihm2026.core.Session;
+import fr.ihm2026.core.TaskRunner;
 import fr.ihm2026.model.UtilisateurVM;
 import fr.ihm2026.ui.commun.Dialogue;
 import fr.ihm2026.ui.commun.EnteteVue;
@@ -27,6 +28,7 @@ import javafx.scene.layout.VBox;
 /** AD1 — administrer les comptes et les rôles (un seul rôle par compte, confirmation avant suppression). */
 public class ComptesView extends BorderPane {
 
+    private boolean operationCompteEnCours;
     private final TableView<UtilisateurVM> table =
             new TableView<>(FXCollections.observableArrayList(AdminApi.comptes()));
     private final Label resumeInscriptions = new Label();
@@ -64,7 +66,7 @@ public class ComptesView extends BorderPane {
         creer.getStyleClass().add("btn-primary");
         creer.setOnAction(e -> creerCompte());
 
-        Button genererInvitation = new Button("Envoyer un PIN d'inscription par e-mail");
+        Button genererInvitation = new Button("Renvoyer le PIN d'activation");
         genererInvitation.setOnAction(e -> creerInvitation());
 
         Button desactiver = new Button("Désactiver");
@@ -112,6 +114,7 @@ public class ComptesView extends BorderPane {
     }
 
     private void deciderInscription(boolean acceptee) {
+        if (operationCompteEnCours) return;
         UtilisateurVM selection = table.getSelectionModel().getSelectedItem();
         if (selection == null || !selection.isEnAttente()) {
             Dialogue.erreur(getScene().getWindow(), "Aucune demande en attente",
@@ -120,16 +123,23 @@ public class ComptesView extends BorderPane {
         }
         String decision = acceptee ? "Accepter" : "Refuser";
         String question = acceptee
-                ? "Autoriser " + selection.getNom() + " à se connecter avec le rôle "
+                ? "Accepter et envoyer un PIN d’activation à " + selection.getNom() + " pour le rôle "
                         + selection.getRole() + " ?"
                 : "Refuser définitivement la demande de " + selection.getNom() + " ?";
         if (Dialogue.confirmer(getScene().getWindow(), decision + " l'inscription ?", question, decision)) {
-            try {
-                remplacer(selection, AdminApi.deciderInscription(selection.getEmail(), acceptee));
-            } catch (IllegalArgumentException | IllegalStateException | UnsupportedOperationException
-                    | ClientAuthentificationHttps.ErreurAuthentification e) {
-                Dialogue.erreur(getScene().getWindow(), "Décision impossible", e.getMessage());
-            }
+            operationCompteEnCours = true;
+            table.setDisable(true);
+            TaskRunner.run(() -> AdminApi.deciderInscription(selection.getEmail(), acceptee), resultat -> {
+                operationCompteEnCours = false;
+                table.setDisable(false);
+                remplacer(selection, resultat);
+                if (acceptee) Dialogue.info(getScene().getWindow(), "Demande acceptée",
+                        "Le PIN a été envoyé par e-mail. Le compte reste inactif jusqu'à son activation.");
+            }, erreur -> {
+                operationCompteEnCours = false;
+                table.setDisable(false);
+                Dialogue.erreur(getScene().getWindow(), "Décision / notification", erreur.getMessage());
+            });
         }
     }
 
@@ -242,8 +252,8 @@ public class ComptesView extends BorderPane {
 
         javafx.scene.control.Dialog<ButtonTypeResultatInvitation> dialogue =
                 new javafx.scene.control.Dialog<>();
-        dialogue.setTitle("PIN d'inscription individuel");
-        dialogue.setHeaderText("Le PIN sera lié à cet e-mail et à ce rôle, valable 48 heures.");
+        dialogue.setTitle("Renvoyer le PIN d’activation");
+        dialogue.setHeaderText("Compte déjà accepté uniquement. Un nouveau PIN invalide le précédent, valable 48 heures.");
         dialogue.getDialogPane().setContent(form);
         var boutonCreer = new javafx.scene.control.ButtonType("Générer",
                 javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
@@ -258,17 +268,19 @@ public class ComptesView extends BorderPane {
                         "Saisissez l'adresse e-mail et choisissez le rôle de l'invitation.");
                 return;
             }
-            try {
-                var invitation = AdminApi.creerInvitation(resultat.email(), resultat.role());
+            if (operationCompteEnCours) return;
+            operationCompteEnCours = true;
+            TaskRunner.run(() -> AdminApi.creerInvitation(resultat.email(), resultat.role()), invitation -> {
+                operationCompteEnCours = false;
                 Dialogue.info(getScene().getWindow(), "Invitation envoyée",
                         invitation.message()
                                 + "\nDestinataire : " + invitation.email()
                                 + "\nRôle : " + invitation.role().label()
                                 + "\nValable jusqu'au : " + invitation.expireLe());
-            } catch (IllegalArgumentException | IllegalStateException | UnsupportedOperationException
-                    | ClientAuthentificationHttps.ErreurAuthentification e) {
-                Dialogue.erreur(getScene().getWindow(), "Création du PIN impossible", e.getMessage());
-            }
+            }, erreur -> {
+                operationCompteEnCours = false;
+                Dialogue.erreur(getScene().getWindow(), "Renvoi du PIN impossible", erreur.getMessage());
+            });
         });
     }
 
