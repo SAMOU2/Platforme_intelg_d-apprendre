@@ -24,9 +24,7 @@ public final class Config {
      * true : données de démonstration pour la couche REST (aucun serveur nécessaire).
      * false : appels réels à l'API REST de la plateforme.
      *
-     * <p>Ce drapeau ne choisit <b>plus</b> le modèle d'assistance : depuis l'étape 6, c'est
-     * {@link #MODELE} qui décide (local par défaut, simulé, ou distant), et le modèle local
-     * fonctionne sans serveur et sans clé.</p>
+     * <p>Le choix du fournisseur IA est séparé : voir {@link #MODELE}.</p>
      */
     public static final boolean USE_MOCK = true;
 
@@ -50,17 +48,8 @@ public final class Config {
         return environnement == null ? "" : environnement.strip();
     }
 
-    /**
-     * Quel modèle d'assistance exécuter (étape 6) : {@code auto} (défaut), {@code local},
-     * {@code local-v2} (expérimental), {@code simule} ou {@code distant}.
-     * Surchargeable par {@code -Dihm.modele=...}.
-     *
-     * <p>{@code auto} prend le modèle local s'il est chargé — c'est le modèle entraîné, celui qui
-     * décide et classe — et retombe sur le modèle simulé sinon. Le modèle distant, lui, n'est
-     * jamais choisi par défaut : il exige une clé, donc une décision explicite. Le v2 n'est
-     * sélectionné que par un choix explicite, car ses résultats de validation restent insuffisants.</p>
-     */
-    public static final String MODELE = System.getProperty("ihm.modele", "auto").toLowerCase();
+    /** IA désactivée par défaut ; ancien connecteur distant sur choix explicite uniquement. */
+    public static final String MODELE = System.getProperty("ihm.modele", "desactive").toLowerCase();
 
     public static final int WINDOW_W = 1280;
     public static final int WINDOW_H = 800;
