@@ -89,6 +89,20 @@ class DeploiementCentralTest(unittest.TestCase):
             self.assertIn('ContenuNiveauView', (base / f'ui/apprenant/{nom}.java').read_text())
         self.assertIn('11-contenus-niveaux.sql', (ROOT / 'db/docker-compose.yml').read_text())
 
+    def test_enseignant_cree_et_publie_ses_niveaux(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        repo = (base / 'api/persistence/PostgresPedagogieRepository.java').read_text()
+        for action in ['creer-niveau', 'publier-niveau']:
+            self.assertIn(f'case "{action}" -> {{ exiger(role==Session.Role.ENSEIGNANT)', repo)
+        self.assertIn('coalesce(max(rang),0)+1', repo)
+        self.assertIn('pe.parcours_id=p.id', repo)
+        self.assertIn('a.apprenant_id=garde.apprenant', repo)
+        self.assertIn("copie de l'ancien parcours", repo)
+        vue = (base / 'ui/enseignant/ConditionsView.java').read_text()
+        self.assertIn('setCenter(new GestionNiveauxView())', vue)
+        self.assertNotIn('Créer un niveau (démo)', (base / 'ui/commun/BarreLaterale.java').read_text())
+        self.assertIn('12-parcours-enseignants.sql', (ROOT / 'db/docker-compose.yml').read_text())
+
     def test_syntaxe_des_lanceurs_linux(self):
         for script in (ROOT / 'postes').glob('*.sh'):
             with self.subTest(script=script.name):

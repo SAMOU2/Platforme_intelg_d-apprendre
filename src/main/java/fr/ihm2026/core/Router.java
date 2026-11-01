@@ -50,7 +50,7 @@ public final class Router {
             Map.entry(TEST, "Test de validation"),
             Map.entry(RESULTAT, "Résultat du test"),
             Map.entry(TABLEAU_BORD, "Tableau de bord"),
-            Map.entry(CONDITIONS, "Créer un niveau"),
+            Map.entry(CONDITIONS, "Mes niveaux et contenus"),
             Map.entry(RESULTATS, "Mes apprenants et corrections"),
             Map.entry(COMPTES, "Comptes et rôles"));
 

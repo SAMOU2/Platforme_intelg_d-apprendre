@@ -85,7 +85,7 @@ public class BarreLaterale extends VBox {
             }
             case ENSEIGNANT -> {
                 getChildren().add(entete("Enseigner"));
-                getChildren().add(entree(fr.ihm2026.reseau.Reseau.sessionCompteInstallee() ? "Créer un niveau (démo)" : "Créer un niveau", Router.CONDITIONS, ICONE_ENSEIGNER));
+                getChildren().add(entree(fr.ihm2026.reseau.Reseau.sessionCompteInstallee() ? "Mes niveaux et contenus" : "Créer un niveau", Router.CONDITIONS, ICONE_ENSEIGNER));
                 getChildren().add(entree("Mes apprenants et copies", Router.RESULTATS, ICONE_RESULTATS));
                 getChildren().addAll(entete("Parcours"), sectionParcours);
                 for (Session.Langage langage : Session.Langage.values()) {
