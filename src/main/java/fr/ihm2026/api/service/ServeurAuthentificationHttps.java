@@ -25,6 +25,9 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
             PostgresAuthentificationService authentification,
             PostgresCompteRepository comptes) throws IOException {
         AideIaApi.utiliserModele(new fr.ihm2026.api.ia.ModeleNvidia());
+        String cleNvidia = System.getenv("NVIDIA_API_KEY");
+        System.out.println("[ia-nvidia] Configuration : cle "
+                + (cleNvidia == null || cleNvidia.isBlank() ? "ABSENTE" : "PRESENTE (validite non verifiee)"));
         serveur = HttpsServer.create(new InetSocketAddress(port), 0);
         serveur.setHttpsConfigurator(new HttpsConfigurator(tls));
         serveur.createContext("/api/", new AuthentificationApiHttps(authentification, comptes));

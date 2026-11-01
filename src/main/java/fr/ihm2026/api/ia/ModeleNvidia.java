@@ -16,24 +16,61 @@ public final class ModeleNvidia implements ModeleIa {
     @Override public String identifiant() { return MODELE; }
 
     @Override public ReponseIa repondre(ContexteIa contexte) {
-        if (transport instanceof TransportHttp http && !http.clePresente()) return refus();
+        if (transport instanceof TransportHttp http && !http.clePresente()) {
+            diagnostic("CLE_ABSENTE : NVIDIA_API_KEY non chargee dans le processus HTTPS.");
+            return refus();
+        }
         try {
             var fragments = fragments(contexte);
-            if (fragments.isEmpty()) return refus();
+            if (fragments.isEmpty()) {
+                diagnostic("CORPUS_ABSENT : aucun extrait pour le langage demande.");
+                return refus();
+            }
             var resultat = transport.poster(URL, requete(contexte, fragments), Duration.ofSeconds(45));
-            if (resultat == null || resultat.code() != 200) return echec();
+            if (resultat == null) { diagnostic("REPONSE_ABSENTE"); return echec(); }
+            if (resultat.code() != 200) {
+                diagnostic("HTTP_" + resultat.code() + " : " + explicationHttp(resultat.code()));
+                return echec();
+            }
             var sortie = SortieIa.lire(resultat.corps());
-            if (sortie.isEmpty()) return echec();
+            if (sortie.isEmpty()) {
+                diagnostic("FORMAT_INVALIDE : HTTP 200 mais contrat JSON system-v2 non respecte.");
+                return echec();
+            }
             ReponseIa reponse = sortie.get().versReponse();
             if (!reponse.estRefus() && reponse.citations().stream().anyMatch(c ->
-                    fragments.stream().noneMatch(f -> f[0].equals(c.langage()) && f[1].equals(c.section())))) return echec();
+                    fragments.stream().noneMatch(f -> f[0].equals(c.langage()) && f[1].equals(c.section())))) {
+                diagnostic("CITATION_INVALIDE : section absente des extraits fournis.");
+                return echec();
+            }
             PolitiqueModele.signalerSucces();
+            diagnostic("REPONSE_VALIDEE : motif " + reponse.motif().name());
             return GardeFou.filtrer(reponse);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
+            diagnostic("APPEL_INTERROMPU");
             return echec();
-        } catch (Exception ex) { return echec(); }
+        } catch (java.net.http.HttpTimeoutException ex) {
+            diagnostic("DELAI_DEPASSE : NVIDIA ne repond pas dans le delai configure.");
+            return echec();
+        } catch (Exception ex) {
+            // Ne jamais journaliser le message, le corps HTTP ou la pile : secrets possibles.
+            diagnostic("ERREUR_TECHNIQUE : " + ex.getClass().getSimpleName());
+            return echec();
+        }
     }
+    private static void diagnostic(String code) { System.err.println("[ia-nvidia] " + code); }
+    static String explicationHttp(int code) {
+        return switch (code) {
+            case 400, 422 -> "parametres refuses par le fournisseur";
+            case 401 -> "cle invalide ou expiree";
+            case 403 -> "acces au modele refuse";
+            case 404 -> "modele ou endpoint introuvable";
+            case 429 -> "quota ou limite de debit NVIDIA";
+            default -> "erreur du fournisseur";
+        };
+    }
+
     private static ReponseIa refus() { return ReponseIa.refus(MotifRefus.INDISPONIBLE, ModeleSimule.VERSION_PROMPT); }
     private static ReponseIa echec() { PolitiqueModele.signalerEchecTechnique(); return refus(); }
 

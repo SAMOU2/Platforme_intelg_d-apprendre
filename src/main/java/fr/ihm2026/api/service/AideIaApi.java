@@ -91,7 +91,10 @@ public final class AideIaApi {
             if (fr.ihm2026.core.Session.evaluationEnCours())
                 return ReponseIa.refus(MotifRefus.TEST_EN_COURS, ModeleSimule.VERSION_PROMPT);
             try { return fr.ihm2026.reseau.Reseau.sessionAuthentification().demanderIa(contexte); }
-            catch (RuntimeException ex) { return ReponseIa.refus(MotifRefus.INDISPONIBLE, ModeleSimule.VERSION_PROMPT); }
+            catch (RuntimeException ex) {
+                System.err.println("[ia-pc1] Echec de la demande HTTPS : " + ex.getClass().getSimpleName());
+                return ReponseIa.refus(MotifRefus.INDISPONIBLE, ModeleSimule.VERSION_PROMPT);
+            }
         }
         long debut = System.currentTimeMillis();
 

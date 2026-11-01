@@ -131,8 +131,8 @@ public class BarreTitre extends HBox {
         // Les symboles au survol sont posés en CSS (.feux:hover .feu) ; ils ne doivent pas peser sur
         // la largeur du bouton, sinon les pastilles rondes deviennent des rectangles.
         for (Button feu : java.util.List.of(fermer, reduire, agrandir)) {
-            feu.setMaxSize(12, 12);
-            feu.setMinSize(12, 12);
+            feu.setMaxSize(22, 22);
+            feu.setMinSize(22, 22);
         }
         HBox feux = new HBox(8, fermer, reduire, agrandir);
         feux.getStyleClass().add("feux");
@@ -141,10 +141,15 @@ public class BarreTitre extends HBox {
     }
 
     private Button pastille(String classe, String info, Runnable action) {
-        Button bouton = new Button();
+        Button bouton = new Button(switch (classe) {
+            case "feu-rouge" -> "×";
+            case "feu-jaune" -> "−";
+            default -> "□";
+        });
+        bouton.setAccessibleText(info);
         bouton.getStyleClass().addAll("feu", classe);
         bouton.setTooltip(new Tooltip(info));
-        bouton.setFocusTraversable(false);
+        bouton.setFocusTraversable(true);
         bouton.setOnAction(e -> action.run());
         return bouton;
     }

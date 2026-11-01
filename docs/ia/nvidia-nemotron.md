@@ -82,3 +82,16 @@ connexion depuis un autre PC sans clé fournisseur, interface réactive pendant 
 Dans le sandbox : aucun appel réel NVIDIA (pas de clé et hôte non autorisé), aucun
 JDK/Maven disponible ; les contrôles Python et l'analyse syntaxique ne remplacent
 pas compilation, JUnit, PostgreSQL, JavaFX ou validation des réponses réelles.
+
+## Diagnostic de l'indisponibilité
+
+La console HTTPS indique maintenant au démarrage seulement si la clé est PRESENTE
+ou ABSENTE (pas sa valeur ni sa longueur). PRESENTE ne prouve pas sa validité.
+Après une demande, les codes `[ia-nvidia]` distinguent HTTP_401, HTTP_403, HTTP_429,
+DELAI_DEPASSE, FORMAT_INVALIDE, CITATION_INVALIDE et CORPUS_ABSENT. Les corps de
+réponse et les messages d'exception du fournisseur ne sont jamais imprimés.
+La console client indique `[ia-pc1] HTTP ...` si PC1 refuse la requête, sans jeton
+ni corps de réponse. Une erreur 404 côté PC1 peut indiquer un ancien serveur HTTPS
+non redémarré après mise à jour. L'interface conserve un message générique.
+Ces diagnostics ne corrigent pas à eux seuls la cause de la panne ; ils permettent
+de la déterminer sans partager de secrets.

@@ -52,3 +52,27 @@
 .code-str { -fx-fill: #fea97a; }
 .code-com { -fx-fill: #8e8e93; }
 .code-defaut { -fx-fill: #f5f5f7; }
+
+/* Contraste des contrôles éditables, menus et tableaux (tous les rôles). */
+.text-input, .text-field, .password-field, .text-area {
+    -fx-text-fill: #f5f5f7;
+    -fx-prompt-text-fill: #b8bcc6;
+    -fx-control-inner-background: #25272d;
+    -fx-highlight-fill: #176bb7;
+    -fx-highlight-text-fill: #ffffff;
+}
+.text-area .content { -fx-background-color: #25272d; }
+.combo-box .list-cell, .choice-box .label, .menu-item .label,
+.table-view .table-cell, .list-view .list-cell, .dialog-pane .label {
+    -fx-text-fill: #f5f5f7;
+}
+.combo-box-popup .list-view, .context-menu, .dialog-pane {
+    -fx-background-color: #25272d;
+}
+.combo-box-popup .list-cell { -fx-background-color: #25272d; }
+.combo-box-popup .list-cell:hover, .combo-box-popup .list-cell:selected {
+    -fx-background-color: #176bb7;
+    -fx-text-fill: #ffffff;
+}
+.notification { -fx-background-color: #25272d; }
+.notification .label { -fx-text-fill: #f5f5f7; }
