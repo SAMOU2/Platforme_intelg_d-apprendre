@@ -193,3 +193,10 @@ avec `psql -v ON_ERROR_STOP=1 -f ...` sur les volumes existants. Instructions et
 `11-contenus-niveaux.sql` ajoute les énoncés et codes de départ d'entraînement, sans
 modifier les comptes ni les copies existantes. Appliquer après 10, sur base sauvegardée.
 Voir [les étapes par niveau](../docs/parcours-par-niveau.md).
+
+## Migration 12 — parcours des enseignants
+
+`12-parcours-enseignants.sql` associe un parcours à chaque enseignant/langage. Ne déplace
+aucun niveau existant et ne modifie aucune copie. Appliquer après 11 sur base sauvegardée.
+La première publication d'un niveau du nouvel enseignant active ce parcours pour ses
+apprenants affectés dans ce langage. Lire [la procédure de bascule](../docs/niveaux-enseignant.md).

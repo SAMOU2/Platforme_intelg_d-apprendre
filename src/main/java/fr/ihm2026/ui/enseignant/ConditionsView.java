@@ -34,6 +34,9 @@ public class ConditionsView extends BorderPane {
     private final Label autosave = new Label("Brouillon — aucun enregistrement encore");
 
     public ConditionsView(Router router) {
+        if(fr.ihm2026.reseau.Reseau.sessionCompteInstallee()){
+            getStyleClass().add("vue");setCenter(new GestionNiveauxView());return;
+        }
         getStyleClass().add("vue");
         setTop(new EnteteVue("Créer un niveau et fixer ses conditions",
                 "Parcours " + Session.langage().label() + " · les conditions sont enregistrées comme des données, "

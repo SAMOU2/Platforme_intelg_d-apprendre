@@ -28,6 +28,7 @@ public final class SuiviPedagogique extends VBox {
     public SuiviPedagogique(boolean enseignant) {
         super(10);
         if (enseignant) {
+            getChildren().add(new Label("Créez et publiez vos niveaux depuis « Mes niveaux et contenus » dans le menu."));
             Button contenus = new Button("Publier cours et entraînement (mes niveaux)");
             contenus.setOnAction(e -> publierContenus(getScene().getWindow()));
             Button sujet = new Button("Préparer le test final (mes niveaux)");
@@ -129,7 +130,7 @@ public final class SuiviPedagogique extends VBox {
         TaskRunner.run(() -> appeler(demande("catalogue-tests")), niveaux -> {
             ComboBox<JsonNode> choix=new ComboBox<>();niveaux.forEach(choix.getItems()::add);
             choix.setConverter(new javafx.util.StringConverter<>() {
-                public String toString(JsonNode n){return n==null?"":n.path("langage").asText()+" · Niveau "+n.path("rang").asText()+" · "+n.path("titre").asText();}
+                public String toString(JsonNode n){return n==null?"":n.path("langage").asText()+" · Niveau "+n.path("rang").asText()+" · "+n.path("titre").asText()+" · "+n.path("statut").asText();}
                 public JsonNode fromString(String s){return null;}
             });
             TextArea cours=new TextArea(),exercice=new TextArea(),code=new TextArea();
@@ -155,7 +156,7 @@ public final class SuiviPedagogique extends VBox {
         TaskRunner.run(() -> appeler(demande("catalogue-tests")), niveaux -> {
             ComboBox<JsonNode> choix=new ComboBox<>();niveaux.forEach(choix.getItems()::add);
             choix.setConverter(new javafx.util.StringConverter<>() {
-                public String toString(JsonNode n){return n==null?"":n.path("langage").asText()+" · Niveau "+n.path("rang").asText()+" · "+n.path("titre").asText();}
+                public String toString(JsonNode n){return n==null?"":n.path("langage").asText()+" · Niveau "+n.path("rang").asText()+" · "+n.path("titre").asText()+" · "+n.path("statut").asText();}
                 public JsonNode fromString(String s){return null;}
             });
             TextArea questions=new TextArea();questions.setPromptText("Une question à réponse libre par ligne (1 à 20). Pas de corrigé ici.");questions.setPrefRowCount(8);questions.setWrapText(true);

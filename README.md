@@ -909,3 +909,12 @@ sans IA**, puis soumission, correction humaine et progression après validation 
 Les boutons indisponibles indiquent les contenus en préparation. **Migration 11 requise**
 en plus de 10 ; aucun cours/test fictif n'est créé pour masquer un contenu manquant.
 [Publication des contenus, droits, limites et recette](docs/parcours-par-niveau.md).
+
+### Préparation pédagogique par l'enseignant
+
+L'enseignant connecté dispose de **Mes niveaux et contenus** : création de ses niveaux en
+brouillon, préparation des cours/exercices/tests, puis publication explicite pour ses
+apprenants affectés. Plus de passage obligé par l'administrateur pour créer les contenus.
+**Migration 12 requise**, après 10 et 11. Les nouveaux parcours sont isolés par enseignant
+et langage ; les anciennes copies ne sont pas supprimées ni converties en nouvelles validations.
+[Procédure, bascule des anciens parcours et recette](docs/niveaux-enseignant.md).

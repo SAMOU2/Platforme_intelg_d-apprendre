@@ -1,5 +1,9 @@
 # Cours → entraînement avec IA → test → correction → progression
 
+> Complété par la migration 12 : l’enseignant peut maintenant créer ses niveaux et les
+> publier pour ses apprenants affectés. Voir [la procédure actuelle](niveaux-enseignant.md).
+> Les limites ci-dessous sur l’absence de création de niveaux décrivent la migration 11 seule.
+
 ## Expérience apprenant connectée
 
 Chaque carte de niveau expose trois actions numérotées :

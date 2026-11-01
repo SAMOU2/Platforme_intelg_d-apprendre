@@ -19,8 +19,10 @@ public final class PostgresPedagogieRepository {
             try {
                 JsonNode resultat = switch (demande.path("action").asText()) {
                     case "catalogue-tests" -> { exiger(role == Session.Role.ADMINISTRATEUR || role == Session.Role.ENSEIGNANT);
-                        yield liste(c,"SELECT n.id,n.rang,n.titre,l.code AS langage FROM niveaux n JOIN parcours p ON p.id=n.parcours_id JOIN langages l ON l.id=p.langage_id WHERE n.statut='PUBLIE' AND (? OR n.cree_par=?) ORDER BY l.code,n.rang,n.id",role==Session.Role.ADMINISTRATEUR,acteur); }
+                        yield liste(c,"SELECT n.id,n.rang,n.titre,n.statut::text,l.code AS langage FROM niveaux n JOIN parcours p ON p.id=n.parcours_id JOIN langages l ON l.id=p.langage_id WHERE (? OR n.cree_par=?) ORDER BY l.code,n.rang,n.id",role==Session.Role.ADMINISTRATEUR,acteur); }
                     case "preparer-test" -> { droitEdition(c,acteur,role,id(demande,"niveau")); yield preparerTest(c,acteur,demande); }
+                    case "creer-niveau" -> { exiger(role==Session.Role.ENSEIGNANT); yield creerNiveau(c,acteur,demande); }
+                    case "publier-niveau" -> { exiger(role==Session.Role.ENSEIGNANT); droitEdition(c,acteur,role,id(demande,"niveau")); yield publierNiveau(c,acteur,demande); }
                     case "publier-contenus" -> { droitEdition(c,acteur,role,id(demande,"niveau")); yield publierContenus(c,acteur,demande); }
                     case "contenus" -> { exiger(role==Session.Role.APPRENANT); yield contenus(c,acteur,demande); }
                     case "affectations" -> { exiger(role == Session.Role.ADMINISTRATEUR); yield affectations(c); }
@@ -71,6 +73,66 @@ public final class PostgresPedagogieRepository {
         }
         return liste;
     }
+    /** Un parcours privé par enseignant et langage ; rang attribué sous verrou, jamais choisi par le client. */
+    private static JsonNode creerNiveau(Connection c,long acteur,JsonNode d) throws SQLException {
+        String langage=d.path("langage").asText(),titre=d.path("titre").asText().strip();
+        int seuil=d.path("seuil").asInt(-1),max=d.path("tentatives").asInt(-1);
+        if(!List.of("java","python","cpp").contains(langage) || titre.isEmpty() || titre.length()>180
+                || seuil<0 || seuil>20 || max<1 || max>10)throw new IllegalArgumentException("Titre, langage, seuil (0–20) et tentatives (1–10) requis.");
+        try(var p=c.prepareStatement("SELECT id FROM utilisateurs WHERE id=? AND role='ENSEIGNANT' AND actif AND statut_inscription='ACCEPTE' FOR UPDATE")){
+            p.setLong(1,acteur);try(var r=p.executeQuery()){exiger(r.next());}
+        }
+        long langue;
+        try(var p=c.prepareStatement("SELECT id FROM langages WHERE code=?")){p.setString(1,langage);try(var r=p.executeQuery()){if(!r.next())throw new IllegalArgumentException("Langage non initialisé");langue=r.getLong(1);}}
+        long parcours=0;
+        try(var p=c.prepareStatement("SELECT parcours_id FROM parcours_enseignants WHERE enseignant_id=? AND langage_id=?")){
+            p.setLong(1,acteur);p.setLong(2,langue);try(var r=p.executeQuery()){if(r.next())parcours=r.getLong(1);}
+        }
+        if(parcours==0){
+            try(var p=c.prepareStatement("INSERT INTO parcours(langage_id,libelle) VALUES(?,?) RETURNING id")){
+                p.setLong(1,langue);p.setString(2,"Parcours enseignant "+acteur+" — "+langage);try(var r=p.executeQuery()){r.next();parcours=r.getLong(1);}
+            }
+            try(var p=c.prepareStatement("INSERT INTO parcours_enseignants(enseignant_id,langage_id,parcours_id) VALUES(?,?,?)")){
+                p.setLong(1,acteur);p.setLong(2,langue);p.setLong(3,parcours);p.executeUpdate();
+            }
+        }
+        ObjectNode resultat=JSON.createObjectNode();
+        try(var p=c.prepareStatement("INSERT INTO niveaux(parcours_id,rang,titre,seuil,tentatives_max,cree_par) SELECT ?,coalesce(max(rang),0)+1,?,?,?,? FROM niveaux WHERE parcours_id=? RETURNING id,rang")){
+            p.setLong(1,parcours);p.setString(2,titre);p.setInt(3,seuil);p.setInt(4,max);p.setLong(5,acteur);p.setLong(6,parcours);
+            try(var r=p.executeQuery()){r.next();resultat.put("id",r.getLong(1)).put("rang",r.getInt(2));}
+        }
+        audit(c,acteur,"CREATION_NIVEAU",resultat.path("id").asLong());return resultat;
+    }
+    private static JsonNode publierNiveau(Connection c,long acteur,JsonNode d) throws SQLException {
+        long niveau=id(d,"niveau"),parcours,langage;int rang;
+        try(var p=c.prepareStatement("SELECT n.parcours_id,p.langage_id,n.rang FROM niveaux n JOIN parcours p ON p.id=n.parcours_id WHERE n.id=? AND n.cree_par=? FOR NO KEY UPDATE OF p")){
+            p.setLong(1,niveau);p.setLong(2,acteur);try(var r=p.executeQuery()){exiger(r.next());parcours=r.getLong(1);langage=r.getLong(2);rang=r.getInt(3);}
+        }
+        try(var p=c.prepareStatement("SELECT id FROM niveaux WHERE id=? FOR UPDATE")){p.setLong(1,niveau);p.executeQuery().close();}
+        try(var p=c.prepareStatement("""
+            SELECT 1 FROM niveaux n WHERE n.id=?
+            AND EXISTS(SELECT 1 FROM cours x JOIN blocs b ON b.cours_id=x.id WHERE x.niveau_id=n.id AND x.statut='PUBLIE')
+            AND EXISTS(SELECT 1 FROM entrainements_niveaux e WHERE e.niveau_id=n.id AND e.publie)
+            AND EXISTS(SELECT 1 FROM tests t JOIN questions q ON q.test_id=t.id WHERE t.niveau_id=n.id AND q.active_pedagogique)
+            AND (n.rang=1 OR EXISTS(SELECT 1 FROM niveaux precedent WHERE precedent.parcours_id=n.parcours_id AND precedent.rang=n.rang-1 AND precedent.statut='PUBLIE'))
+            """)){
+            p.setLong(1,niveau);try(var r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Publiez d'abord cours, entraînement, questions du test et niveau précédent.");}
+        }
+        // Même verrou apprenant que commencer/affecter : ne pas masquer une copie encore ouverte.
+        try(var p=c.prepareStatement("SELECT u.id FROM utilisateurs u JOIN affectations_pedagogiques a ON a.apprenant_id=u.id WHERE a.enseignant_id=? ORDER BY u.id FOR UPDATE OF u")){
+            p.setLong(1,acteur);p.executeQuery().close();
+        }
+        try(var p=c.prepareStatement("""
+            SELECT 1 FROM tentatives t JOIN tests x ON x.id=t.test_id JOIN niveaux n ON n.id=x.niveau_id
+            JOIN parcours p ON p.id=n.parcours_id JOIN affectations_pedagogiques a ON a.apprenant_id=t.apprenant_id
+            WHERE a.enseignant_id=? AND p.langage_id=? AND p.id<>? AND t.enseignant_id IS NOT NULL AND t.statut IN ('EN_COURS','SOUMISE')
+            """)){
+            p.setLong(1,acteur);p.setLong(2,langage);p.setLong(3,parcours);try(var r=p.executeQuery()){if(r.next())throw new IllegalStateException("Une copie de l'ancien parcours est encore ouverte : terminer sa correction/publication avant de basculer.");}
+        }
+        try(var p=c.prepareStatement("UPDATE niveaux SET statut='PUBLIE',maj_le=now() WHERE id=?")){p.setLong(1,niveau);p.executeUpdate();}
+        audit(c,acteur,"PUBLICATION_NIVEAU",niveau);return JSON.createObjectNode().put("ok",true).put("rang",rang);
+    }
+
     private static void droitEdition(Connection c,long acteur,Session.Role role,long niveau) throws SQLException {
         exiger(role==Session.Role.ADMINISTRATEUR || role==Session.Role.ENSEIGNANT);
         try(var p=c.prepareStatement("SELECT id FROM niveaux WHERE id=? AND (? OR cree_par=?)")) {
@@ -113,8 +175,8 @@ public final class PostgresPedagogieRepository {
         JsonNode questions=d.path("questions");
         if(!questions.isArray() || questions.isEmpty() || questions.size()>20)throw new IllegalArgumentException("De 1 à 20 questions requises");
         for(JsonNode q:questions)if(!q.isTextual() || q.asText().isBlank() || q.asText().length()>1500)throw new IllegalArgumentException("Énoncé invalide");
-        try(var p=c.prepareStatement("SELECT id FROM niveaux WHERE id=? AND statut='PUBLIE' FOR UPDATE")) {
-            p.setLong(1,niveau);try(var r=p.executeQuery()){if(!r.next())throw new IllegalArgumentException("Niveau publié requis");}
+        try(var p=c.prepareStatement("SELECT id FROM niveaux WHERE id=? FOR UPDATE")) {
+            p.setLong(1,niveau);try(var r=p.executeQuery()){if(!r.next())throw new IllegalArgumentException("Niveau introuvable");}
         }
         try(var p=c.prepareStatement("INSERT INTO tests(niveau_id) VALUES(?) ON CONFLICT(niveau_id) DO NOTHING")){p.setLong(1,niveau);p.executeUpdate();}
         long test;
@@ -196,7 +258,15 @@ public final class PostgresPedagogieRepository {
                THEN 'EN_COURS' ELSE 'VERROUILLE' END AS etat
             FROM niveaux n CROSS JOIN garde JOIN parcours p ON p.id=n.parcours_id JOIN langages l ON l.id=p.langage_id
             LEFT JOIN progressions g ON g.niveau_id=n.id AND g.apprenant_id=?
-            WHERE l.code=? AND n.statut='PUBLIE' AND p.actif ORDER BY n.rang,n.id
+            WHERE l.code=? AND n.statut='PUBLIE' AND p.actif
+            AND (
+              EXISTS(SELECT 1 FROM parcours_enseignants pe JOIN affectations_pedagogiques a ON a.enseignant_id=pe.enseignant_id
+                WHERE a.apprenant_id=garde.apprenant AND pe.parcours_id=p.id)
+              OR (NOT EXISTS(SELECT 1 FROM parcours_enseignants pe WHERE pe.parcours_id=p.id)
+                AND NOT EXISTS(SELECT 1 FROM parcours_enseignants pe JOIN affectations_pedagogiques a ON a.enseignant_id=pe.enseignant_id
+                  JOIN niveaux prive ON prive.parcours_id=pe.parcours_id AND prive.statut='PUBLIE'
+                  WHERE a.apprenant_id=garde.apprenant AND pe.langage_id=p.langage_id))
+            ) ORDER BY n.rang,n.id
             """,acteur,acteur,acteur,langage);
     }
 
@@ -205,6 +275,7 @@ public final class PostgresPedagogieRepository {
         if(!List.of("java","python","cpp").contains(langage)) throw new IllegalArgumentException("Langage invalide");
         long niveauDemande=id(d,"niveau");
         int rang=d.path("rang").asInt(); if(rang<1) throw new IllegalArgumentException("Niveau invalide");
+        try(var p=c.prepareStatement("SELECT id FROM utilisateurs WHERE id=? FOR UPDATE")) { p.setLong(1,acteur);p.executeQuery().close(); }
         JsonNode contenu=contenus(c,acteur,d);
         JsonNode infos=contenu.path("niveau");
         if(infos.path("rang").asInt()!=rang)throw new IllegalArgumentException("Le niveau sélectionné ne correspond pas au parcours. Revenez dans Parcours.");
@@ -212,7 +283,6 @@ public final class PostgresPedagogieRepository {
             throw new IllegalStateException("Cours ou entraînement en préparation : le niveau doit être complet avant le test final.");
         if(!infos.path("test_pret").asBoolean())throw new IllegalStateException("Test en préparation : aucune question publiée pour ce niveau.");
         if(!infos.path("periode_ouverte").asBoolean())throw new IllegalStateException("Le test est en dehors de sa période d'ouverture.");
-        try(var p=c.prepareStatement("SELECT id FROM utilisateurs WHERE id=? FOR UPDATE")) { p.setLong(1,acteur);p.executeQuery().close(); }
         long prof;
         try(var p=c.prepareStatement("SELECT a.enseignant_id FROM affectations_pedagogiques a JOIN utilisateurs u ON u.id=a.enseignant_id WHERE a.apprenant_id=? AND u.actif AND u.statut_inscription='ACCEPTE'")) {
             p.setLong(1,acteur); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalStateException("L'administrateur doit d'abord vous affecter à un enseignant actif."); prof=r.getLong(1); }
