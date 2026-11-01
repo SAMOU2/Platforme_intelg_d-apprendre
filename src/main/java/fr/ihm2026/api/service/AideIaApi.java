@@ -5,7 +5,7 @@ import fr.ihm2026.api.ia.EtatAgent;
 import fr.ihm2026.api.ia.GardeFou;
 import fr.ihm2026.api.ia.ModeleDistant;
 import fr.ihm2026.api.ia.ModeleIa;
-import fr.ihm2026.api.ia.ModeleLocal;
+import fr.ihm2026.api.ia.ModeleIndisponible;
 import fr.ihm2026.api.ia.ModeleSimule;
 import fr.ihm2026.api.ia.MotifRefus;
 import fr.ihm2026.api.ia.PolitiqueModele;
@@ -37,18 +37,11 @@ public final class AideIaApi {
     private AideIaApi() {
     }
 
-    /**
-     * Sélection du modèle selon {@code -Dihm.modele=...} ; {@code local-v2} charge explicitement
-     * le modèle expérimental. En {@code auto}, le modèle v1 s'il est chargé, sinon le simulé.
-     * Le modèle distant n'est jamais retenu sans choix explicite : il demande une clé.
-     */
+    /** Aucun modèle local ni appel distant implicite. NVIDIA sera intégré séparément. */
     private static ModeleIa modeleInitial() {
         return switch (Config.MODELE) {
-            case "simule" -> new ModeleSimule();
-            case "distant" -> new ModeleDistant();
-            case "local" -> new ModeleLocal();
-            case "local-v2" -> new ModeleLocal();
-            default -> ModeleLocal.disponible() ? new ModeleLocal() : new ModeleSimule();
+            case "distant" -> new ModeleDistant(); // ancien connecteur explicite, pas NVIDIA
+            default -> new ModeleIndisponible();
         };
     }
 

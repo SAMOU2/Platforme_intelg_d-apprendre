@@ -45,7 +45,13 @@
     {
       "id": "RAG_API",
       "libelle": "API externe d'un modèle généraliste, avec RAG",
-      "notes": {"qualite_fr": 4, "cout": 4, "latence": 4, "confidentialite": 2, "competence": 5},
+      "notes": {
+        "qualite_fr": 4,
+        "cout": 4,
+        "latence": 4,
+        "confidentialite": 2,
+        "competence": 5
+      },
       "arguments": {
         "qualite_fr": "Les modèles généralistes récents répondent correctement en français ; la citation vient du corpus, pas du modèle.",
         "cout": "Environ 20 $ par mois au volume du projet (52 800 requêtes), sans matériel à acheter.",
@@ -57,7 +63,13 @@
     {
       "id": "RAG_AUTOHEBERGE",
       "libelle": "Modèle auto-hébergé à poids ouverts, avec RAG",
-      "notes": {"qualite_fr": 4, "cout": 2, "latence": 3, "confidentialite": 5, "competence": 2},
+      "notes": {
+        "qualite_fr": 4,
+        "cout": 2,
+        "latence": 3,
+        "confidentialite": 5,
+        "competence": 2
+      },
       "arguments": {
         "qualite_fr": "Mistral Small 4 (poids ouverts) est du même ordre sur ce type de question courte et citée.",
         "cout": "Un GPU d'inférence revient à environ 365 $ par mois en location, ou à une machine dédiée à l'établissement plus son exploitation.",
@@ -69,7 +81,13 @@
     {
       "id": "FINE_TUNING",
       "libelle": "Apprentissage supervisé sur les données du projet",
-      "notes": {"qualite_fr": 2, "cout": 2, "latence": 4, "confidentialite": 4, "competence": 1},
+      "notes": {
+        "qualite_fr": 2,
+        "cout": 2,
+        "latence": 4,
+        "confidentialite": 4,
+        "competence": 1
+      },
       "ecarte": true,
       "motifEcarte": "Écarté en v1 : sans volume de données annotées, l'apprentissage dégrade la qualité au lieu de l'améliorer, et il fige le corpus — chaque cours ajouté imposerait un nouvel entraînement. Le RAG répond au même besoin sans cette dette.",
       "arguments": {
@@ -122,21 +140,42 @@
       "https://www.actuia.com/en/news/ai-api-pricing-in-october-2026-050-to-50-for-output/"
     ],
     "modeles": {
-      "Mistral Small 4": {"entree": 0.15, "sortie": 0.60},
-      "Mistral Large 3": {"entree": 0.50, "sortie": 1.50},
-      "Mistral Medium 3.5": {"entree": 1.50, "sortie": 7.50},
-      "GPT-6 Luna": {"entree": 0.10, "sortie": 0.50}
+      "Mistral Small 4": {
+        "entree": 0.15,
+        "sortie": 0.6
+      },
+      "Mistral Large 3": {
+        "entree": 0.5,
+        "sortie": 1.5
+      },
+      "Mistral Medium 3.5": {
+        "entree": 1.5,
+        "sortie": 7.5
+      },
+      "GPT-6 Luna": {
+        "entree": 0.1,
+        "sortie": 0.5
+      }
     },
     "modeleRetenu": "Mistral Small 4",
     "coutEstimeMois": 20.6
   },
   "architecture": {
     "interface": "fr.ihm2026.api.ia.ModeleIa",
-    "implementations": ["ModeleSimule", "ModeleDistant"],
+    "implementations": [
+      "ModeleSimule",
+      "ModeleDistant"
+    ],
     "sortiesReseau": {
       "fr.ihm2026.api.ApiClient": "serveur de la plateforme (cours, exercices, comptes) — existant",
       "fr.ihm2026.api.ia.TransportHttp": "fournisseur de modèle — seule classe qui lit et envoie la clé"
     },
     "constat": "Deux sorties réseau, nommées dans un test qui lit les sources : un troisième fichier qui ouvrirait une connexion fait échouer la suite. La clé du fournisseur ne circule que dans TransportHttp."
+  },
+  "etatIntegrationActuel": {
+    "fournisseurCible": "NVIDIA",
+    "statut": "non intégré, IA désactivée par défaut",
+    "modelesLocaux": "retirés",
+    "note": "Les comparaisons et prix de cette stratégie sont historiques, pas une configuration NVIDIA validée."
   }
 }

@@ -94,17 +94,6 @@
           <include>sortie-schema.json</include>
         </includes>
       </resource>
-      <!-- Même principe pour le modèle local (étape 6) : il est entraîné par ia/modele/entrainer.py
-           et copié tel quel sur le classpath. Le fichier de poids n'est pas versionné à la main :
-           il est régénéré et vérifié par entrainer.py, option de vérification. -->
-      <resource>
-        <directory>${project.basedir}/ia/modele</directory>
-        <targetPath>fr/ihm2026/ia</targetPath>
-        <filtering>false</filtering>
-        <includes>
-          <include>modele-local-*.json</include>
-        </includes>
-      </resource>
     </resources>
 
     <plugins>

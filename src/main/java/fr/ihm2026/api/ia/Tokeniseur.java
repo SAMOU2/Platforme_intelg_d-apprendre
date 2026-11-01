@@ -9,26 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Découpage en mots — une seule définition, partagée par le modèle simulé et le modèle local.
- *
- * <p>Jusqu'ici chaque classe avait sa table de synonymes et sa liste de mots vides. Deux copies,
- * deux dérives possibles : le modèle simulé trouvait un fragment que le modèle local ne trouvait
- * plus, avec les mêmes mots. Les tables viennent désormais <b>du fichier du modèle</b>
- * ({@code ia/modele/modele-local-*.json}, section {@code tokeniseur}), lui-même généré par
- * {@code ia/modele/entrainer.py}. Le Python et le Java lisent donc la même table, et un test compare
- * les découpages mot pour mot ({@code ModeleLocalTest.tokeniseurIdentiqueAuPython}).</p>
- */
+/** Découpage lexical du corpus et des garde-fous, indépendant de tout modèle entraîné. */
 public final class Tokeniseur {
 
-    /** Version du découpage, écrite dans le fichier du modèle : la changer invalide les poids. */
+    /** Version du découpage, écrite dans le fichier lexical : versionnée indépendamment du fournisseur. */
     public static final String VERSION = "tok-v1";
 
-    static final String RESSOURCE_MODELE = "/fr/ihm2026/ia/" + ModeleLocal.VERSION + ".json";
+    static final String RESSOURCE_MODELE = "/fr/ihm2026/ia/tokeniseur.json";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    /** Table de repli : si le fichier du modèle manque, l'application doit quand même démarrer. */
+    /** Table de repli : si le fichier lexical manque, l'application doit quand même démarrer. */
     private static final Map<String, String> FAMILLES_REPLI = Map.ofEntries(
             Map.entry("return", "retour"), Map.entry("returns", "retour"),
             Map.entry("retourne", "retour"), Map.entry("retourner", "retour"),
@@ -51,7 +42,7 @@ public final class Tokeniseur {
 
     private static final Map<String, String> FAMILLES;
     private static final Set<String> MOTS_VIDES;
-    /** true si les tables viennent du fichier du modèle, false si c'est la table de repli. */
+    /** true si les tables viennent du fichier lexical, false si c'est la table de repli. */
     private static final boolean DEPUIS_LE_MODELE;
 
     static {
@@ -60,7 +51,7 @@ public final class Tokeniseur {
         boolean depuis = false;
         try (InputStream in = Tokeniseur.class.getResourceAsStream(RESSOURCE_MODELE)) {
             if (in != null) {
-                JsonNode noeud = MAPPER.readTree(in).path("tokeniseur");
+                JsonNode noeud = MAPPER.readTree(in);
                 if (noeud.has("familles") && noeud.has("motsVides")) {
                     var f = new java.util.HashMap<String, String>();
                     noeud.get("familles").fields().forEachRemaining(
@@ -73,7 +64,7 @@ public final class Tokeniseur {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[ia] tokeniseur : fichier du modèle illisible (" + e + ")");
+            System.err.println("[ia] tokeniseur : fichier lexical illisible (" + e + ")");
         }
         FAMILLES = familles;
         MOTS_VIDES = vides;
@@ -83,8 +74,8 @@ public final class Tokeniseur {
     private Tokeniseur() {
     }
 
-    /** true si les tables de synonymes et de mots vides ont été lues dans le fichier du modèle. */
-    public static boolean depuisLeModele() {
+    /** true si les tables de synonymes et de mots vides ont été lues dans le fichier lexical. */
+    public static boolean depuisRessource() {
         return DEPUIS_LE_MODELE;
     }
 
@@ -113,7 +104,7 @@ public final class Tokeniseur {
         return jetons;
     }
 
-    /** Les mêmes jetons, dans l'ordre : utilisé par le test de comparaison avec le Python. */
+    /** Les mêmes jetons, dans l'ordre : utile aux tests du découpage. */
     public static List<String> liste(String texte) {
         return List.copyOf(mots(texte));
     }

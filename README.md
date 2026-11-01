@@ -1,3 +1,5 @@
+> **État IA actuel :** modèles locaux retirés, aide désactivée par défaut en attente de l’intégration NVIDIA. Les références aux anciennes versions et leurs captures ci-dessous sont historiques.
+
 # Plateforme d'apprentissage Java · Python · C++ — client JavaFX
 
 **Projet d'IHM 2026** · version **0.14.4** (plateforme complète, agent d'assistance intégré, corpus v1, index v2, stratégie de modèle, prompt v2, sortie vérifiée, modèle local entraîné, fenêtre macOS, animations, style rétro phosphore, **postes en réseau local**)
@@ -14,7 +16,7 @@ Application de bureau **JavaFX 25**, thèmes **AtlantaFX**, style **CSS3**, base
 | Apprenant | ✅ | poste dédié connecté au serveur ; parcours, cours, exercice, test et résultats |
 | Enseignant | ✅ | poste dédié connecté au serveur ; création des niveaux et consultation des résultats |
 | Administrateur | ✅ | poste dédié connecté au serveur ; comptes et rôles |
-| Agent d'IA | ✅ | **intégré aux 3 rôles** : apprenant (Cours + Exercice), enseignant (synthèse), administrateur (journal). Modèle local v1 + corpus de 36 fragments ; modèle v2 expérimental. Ce modèle local de classement/récupération n'est pas un LLM génératif. Fermé côté service pendant un test |
+| Agent d'IA | ✅ | **intégré aux 3 rôles** : apprenant (Cours + Exercice), enseignant (synthèse), administrateur (journal). Fournisseur désactivé en attente de NVIDIA ; corpus et protections conservés. Les modèles locaux ont été retirés. Fermé côté service pendant un test |
 | Authentification | ✅ | connexion par e-mail/mot de passe sur HTTPS ; inscription publique apprenant/enseignant sans PIN ; acceptation puis PIN d'activation ; comptes admin créés par l'administrateur |
 | Données | 🟡 simulées | `api/mock/MockBackend` — mêmes valeurs que `db/02-seed.sql` |
 | Base PostgreSQL | ✅ | `db/01` à `04` — **exécutés sur PostgreSQL 17 + pgvector**, pas seulement écrits |
@@ -360,7 +362,7 @@ soit **+10 points** de top-1 grâce au filtre de langage. Détail : `ia/evaluati
 | Document de l'étape 4 (PDF, 4 p.) | `docs/ia/Etape-4-strategie-de-modele.pdf` + capture `docs/captures/exercice-ia-desactivee.png` |
 | **Étape 5 — prompts et format de sortie** | `ia/prompts/` (gabarit, générateur, prompt v2, schéma), `api/ia/SortieIa` |
 | Document de l'étape 5 (PDF, 5 p.) | `docs/ia/Etape-5-prompts-et-format-de-sortie.pdf` |
-| **Étape 6 — modèle local entraîné** | `ia/modele/` (entraîneur, négatifs, poids, rapport de mesures), `api/ia/ModeleLocal`, `api/ia/Tokeniseur` |
+| **Ancienne étape 6 — retirée** | Modèles locaux supprimés ; découpage lexical conservé dans `api/ia/Tokeniseur` |
 | Insertion en base | `db/05-corpus-v1.sql` — idempotent, exécuté deux fois sur PostgreSQL 17 + pgvector |
 
 ### Étape 4 — stratégie de modèle
@@ -447,76 +449,19 @@ hors périmètre, parce que le découpage en mots jetait les jetons de moins de 
 les chiffres. Les nombres sont désormais des jetons porteurs de sens (`ModeleSimule.mots()`), ce qui
 est le minimum pour un cours de programmation.
 
-### Étape 6 — le modèle local, entraîné et exécuté hors ligne
+### Modèle local retiré — préparation de NVIDIA
 
-Jusqu'ici, « le modèle » était un retrouveur de fragments écrit à la main (`ModeleSimule`). Cette
-étape **apprend** ce qui était codé en dur — la notion dont parle une question et la décision de
-répondre ou de refuser — et l'exécute sans réseau, sans clé et sans dépendance ajoutée.
+Les modèles locaux v1/v2, leurs poids, leur entraînement et les tests spécifiques ont
+été retirés. L'aide IA est **désactivée par défaut** et répond par une indisponibilité
+jusqu'à l'intégration du fournisseur NVIDIA. Le connecteur distant historique reste
+accessible explicitement avec `-Dihm.modele=distant`, mais ce n'est pas une API NVIDIA.
+Les anciens sélecteurs `local`, `local-v2`, `simule` et `auto` n'activent plus de modèle.
 
-| Ce qui est appris | Comment | Où |
-|---|---|---|
-| **Décision** : répondre, refuser une solution, refuser une note, refuser hors parcours (4 classes) | Naive Bayes multinomial, α réglé en validation croisée | `ia/modele/entrainer.py` → candidat `modele-local-v2.json` |
-| **Notion** : VAR, COND, BOUCLE, FONC, COLL, ERREUR (6 classes) | même famille, occurrences pondérées par l'idf | même fichier, tête `notion` |
-| **Couverture** : la question parle-t-elle du domaine ? | recouvrement pondéré, seuil lu dans le fichier (0,10) | tête `seuil` |
-| **Table des sections** | lue du fichier : 3 langages × 6 notions, aucune règle en dur | `sections` |
+Le corpus, les prompts, les garde-fous et le découpage lexical (`tokeniseur.json`)
+sont conservés. Le simulateur extractif reste une fixture pour les tests, jamais un
+repli automatique en production. Aucun modèle GGUF externe n'est modifié.
+Voir [le détail du retrait](docs/ia/retrait-modele-local.md).
 
-**Données d'entraînement** : les 60 questions du jeu gelé de l'étape 2 (légitimes), 48 exemples
-synthétiques annotés pour ce projet, les demandes du contrat de refus de l'étape 1, 64 négatifs
-d'entraînement de `ia/modele/negatifs.json`, et les 36 fragments du corpus comme exemples de soutien.
-Les 24 questions synthétiques d'évaluation sont réservées et distinctes des données d'entraînement.
-Elles sont générées, pas collectées auprès d'apprenants.
-Le fichier `ia/modele/questions-synthetiques-ajustement.jsonl` a servi uniquement aux essais
-d'ajustement et n'est pas inclus dans le score du test réservé.
-
-**Mesures** (`ia/modele/rapport-modele-local.md`, régénérable) :
-
-| Mesure | Résultat |
-|---|---|
-| Candidat v2 : notion, validation croisée laissée-un-dehors | **90/108 = 83 %** |
-| Candidat v2 : notion, test synthétique réservé | **14/24 = 58 %** |
-| Négatifs de mesure, jamais vus | **23/24 refusés** |
-| Questions légitimes refusées à tort (40, dont 24 synthétiques réservées) | **9/40** |
-| Section trouvée sur le jeu de 60 | **60/60** — témoin attendu présent dans le fragment choisi : 52/60 (87 %) |
-
-Le candidat v2 n'est **pas activé** : le test synthétique réservé montre une généralisation encore
-insuffisante (14/24) et trop de refus de questions légitimes (9/40). L'application continue d'utiliser
-le modèle v1. Les exemples synthétiques ne remplacent pas des questions réelles d'apprenants ; il
-faudra enrichir et vérifier les annotations avant de promouvoir une nouvelle version.
-
-**Ce que l'étape change dans le code**
-
-1. `ModeleLocal` lit le fichier de poids v1 et répond : décision → notion → section → **phrase du cours**
-   (réponse extractive, jamais rédigée). Modèle par défaut : `Config.MODELE=auto` prend le local s'il
-   est chargé.
-2. `Tokeniseur` : le découpage en mots n'existe plus en deux exemplaires. Les tables (synonymes, mots
-   vides) viennent **du fichier du modèle**, donc du Python ; `ModeleSimule` et `ModeleLocal` les
-   partagent, et un test compare les découpages mot pour mot (`tokens-reference.json`).
-3. La trace journalisée dit qui a répondu : `modele-local@modele-local-v1`, pas un numéro de prompt.
-
-```bash
-# régénérer les poids, les mesures et les phrases de référence — puis vérifier qu'ils n'ont pas dérivé
-python3 ia/modele/entrainer.py && python3 ia/modele/entrainer.py --verifier
-# → génère le candidat modele-local-v2 ; voir les mesures et la décision de promotion dans le rapport
-
-# choisir le modèle à l'exécution (auto/v1 par défaut ; local-v2 est expérimental)
-java -Dihm.modele=local   ...   # modèle appris, hors ligne
-java -Dihm.modele=local-v2 ...   # candidat v2, réservé aux essais
-java -Dihm.modele=simule  ...   # retrouveur de fragments (étape 2), pour comparaison
-java -Dihm.modele=distant ...   # fournisseur, exige IHM_API_KEY
-```
-
-Ce que la suite démontre (`ModeleLocalTest`, 11 tests) : le modèle actif v1 est **chargé** depuis le fichier
-produit par l'entraînement (233 termes, 36 fragments, 3 × 6 sections, 4 classes de décision), le
-découpage Java est **le même** que celui du Python sur 15 phrases de référence, dix questions du jeu
-gelé obtiennent une **citation juste** dans le bon parcours, les **demandes du contrat** (note,
-solution, hors parcours) sont refusées avec le bon motif, les **négatifs de mesure** sont refusés sans
-refuser l'utile, la réponse est un **JSON conforme** au format de l'étape 5, et le modèle
-**n'ouvre aucune connexion** — un test lit les sources et refuse `java.net`, `Socket`, `HttpClient`
-ou `CLE_API` dans `ModeleLocal` et `Tokeniseur`.
-
-**Limites assumées** : le modèle ne rédige pas (la réponse reste extractive) ; il ne traite pas les
-refus qui dépendent de l'état de la session (quota, test en cours, indisponibilité) — c'est le
-garde-fou qui les décide ; et il ne note pas, ne valide pas, ne débloque pas.
 ### Direction visuelle macOS (v0.9.0)
 
 Décision d'interface : l'application adopte le langage visuel de macOS Sonoma — **barre de titre
