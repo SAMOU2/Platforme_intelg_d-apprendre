@@ -48,6 +48,12 @@ class AppareilConfiance48hTest(unittest.TestCase):
         memoire = (JAVA / 'reseau/MemoireAppareilConfiance.java').read_text()
         self.assertIn('appareils-confiance', memoire)
         self.assertIn('Session.Role role', memoire)
+        self.assertIn('StandardOpenOption.TRUNCATE_EXISTING', memoire)
+        # Régression Windows : ne pas réintroduire les permissions java.io.File inefficaces
+        # sous Windows, ni le déplacement temporaire fragile constaté par Maven.
+        for interdit in ['setReadable(false', 'setWritable(false', 'setExecutable(false',
+                         'Files.createTempFile', 'Files.move']:
+            self.assertNotIn(interdit, memoire)
         self.assertNotIn('motDePasse', memoire)
         self.assertNotIn('codeConnexion', memoire)
         deux_barres = chr(92) * 2

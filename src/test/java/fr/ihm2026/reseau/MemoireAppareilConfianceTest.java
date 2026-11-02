@@ -29,7 +29,9 @@ class MemoireAppareilConfianceTest {
 
             var lu = MemoireAppareilConfiance.lire(
                     "samoumegharba210@gmail.com", Session.Role.ADMINISTRATEUR);
-            assertTrue(lu.isPresent());
+            assertTrue(lu.isPresent(), () -> "Le jeton écrit dans "
+                    + MemoireAppareilConfiance.dossier() + " doit pouvoir être relu. "
+                    + "Fichiers présents : " + fichiersPresents());
             assertEquals(jeton, lu.get().jeton());
             assertEquals(expiration.toEpochMilli(), lu.get().expireLe().toEpochMilli());
             assertTrue(MemoireAppareilConfiance.lire(
@@ -61,6 +63,18 @@ class MemoireAppareilConfianceTest {
             } else {
                 System.setProperty("user.home", ancienProfil);
             }
+        }
+    }
+
+    private static String fichiersPresents() {
+        Path dossier = MemoireAppareilConfiance.dossier();
+        if (!Files.isDirectory(dossier)) {
+            return "dossier absent";
+        }
+        try (var fichiers = Files.list(dossier)) {
+            return fichiers.map(fichier -> fichier.getFileName().toString()).toList().toString();
+        } catch (Exception ex) {
+            return "liste impossible (" + ex.getClass().getSimpleName() + ")";
         }
     }
 }
