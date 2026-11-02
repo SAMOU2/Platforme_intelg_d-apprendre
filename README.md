@@ -925,3 +925,12 @@ Le service HTTPS utilise désormais un port libre attribué par le système (0 p
 annoncé aux clients par découverte réseau v3. Un deuxième lancement dans le même dossier
 ne démarre pas un serveur concurrent. Les ports salle/découverte et PostgreSQL restent
 configurés : [déploiement, pare-feu et limites](docs/ports-automatiques.md).
+
+### Adaptation HTTPS aux changements de Wi-Fi Windows (optionnelle)
+
+Un mode opt-in crée une autorité privée explicitement sur PC1, dont le certificat public
+est approuvé une fois sur les clients. Il renouvelle les certificats serveur pour les
+adresses IPv4 physiques actives sans imposer 127.0.0.1. L'écran de connexion redécouvre les
+serveurs en fond. Ce n'est pas une migration transparente des sessions existantes et cela
+ne contourne pas l'isolement des Wi-Fi publics. Lire impérativement
+[la préparation, la sécurité et les limites](docs/wifi-identite-https.md) avant activation.

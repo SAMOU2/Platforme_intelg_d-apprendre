@@ -69,6 +69,26 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('hoteServeur, portChallenge,', client)
         self.assertIn('portHttpsManuel', client)
 
+    def test_identite_tls_reseau_optionnelle_et_confiance_explicite(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        tls = (base / 'api/service/IdentiteTlsReseau.java').read_text()
+        for garde in ['IHM_TLS_CA_PASSWORD', 'scheduleWithFixedDelay', 'feuille.verify(racine.getPublicKey())',
+                      'getBasicConstraints()', 'BC=ca:false',
+                      'CREATE_NEW', 'waitFor(60,TimeUnit.SECONDS)', 'storepass:env', 'versions.put']:
+            self.assertIn(garde, tls)
+        self.assertNotIn('127.0.0.1', tls)
+        self.assertIn('IHM_TLS_RESEAU_AUTO', (base / 'api/service/ServeurAuthentificationHttps.java').read_text())
+        confiance = (ROOT / 'postes/approuver-autorite-client.ps1').read_text()
+        self.assertIn('$attendue -ne $empreinte', confiance)
+        self.assertIn('CertificateAuthority', confiance)
+        self.assertNotIn('-noprompt', confiance)
+        reseau = (base / 'reseau/DecouverteServeurs.java').read_text()
+        self.assertNotIn('destinations.add(InetAddress.getByName("127.0.0.1"))', reseau)
+        self.assertIn('interfaceReseau(carte)', reseau)
+        vue = (base / 'ui/commun/VueConnexionServeur.java').read_text()
+        self.assertIn('new ActualisationVue<Long>', vue)
+        self.assertIn('!avance.isExpanded() && !adresseServeur.isDisabled()', vue)
+
     def test_connexion_automatique_sans_scan_wifi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
         self.assertNotIn('ChoixWifi', texte)

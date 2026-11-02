@@ -126,13 +126,8 @@ public class VueConnexionServeur extends StackPane {
             if (adresseServeur.isDisabled() || rechercheEnCours.get()) return;
             long generation = ++generationDecouverte;
             rechercheEnCours.set(true);
-            // Ne pas conserver une ancienne sélection automatique après un changement réseau.
-            if (!avance.isExpanded()) adresseServeur.clear();
-            serveurs.getSelectionModel().clearSelection();
-            serveurs.getItems().clear();
-            serveurs.setVisible(false);
-            serveurs.setManaged(false);
-            etatDecouverte.setText("Recherche de la plateforme sur votre réseau…");
+            // Garder le formulaire et la selection utilisables pendant la recherche de fond.
+            if(serveurs.getItems().isEmpty())etatDecouverte.setText("Recherche de la plateforme sur votre réseau…");
             TaskRunner.run(() -> fr.ihm2026.reseau.DecouverteServeurs.chercher(IdentitePoste.port()),
                     liste -> {
                         if (generation != generationDecouverte) return;
@@ -142,14 +137,21 @@ public class VueConnexionServeur extends StackPane {
                             etatDecouverte.setText("Adresse manuelle conservée. Connectez-vous à votre compte.");
                             return;
                         }
-                        serveurs.getItems().setAll(liste);
+                        var selection=serveurs.getValue();
+                        if(!serveurs.getItems().equals(liste))serveurs.getItems().setAll(liste);
+                        serveurs.setVisible(liste.size()>1);serveurs.setManaged(liste.size()>1);
                         if (liste.size() == 1) {
                             serveurs.getSelectionModel().selectFirst();
+                            adresseServeur.setText(liste.get(0).hote());
+                            portHttpsManuel.setText(Integer.toString(liste.get(0).portHttps()));
                         } else if (liste.size() > 1) {
                             serveurs.setVisible(true);
                             serveurs.setManaged(true);
+                            if(selection!=null && liste.contains(selection))serveurs.getSelectionModel().select(selection);
+                            else adresseServeur.clear();
                             etatDecouverte.setText("Plusieurs plateformes détectées. Choisissez celle de votre établissement.");
                         } else {
+                            adresseServeur.clear();
                             etatDecouverte.setText("Aucun serveur de plateforme trouvé. Vérifiez votre connexion réseau "
                                     + "et que PC1 est démarré, puis cliquez sur Réessayer.");
                         }
@@ -160,7 +162,14 @@ public class VueConnexionServeur extends StackPane {
                                 + "ou utilisez les options avancées.");
                     });
         };
-        actualiserServeurs.setOnAction(e -> rechercher.run());
+        actualiserServeurs.setOnAction(e -> {
+            if (!avance.isExpanded()) adresseServeur.clear();
+            rechercher.run();
+        });
+        new ActualisationVue<Long>(this,System::nanoTime,tick -> {
+            if(!avance.isExpanded() && !adresseServeur.isDisabled() && !rechercheEnCours.get())rechercher.run();
+        },erreur -> { });
+        sceneProperty().addListener((o,a,b) -> {if(b==null)generationDecouverte++;});
         parametresWifi.setOnAction(e -> TaskRunner.run(() -> {
             fr.ihm2026.reseau.WifiWindows.ouvrirParametres();
             return true;
