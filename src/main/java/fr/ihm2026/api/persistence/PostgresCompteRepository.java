@@ -492,6 +492,9 @@ public final class PostgresCompteRepository {
                             throw new SQLException("Le compte n'a pas pu être mis à jour.");
                         }
                         Compte actualise = lireCompte(resultat);
+                        if (!actif) {
+                            revoquerAppareilsConfiance(connexion, actualise.id());
+                        }
                         journaliser(connexion, acteurId,
                                 actif ? "ACTIVATION_COMPTE" : "DESACTIVATION_COMPTE",
                                 actualise.email(), actualise.role().name(), actualise.actif());
@@ -503,6 +506,25 @@ public final class PostgresCompteRepository {
                 connexion.rollback();
                 throw ex;
             }
+        }
+    }
+
+    private void revoquerAppareilsConfiance(Connection connexion, long utilisateurId)
+            throws SQLException {
+        var avantRevocation = connexion.setSavepoint();
+        try (PreparedStatement requete = connexion.prepareStatement("""
+                UPDATE appareils_confiance
+                SET revoque_le = now()
+                WHERE utilisateur_id = ? AND revoque_le IS NULL
+                """)) {
+            requete.setLong(1, utilisateurId);
+            requete.executeUpdate();
+        } catch (SQLException ex) {
+            if (!"42P01".equals(ex.getSQLState())) {
+                throw ex;
+            }
+            // Une base non encore migrée ne doit pas empêcher une désactivation urgente.
+            connexion.rollback(avantRevocation);
         }
     }
 

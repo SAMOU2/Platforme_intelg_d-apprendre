@@ -127,9 +127,14 @@ est effectué après validation de la transaction. En cas d'échec e-mail, la d�
 Les demandes refusées ne peuvent ni être activées ni se connecter. L'inscription publique d'un
 administrateur est interdite côté serveur.
 
-Après activation, chaque connexion avec e-mail/mot de passe envoie un **autre code à six chiffres**,
+Après activation, la connexion e-mail/mot de passe envoie un **autre code à six chiffres**,
 valable dix minutes, à saisir pour terminer la connexion. Ce code n'est pas le PIN d'activation.
-Voir [le protocole de validation du nouveau parcours](docs/preuves/activation-sans-pin.md).
+Si l'utilisateur coche **« Faire confiance à ce poste pendant 2 jours »**, ce code n'est ensuite
+redemandé qu'après 48 heures, révocation ou oubli du poste ; le mot de passe reste demandé à
+chaque ouverture. Ne pas utiliser cette option sur un poste partagé. Appliquer la migration
+`db\14-appareils-confiance-48h.sql` sur les bases existantes sauvegardées et voir
+[l'appareil de confiance de 48 heures](docs/appareil-confiance-48h.md), ainsi que
+[le protocole de validation du nouveau parcours](docs/preuves/activation-sans-pin.md).
 
 Le mot de passe doit contenir au moins 12 caractères et au plus 72 octets UTF-8; PostgreSQL le
 conserve haché. La découverte utilise UDP sur le port local du serveur; autoriser ce port UDP ainsi

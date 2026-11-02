@@ -14,9 +14,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,12 +40,19 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             .build();
     private final URI base;
     private final Compte compte;
+    private final AppareilConfiance appareilConfiance;
     private String jeton;
 
     private ClientAuthentificationHttps(URI base, String jeton, Compte compte) {
+        this(base, jeton, compte, null);
+    }
+
+    private ClientAuthentificationHttps(URI base, String jeton, Compte compte,
+            AppareilConfiance appareilConfiance) {
         this.base = base;
         this.jeton = jeton;
         this.compte = compte;
+        this.appareilConfiance = appareilConfiance;
     }
 
     public static CompteInscrit inscrireCompte(String hote, int port,
@@ -107,22 +116,45 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
 
     public static ChallengeConnexion demanderCodeConnexion(String hote, int port, String email,
             char[] motDePasse) {
+        var debut = commencerConnexion(hote, port, email, motDePasse, null);
+        if (!debut.codeRequis()) {
+            debut.session().close();
+            throw new ErreurAuthentification("Réponse invalide du service d'authentification.");
+        }
+        return debut.challenge();
+    }
+
+    /**
+     * Vérifie d'abord le mot de passe. Si le jeton de ce poste est encore dans sa
+     * fenêtre de 48 heures, le serveur ouvre directement la session ; sinon il
+     * renvoie un défi par code e-mail.
+     */
+    public static DebutConnexion commencerConnexion(String hote, int port, String email,
+            char[] motDePasse, String jetonConfiance) {
         if (motDePasse == null) {
             throw new ErreurAuthentification("Saisir le mot de passe du compte.");
         }
         try {
             URI base = base(hote, port);
-            String secret = new String(motDePasse);
-            String corps = MAPPER.writeValueAsString(
-                    Map.of("email", email == null ? "" : email, "motDePasse", secret));
+            Map<String, Object> demande = new LinkedHashMap<>();
+            demande.put("email", email == null ? "" : email);
+            demande.put("motDePasse", new String(motDePasse));
+            if (jetonConfiance != null && !jetonConfiance.isBlank()) {
+                demande.put("jetonConfiance", jetonConfiance);
+            }
+            String corps = MAPPER.writeValueAsString(demande);
             JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/connexion"))
                     .timeout(DELAI_ENVOI_EMAIL)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(corps))
                     .build());
-            return new ChallengeConnexion(texteObligatoire(reponse, "identifiant"),
-                    texteObligatoire(reponse, "message"));
+            if (reponse != null && reponse.path("jeton").isTextual()) {
+                return new DebutConnexion(lireSession(base, reponse), null);
+            }
+            return new DebutConnexion(null, new ChallengeConnexion(
+                    texteObligatoire(reponse, "identifiant"),
+                    texteObligatoire(reponse, "message")));
         } catch (ErreurAuthentification ex) {
             throw ex;
         } catch (InterruptedException ex) {
@@ -142,25 +174,28 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
 
     public static ClientAuthentificationHttps confirmerCodeConnexion(String hote, int port,
             String identifiant, String code) {
+        return confirmerCodeConnexion(hote, port, identifiant, code, false, null);
+    }
+
+    public static ClientAuthentificationHttps confirmerCodeConnexion(String hote, int port,
+            String identifiant, String code, boolean memoriserAppareil, String libelleAppareil) {
         try {
             URI base = base(hote, port);
-            String corps = MAPPER.writeValueAsString(Map.of(
-                    "identifiant", identifiant == null ? "" : identifiant,
-                    "code", code == null ? "" : code));
+            Map<String, Object> demande = new LinkedHashMap<>();
+            demande.put("identifiant", identifiant == null ? "" : identifiant);
+            demande.put("code", code == null ? "" : code);
+            demande.put("memoriserAppareil", memoriserAppareil);
+            if (libelleAppareil != null && !libelleAppareil.isBlank()) {
+                demande.put("libelleAppareil", libelleAppareil);
+            }
+            String corps = MAPPER.writeValueAsString(demande);
             JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/code"))
                     .timeout(DELAI_REQUETE)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(corps))
                     .build());
-            String jeton = texteObligatoire(reponse, "jeton");
-            Compte compte = new Compte(
-                    reponse.path("utilisateurId").asLong(),
-                    texteObligatoire(reponse, "nom"),
-                    texteObligatoire(reponse, "email"),
-                    Session.Role.valueOf(texteObligatoire(reponse, "role")),
-                    Instant.parse(texteObligatoire(reponse, "expireLe")));
-            return new ClientAuthentificationHttps(base, jeton, compte);
+            return lireSession(base, reponse);
         } catch (ErreurAuthentification ex) {
             throw ex;
         } catch (InterruptedException ex) {
@@ -174,6 +209,47 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         } catch (IllegalArgumentException ex) {
             throw new ErreurAuthentification("Réponse invalide du service d'authentification.", ex);
         }
+    }
+
+    public static void oublierAppareilConfiance(String hote, int port, String jetonConfiance) {
+        if (jetonConfiance == null || jetonConfiance.isBlank()) {
+            return;
+        }
+        try {
+            URI base = base(hote, port);
+            String corps = MAPPER.writeValueAsString(Map.of("jetonConfiance", jetonConfiance));
+            envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/appareil-confiance/oublier"))
+                    .timeout(DELAI_REQUETE)
+                    .header("Content-Type", "application/json; charset=utf-8")
+                    .header("Accept", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(corps))
+                    .build());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ErreurAuthentification("Oubli du poste de confiance interrompu.", ex);
+        } catch (javax.net.ssl.SSLHandshakeException ex) {
+            throw new ErreurAuthentification(
+                    "Certificat HTTPS du serveur non reconnu ou nom du serveur non concordant.", ex);
+        } catch (IOException ex) {
+            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+        }
+    }
+
+    private static ClientAuthentificationHttps lireSession(URI base, JsonNode reponse) {
+        String jeton = texteObligatoire(reponse, "jeton");
+        Compte compte = new Compte(
+                reponse.path("utilisateurId").asLong(),
+                texteObligatoire(reponse, "nom"),
+                texteObligatoire(reponse, "email"),
+                Session.Role.valueOf(texteObligatoire(reponse, "role")),
+                Instant.parse(texteObligatoire(reponse, "expireLe")));
+        AppareilConfiance confiance = null;
+        if (reponse.path("jetonConfiance").isTextual()
+                && reponse.path("confianceExpireLe").isTextual()) {
+            confiance = new AppareilConfiance(reponse.path("jetonConfiance").asText(),
+                    Instant.parse(reponse.path("confianceExpireLe").asText()));
+        }
+        return new ClientAuthentificationHttps(base, jeton, compte, confiance);
     }
 
     public JsonNode pedagogie(JsonNode demande) {
@@ -210,6 +286,10 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
 
     public Compte compte() {
         return compte;
+    }
+
+    public Optional<AppareilConfiance> appareilConfiance() {
+        return Optional.ofNullable(appareilConfiance);
     }
 
     public List<CompteAdmin> comptesAdministrateur() {
@@ -577,6 +657,15 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     }
 
     public record ChallengeConnexion(String identifiant, String message) {
+    }
+
+    public record DebutConnexion(ClientAuthentificationHttps session, ChallengeConnexion challenge) {
+        public boolean codeRequis() {
+            return session == null;
+        }
+    }
+
+    public record AppareilConfiance(String jeton, Instant expireLe) {
     }
 
     public record CompteInscrit(long id, String nom, String email, String statutInscription,

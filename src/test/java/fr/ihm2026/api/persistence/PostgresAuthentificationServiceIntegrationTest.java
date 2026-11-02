@@ -2,6 +2,7 @@ package fr.ihm2026.api.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,6 +19,8 @@ import java.net.http.HttpResponse;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -188,6 +191,80 @@ class PostgresAuthentificationServiceIntegrationTest {
                 () -> authentification.confirmerCodeConnexion(ancien.identifiant(), ancien.code()));
         var session = authentification.confirmerCodeConnexion(nouveau.identifiant(), nouveau.code());
         assertTrue(authentification.valider(session.jeton()).isPresent());
+    }
+
+    @Test
+    @DisplayName("Un appareil de confiance évite le code pendant 48 heures, sans éviter le mot de passe")
+    void appareilConfiance48Heures() throws SQLException {
+        var challenge = authentification.demanderCodeConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source);
+        var premiereSession = authentification.confirmerCodeConnexion(
+                challenge.identifiant(), challenge.code(), true, "PC de test");
+        var confiance = premiereSession.appareilConfiance();
+        assertNotNull(confiance);
+        assertEquals(43, confiance.jeton().length());
+        assertTrue(confiance.expireLe().isAfter(Instant.now().plus(47, ChronoUnit.HOURS)));
+        assertTrue(confiance.expireLe().isBefore(Instant.now().plus(49, ChronoUnit.HOURS)));
+
+        // Fermer la session simule la fermeture de l'application : la confiance subsiste.
+        authentification.deconnecter(premiereSession.jeton());
+        assertThrows(PostgresAuthentificationService.AuthentificationRefuseeException.class,
+                () -> authentification.commencerConnexion(email,
+                        "mot-de-passe-toujours-incorrect".toCharArray(), source,
+                        confiance.jeton()));
+
+        var directe = authentification.commencerConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source, confiance.jeton());
+        assertFalse(directe.codeRequis());
+        assertNotNull(directe.session());
+        assertEquals(confiance.expireLe(), directe.session().appareilConfiance().expireLe(),
+                "Utiliser le poste ne doit pas prolonger la fenêtre de 48 heures.");
+        authentification.deconnecter(directe.session().jeton());
+
+        long utilisateurId = premiereSession.session().utilisateurId();
+        comptes.definirActif(email, false, utilisateurId);
+        assertThrows(PostgresAuthentificationService.AuthentificationRefuseeException.class,
+                () -> authentification.commencerConnexion(email,
+                        "mot-de-passe-integration-2026".toCharArray(), source,
+                        confiance.jeton()));
+        comptes.definirActif(email, true, utilisateurId);
+        var apresDesactivation = authentification.commencerConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source, confiance.jeton());
+        assertTrue(apresDesactivation.codeRequis(),
+                "La désactivation doit révoquer définitivement les appareils de confiance.");
+        authentification.annulerCodeConnexion(apresDesactivation.challenge().identifiant());
+
+        var fauxJeton = authentification.commencerConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source, "x".repeat(43));
+        assertTrue(fauxJeton.codeRequis());
+        authentification.annulerCodeConnexion(fauxJeton.challenge().identifiant());
+
+        try (var connexion = DriverManager.getConnection(configuration.url(),
+                configuration.utilisateur(), configuration.motDePasse());
+             PreparedStatement expirer = connexion.prepareStatement("""
+                     UPDATE appareils_confiance
+                     SET expire_le = now() - INTERVAL '1 second'
+                     WHERE utilisateur_id = (
+                         SELECT id FROM utilisateurs WHERE lower(email) = lower(?))
+                     """)) {
+            expirer.setString(1, email);
+            assertTrue(expirer.executeUpdate() >= 1);
+        }
+        var apresExpiration = authentification.commencerConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source, confiance.jeton());
+        assertTrue(apresExpiration.codeRequis());
+
+        var renouvelee = authentification.confirmerCodeConnexion(
+                apresExpiration.challenge().identifiant(), apresExpiration.challenge().code(),
+                true, "PC de test");
+        assertNotNull(renouvelee.appareilConfiance());
+        authentification.deconnecter(renouvelee.jeton());
+        authentification.revoquerAppareilConfiance(renouvelee.appareilConfiance().jeton());
+        var apresRevocation = authentification.commencerConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source,
+                renouvelee.appareilConfiance().jeton());
+        assertTrue(apresRevocation.codeRequis());
+        authentification.annulerCodeConnexion(apresRevocation.challenge().identifiant());
     }
 
     @Test

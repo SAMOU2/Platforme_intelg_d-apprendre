@@ -13,8 +13,9 @@ pas une certification WCAG/RGAA ni une garantie que toute la plateforme est acce
   tentatives. Si elles ont une action, elles acceptent Entrée/Espace et l'action
   d'accessibilité FIRE. Leur action métier et les contrôles d'autorisation ne changent pas.
 - Boutons à icône de la barre de titre et déconnexion : noms explicites.
-- Formulaire de connexion : noms explicites des champs, y compris OTP, PIN, confirmation
-  et port de secours. Les états de connexion/découverte sont atteignables par Tab.
+- Formulaire de connexion : noms explicites des champs, y compris OTP, PIN, confirmation,
+  case « Faire confiance à ce poste pendant 2 jours », bouton d'oubli du poste et port de
+  secours. Les états de connexion/découverte sont atteignables par Tab.
 - Champs de réponse du test serveur : énoncé associé au champ ou au choix QCM. Aucun
   corrigé ni indice supplémentaire n'est introduit. Console, éditeurs/brouillon et
   champ de question IA nommés.
