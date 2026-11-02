@@ -61,6 +61,7 @@ public class PanneauAssistant extends VBox {
         HBox actions = new HBox(6, indice, erreur, cours);
         HBox.setHgrow(indice, Priority.ALWAYS);
 
+        champ.setAccessibleText("Question à l’assistant pédagogique");
         champ.setPromptText("Poser une question sur le cours…");
         champ.getStyleClass().add("champ");
         champ.setOnAction(e -> envoyerLibre());

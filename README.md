@@ -940,3 +940,9 @@ ne contourne pas l'isolement des Wi-Fi publics. Lire impérativement
 Salutations adaptées, suivi de trois échanges récents par panneau et explications avec
 exemples limités (2400 caractères maximum), sans lever les protections du test ni donner
 à l'IA le pouvoir de noter/valider. [Fonctionnement, confidentialité et recette](docs/assistant-conversation.md).
+
+### Accessibilité clavier et lecteur d’écran
+
+Première base : navigation latérale au clavier, noms accessibles, F1 (aide), F6/Maj+F6
+(changement de région), F8 (relecture de la dernière notification), champs de test nommés.
+La compatibilité complète n’est pas certifiée : voir la [recette NVDA et les limites](docs/accessibilite.md).

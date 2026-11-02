@@ -11,11 +11,14 @@ import javafx.util.Duration;
 /** Une notification non modale à la fois, disponible pour tous les rôles. */
 public final class Notifications {
     public enum Type { INFORMATION, SUCCES, AVERTISSEMENT, ERREUR }
+    private static final Object DERNIERE_NOTIFICATION = new Object();
     private static Popup courant;
     private static PauseTransition delai;
     private Notifications() { }
     public static void afficher(Window owner, Type type, String message) {
         if (owner == null || !owner.isShowing() || message == null || message.isBlank()) return;
+        if (owner.getScene() != null)
+            owner.getScene().getRoot().getProperties().put(DERNIERE_NOTIFICATION, type.name() + " — " + message);
         if (courant != null) courant.hide();
         if (delai != null) delai.stop();
         Label texte = new Label(type.name() + " — " + message);
@@ -42,6 +45,30 @@ public final class Notifications {
             delai.play();
         }
     }
+    /** Relecture explicite, sans voler le focus à l'arrivée d'un message asynchrone. */
+    public static void relire(Window owner) {
+        if (owner == null || owner.getScene() == null) return;
+        Object derniere = owner.getScene().getRoot().getProperties().get(DERNIERE_NOTIFICATION);
+        Alert alerte = new Alert(Alert.AlertType.INFORMATION,
+                derniere instanceof String texte ? texte : "Aucune notification à relire dans cette session.", ButtonType.CLOSE);
+        alerte.initOwner(owner);
+        alerte.setTitle("Dernière notification");
+        alerte.setHeaderText("Dernier message reçu");
+        Dialogue.appliquerTheme(alerte.getDialogPane(), owner);
+        alerte.showAndWait();
+    }
+
+    /** Ne pas exposer le message d'un compte à l'utilisateur suivant dans la même fenêtre. */
+    public static void effacer(Window owner) {
+        if (owner != null && owner.getScene() != null)
+            owner.getScene().getRoot().getProperties().remove(DERNIERE_NOTIFICATION);
+        if (courant != null && courant.getOwnerWindow() == owner) {
+            courant.hide();
+            courant = null;
+            if (delai != null) { delai.stop(); delai = null; }
+        }
+    }
+
     public static void erreurActive() {
         Window.getWindows().stream().filter(w -> w.isShowing() && w.isFocused() && !(w instanceof Popup))
                 .findFirst().ifPresent(w -> afficher(w, Type.ERREUR,

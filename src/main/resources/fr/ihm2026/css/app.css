@@ -989,3 +989,21 @@
 .notification-erreur { -fx-border-color: -color-danger; }
 
 .feux .feu { -fx-background-radius: 11; -fx-border-radius: 11; }
+
+/* Repère clavier indépendant de la couleur de statut, commun aux thèmes. */
+.ligne-laterale.button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 2;
+    -fx-border-color: transparent;
+    -fx-border-radius: 6;
+}
+.ligne-laterale.button:focused, .card-niveau:focused {
+    -fx-border-color: -color-texte;
+    -fx-border-width: 2;
+    -fx-border-style: segments(4, 3);
+}
+
+.ligne-laterale.button:hover { -fx-background-color: -color-survol-lateral; }
+.ligne-laterale.button.active { -fx-background-color: -color-accent; }
+.ligne-laterale.button.active:focused { -fx-border-color: white; }

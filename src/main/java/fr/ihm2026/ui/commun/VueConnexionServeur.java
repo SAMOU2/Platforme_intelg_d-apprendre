@@ -93,6 +93,8 @@ public class VueConnexionServeur extends StackPane {
         javafx.scene.control.ComboBox<fr.ihm2026.reseau.DecouverteServeurs.Serveur> serveurs =
                 new javafx.scene.control.ComboBox<>();
         serveurs.setId("serveurs-locaux");
+        serveurs.setAccessibleText("Plateforme du réseau à rejoindre");
+        portHttpsManuel.setAccessibleText("Port HTTPS, connexion manuelle de secours");
         serveurs.setPromptText("Plusieurs plateformes : choisissez celle de votre établissement…");
         serveurs.setMaxWidth(Double.MAX_VALUE);
         serveurs.setVisible(false);
@@ -200,6 +202,15 @@ public class VueConnexionServeur extends StackPane {
         nom.setMaxWidth(Double.MAX_VALUE);
         etiquetteNom.getStyleClass().add("role-nom");
 
+        email.setAccessibleText("Adresse e-mail du compte");
+        nom.setAccessibleText("Nom et prénom");
+        motDePasse.setAccessibleText("Mot de passe du compte");
+        confirmationMotDePasse.setAccessibleText("Confirmation du mot de passe");
+        codeInvitation.setAccessibleText("PIN d’activation, reçu après acceptation du compte");
+        codeConnexion.setAccessibleText("Code de connexion reçu par e-mail, six chiffres");
+        etat.setFocusTraversable(true);
+        etat.setAccessibleHelp("État de la connexion ou erreur. Utilisez les commandes de lecture du lecteur d’écran.");
+        etatDecouverte.setFocusTraversable(true);
         etiquetteEmail.setLabelFor(email);
         etiquetteMotDePasse.setLabelFor(motDePasse);
         etiquetteNom.setLabelFor(nom);

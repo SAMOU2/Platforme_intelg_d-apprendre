@@ -50,6 +50,7 @@ public class ExerciceView extends BorderPane {
         enonce.getStyleClass().add("enonce");
 
         editeur.getStyleClass().addAll("editor", "code-" + Session.langage().code());
+        editeur.setAccessibleText("Éditeur de code de l’entraînement en " + Session.langage().label());
         editeur.setPrefRowCount(16);
 
         Button executer = new Button("Exécuter");
