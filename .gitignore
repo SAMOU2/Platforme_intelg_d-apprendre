@@ -48,3 +48,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+
+# Registre et verrou locaux du service HTTPS (aucun secret).
+/.ihm-runtime/

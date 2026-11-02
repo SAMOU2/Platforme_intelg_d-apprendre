@@ -9,7 +9,8 @@ import java.util.*;
 public final class DecouverteServeurs {
     private DecouverteServeurs() { }
 
-    public record Serveur(String nom, String hote) {
+    public record Serveur(String nom, String hote, int portHttps) {
+        public Serveur(String nom,String hote){this(nom,hote,8443);}
         @Override public String toString() { return nom; }
     }
 
@@ -37,7 +38,11 @@ public final class DecouverteServeurs {
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setBroadcast(true);
             for (InetAddress destination : destinations) {
-                try { socket.send(new DatagramPacket(demande, demande.length, destination, port)); }
+                try {
+                    byte[] moderne="IHM2026:DISCOVER:3".getBytes(StandardCharsets.UTF_8);
+                    socket.send(new DatagramPacket(moderne, moderne.length, destination, port));
+                    socket.send(new DatagramPacket(demande, demande.length, destination, port));
+                }
                 catch (IOException ignore) { /* Une interface inaccessible n'empêche pas les autres. */ }
             }
             long fin = System.nanoTime() + 2_000_000_000L;
@@ -52,7 +57,8 @@ public final class DecouverteServeurs {
                 if (serveur != null) {
                     boolean local = paquet.getAddress().isLoopbackAddress()
                             || NetworkInterface.getByInetAddress(paquet.getAddress()) != null;
-                    trouves.putIfAbsent(local ? "ce-pc" : serveur.hote(), serveur);
+                    String cle=local ? "ce-pc" : serveur.hote();
+                    if(texte.startsWith("IHM2026:SERVER:3:") || !trouves.containsKey(cle))trouves.put(cle,serveur);
                 }
             }
         }
@@ -60,11 +66,19 @@ public final class DecouverteServeurs {
     }
 
     static Serveur lireAnnonce(String texte, String hote) {
+        int portHttps=8443;
+        if(texte.startsWith("IHM2026:SERVER:3:")) {
+            String[] champs=texte.substring("IHM2026:SERVER:3:".length()).split(":",2);
+            if(champs.length!=2)return null;
+            try {portHttps=Integer.parseInt(champs[0]);}catch(NumberFormatException ex){return null;}
+            if(portHttps<1 || portHttps>65535)return null;
+            texte="IHM2026:SERVER:2:"+champs[1];
+        }
         String prefixe = "IHM2026:SERVER:2:";
         if (!texte.startsWith(prefixe)) return null;
         String nom = texte.substring(prefixe.length()).strip();
         if (nom.isEmpty() || nom.length() > 80 || nom.chars().anyMatch(Character::isISOControl)) return null;
         // L'adresse provient du paquet, jamais du texte fourni par un serveur inconnu.
-        return new Serveur(nom, hote);
+        return new Serveur(nom, hote, portHttps);
     }
 }

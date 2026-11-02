@@ -918,3 +918,10 @@ apprenants affectés. Plus de passage obligé par l'administrateur pour créer l
 **Migration 12 requise**, après 10 et 11. Les nouveaux parcours sont isolés par enseignant
 et langage ; les anciennes copies ne sont pas supprimées ni converties en nouvelles validations.
 [Procédure, bascule des anciens parcours et recette](docs/niveaux-enseignant.md).
+
+### Port HTTPS automatique sur PC1
+
+Le service HTTPS utilise désormais un port libre attribué par le système (0 par défaut),
+annoncé aux clients par découverte réseau v3. Un deuxième lancement dans le même dossier
+ne démarre pas un serveur concurrent. Les ports salle/découverte et PostgreSQL restent
+configurés : [déploiement, pare-feu et limites](docs/ports-automatiques.md).

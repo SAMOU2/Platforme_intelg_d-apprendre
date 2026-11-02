@@ -55,11 +55,21 @@ public class VueConnexionServeur extends StackPane {
     private String identifiantChallenge;
     private String hoteServeur;
     private long generationDecouverte;
+    private final TextField portHttpsManuel = new TextField(Integer.toString(ClientAuthentificationHttps.portConfigure()));
+    private int portChoisi = ClientAuthentificationHttps.portConfigure();
+    private int portChallenge;
+    private int portHttpsPour(String hote) {
+        if(portChoisi<1 || portChoisi>65535)throw new IllegalArgumentException("Le port HTTPS doit être compris entre 1 et 65535.");
+        return portChoisi;
+    }
 
     public VueConnexionServeur(Router router, Session.Role role) {
         this.router = router;
         this.role = java.util.Objects.requireNonNull(role,
                 "Un rôle de poste doit être configuré avant la connexion.");
+        portHttpsManuel.textProperty().addListener((o,a,b) -> {
+            try { portChoisi=Integer.parseInt(b.strip()); } catch(NumberFormatException ex){portChoisi=-1;}
+        });
         getStyleClass().add("login-view");
         etat.textProperty().addListener((o, ancien, message) -> {
             if (getScene() == null || message == null) return;
@@ -94,7 +104,8 @@ public class VueConnexionServeur extends StackPane {
         Label etatDecouverte = new Label();
         etatDecouverte.setWrapText(true);
         javafx.scene.control.TitledPane avance = new javafx.scene.control.TitledPane(
-                "Options avancées — adresse manuelle", adresseServeur);
+                "Options avancées — adresse manuelle", new VBox(8,new Label("Adresse du serveur"),adresseServeur,
+                        new Label("Port HTTPS (annoncé automatiquement, saisie manuelle en secours)"),portHttpsManuel));
         avance.setExpanded(false);
         serveurs.disableProperty().bind(adresseServeur.disableProperty());
         avance.disableProperty().bind(adresseServeur.disableProperty());
@@ -105,6 +116,7 @@ public class VueConnexionServeur extends StackPane {
         serveurs.setOnAction(e -> {
             var choix = serveurs.getValue();
             if (choix != null && !adresseServeur.isDisabled()) {
+                portHttpsManuel.setText(Integer.toString(choix.portHttps()));
                 adresseServeur.setText(choix.hote());
                 etatDecouverte.setText("Plateforme sélectionnée : " + choix.nom()
                         + ". Connectez-vous à votre compte. L'identité sera vérifiée par HTTPS.");
@@ -385,13 +397,14 @@ public class VueConnexionServeur extends StackPane {
             try {
                 String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
                 var challenge = ClientAuthentificationHttps.demanderCodeConnexion(
-                        hote, ClientAuthentificationHttps.portConfigure(), identifiant, secret);
-                return new DemandeCode(hote, challenge);
+                        hote, portHttpsPour(hote), identifiant, secret);
+                return new DemandeCode(hote, portHttpsPour(hote), challenge);
             } finally {
                 java.util.Arrays.fill(secret, '\0');
             }
         }, demande -> {
             hoteServeur = demande.hote();
+            portChallenge = demande.port();
             identifiantChallenge = demande.challenge().identifiant();
             attenteCodeConnexion = true;
             codeConnexion.setVisible(true);
@@ -432,7 +445,7 @@ public class VueConnexionServeur extends StackPane {
         etat.setText("Vérification du code de sécurité…");
         TaskRunner.run(() -> {
             ClientAuthentificationHttps session = ClientAuthentificationHttps.confirmerCodeConnexion(
-                    hoteServeur, ClientAuthentificationHttps.portConfigure(),
+                    hoteServeur, portChallenge,
                     identifiantChallenge, code.strip());
             if (session.compte().role() != role) {
                 session.close();
@@ -498,7 +511,7 @@ public class VueConnexionServeur extends StackPane {
         definirChampsActifs(false);
         TaskRunner.run(() -> {
             String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
-            ClientAuthentificationHttps.activerCompte(hote, ClientAuthentificationHttps.portConfigure(),
+            ClientAuthentificationHttps.activerCompte(hote, portHttpsPour(hote),
                     emailSaisi, pin, role);
             return true;
         }, resultat -> {
@@ -561,7 +574,7 @@ public class VueConnexionServeur extends StackPane {
             try {
                 String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
                 return ClientAuthentificationHttps.inscrireCompte(
-                        hote, ClientAuthentificationHttps.portConfigure(),
+                        hote, portHttpsPour(hote),
                         nomSaisi, emailSaisi, secret, role);
             } finally {
                 java.util.Arrays.fill(secret, '\0');
@@ -634,7 +647,7 @@ public class VueConnexionServeur extends StackPane {
         inscription.setDisable(!actifs);
     }
 
-    private record DemandeCode(String hote,
+    private record DemandeCode(String hote, int port,
             ClientAuthentificationHttps.ChallengeConnexion challenge) {
     }
 

@@ -11,6 +11,19 @@ import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
 
 class ServeurAuthentificationHttpsTest {
+    @Test void portLibreAttribueParLeSystemeEtRepliSiOccupe() throws Exception {
+        try(var occupe=new java.net.ServerSocket(0)) {
+            var serveur=ServeurAuthentificationHttps.ouvrirPort(occupe.getLocalPort());
+            try {
+                assertTrue(serveur.getAddress().getPort()>0);
+                assertTrue(serveur.getAddress().getPort()!=occupe.getLocalPort());
+            } finally {serveur.start();serveur.stop(0);}
+        }
+        var automatique=ServeurAuthentificationHttps.ouvrirPort(0);
+        try {assertTrue(automatique.getAddress().getPort()>0);}
+        finally {automatique.start();automatique.stop(0);}
+    }
+
     @Test
     void expliqueLesErreursPostgresSansExposerLeSecret() {
         String message = ServeurAuthentificationHttps.diagnosticDemarrage(
