@@ -35,3 +35,7 @@ REM IA NVIDIA : uniquement dans configuration-PC1.local.cmd sur PC1.
 REM Ne jamais envoyer cette cle aux postes clients ni la publier dans Git.
 REM set "NVIDIA_API_KEY=REMPLACER_PAR_VOTRE_CLE_PRIVEE"
 exit /b 0
+
+REM Base locale : demarrage automatique Docker/PostgreSQL avant HTTPS.
+REM Pour gerer Docker vous-meme, ajouter dans configuration-PC1.local.cmd :
+REM set "IHM_DB_DEMARRAGE_AUTO=0"

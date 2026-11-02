@@ -200,3 +200,39 @@ Voir [les étapes par niveau](../docs/parcours-par-niveau.md).
 aucun niveau existant et ne modifie aucune copie. Appliquer après 11 sur base sauvegardée.
 La première publication d'un niveau du nouvel enseignant active ce parcours pour ses
 apprenants affectés dans ce langage. Lire [la procédure de bascule](../docs/niveaux-enseignant.md).
+
+## Lanceur automatique Docker / PostgreSQL sous Windows (PC1)
+
+Double-cliquer `postes\demarrer-docker-PC1.bat` ou lancer depuis PowerShell :
+
+```powershell
+.\postes\demarrer-docker-PC1.bat
+```
+
+Le lanceur charge la configuration locale sans afficher ses secrets, démarre Docker Desktop
+si nécessaire (installation initiale requise), attend le moteur jusqu'à 120 secondes, puis
+exécute `docker compose -f db/docker-compose.yml up -d --wait --wait-timeout 120 postgres`.
+Compose v2 avec support `--wait` est requis. Le délai d'attente Docker ne borne pas le temps
+d'un téléchargement initial d'image ni tous les blocages possibles du CLI Docker.
+
+`postes\authentification-PC1.bat` appelle automatiquement ce lanceur avant compilation/HTTPS
+pour une URL JDBC locale explicite (`localhost`, `127.0.0.1` ou `[::1]`) dont le port correspond
+à `IHM_DB_PORT` (5433 par défaut). Les URL externes ou ports différents sont laissés intacts.
+Pour une configuration personnalisée, démarrer votre base vous-même ou régler explicitement
+le port Compose ; ne pas supposer que ce lanceur gère une autre instance PostgreSQL.
+Pour désactiver cet appel automatique, ajouter dans `configuration-PC1.local.cmd` :
+
+```bat
+set "IHM_DB_DEMARRAGE_AUTO=0"
+```
+
+Aucune suppression de volume ni réexécution automatique des migrations sur une base existante.
+Le statut healthy vérifie que PostgreSQL accepte des connexions : il ne valide pas les mots de
+passe JDBC, le schéma ni les migrations. Si HTTPS refuse encore la base après ce démarrage,
+vérifier ces paramètres. Le lanceur ne démarre pas une seconde instance HTTPS et n'installe
+pas de démarrage à l'ouverture de session Windows. Les clients PC2/PC3/PC4 n'utilisent pas Docker.
+
+Vérifications Windows à faire : Docker ouvert/fermé, second lancement avec PostgreSQL déjà
+prêt, Docker absent ou WSL indisponible, échec Compose, URL externe, désactivation automatique.
+Les contrôles Python du dépôt sont structurels ; Windows/Docker Desktop non exécutés dans
+le sandbox. Ne jamais supprimer les volumes pour corriger une erreur de démarrage.

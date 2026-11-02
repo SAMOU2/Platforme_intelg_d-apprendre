@@ -32,6 +32,23 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('Session.setNiveauServeurId(0)', contenu)
         self.assertIn('setDisable(true)', contenu)
 
+    def test_demarrage_docker_pc1_avant_https(self):
+        bat = (ROOT / 'postes/demarrer-docker-PC1.bat').read_text()
+        ps = (ROOT / 'postes/demarrer-docker-PC1.ps1').read_text()
+        auth = (ROOT / 'postes/authentification-PC1.bat').read_text()
+        self.assertIn('configuration-PC1.local.cmd', bat)
+        self.assertIn('-PourAuthentification', bat)
+        self.assertIn('exit /b %RESULTAT%', bat)
+        for garde in ['Test-MoteurDocker', 'Docker Desktop.exe', 'Elapsed.TotalSeconds -ge 120',
+                      '--wait --wait-timeout 120 postgres', '$LASTEXITCODE -ne 0',
+                      'IHM_DB_DEMARRAGE_AUTO', '$Matches[1] -ne $portLocal']:
+            self.assertIn(garde, ps)
+        self.assertNotIn('down -v', ps)
+        self.assertNotIn('volume rm', ps)
+        self.assertLess(auth.index('demarrer-docker-PC1.bat'), auth.index('"%MVN%"'))
+        for client in ['2-administrateur-PC2', '3-enseignant-PC3', '4-apprenant-PC4']:
+            self.assertNotIn('demarrer-docker', (ROOT / f'postes/{client}.bat').read_text())
+
     def test_connexion_automatique_sans_scan_wifi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
         self.assertNotIn('ChoixWifi', texte)
