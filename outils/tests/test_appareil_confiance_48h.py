@@ -65,6 +65,12 @@ class AppareilConfiance48hTest(unittest.TestCase):
         lecture = lecture.split('public static synchronized void ecrire', 1)[0]
         for interdit in ['Files.notExists', 'Files.isDirectory', 'deleteIfExists']:
             self.assertNotIn(interdit, lecture)
+        test_java = (ROOT / 'src/test/java/fr/ihm2026/reseau/'
+                     'MemoireAppareilConfianceTest.java').read_text()
+        self.assertIn('String emailCompte = "Samou@Example.org";', test_java)
+        self.assertIn('emailCompte.toLowerCase(Locale.ROOT)', test_java)
+        self.assertEqual(1, test_java.count('"Samou@Example.org"'))
+        self.assertNotIn('samoumegharba210@gmail.com', test_java)
         deux_barres = chr(92) * 2
         service = (JAVA / 'api/persistence/PostgresAuthentificationService.java').read_text()
         self.assertIn('replaceAll("[' + deux_barres + 'p{Cntrl}]"', service)
