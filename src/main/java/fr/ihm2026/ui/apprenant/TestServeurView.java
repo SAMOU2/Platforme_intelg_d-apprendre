@@ -23,6 +23,8 @@ final class TestServeurView extends BorderPane {
     TestServeurView(Router router) {
         setTop(new EnteteVue("Test — niveau "+Session.rangNiveauCourant(),
                 "Votre travail sera corrigé par votre enseignant. L'IA est bloquée pendant cette tentative."));
+        etat.setFocusTraversable(true);
+        code.setAccessibleText("Code complémentaire du test, facultatif et non exécuté");
         etat.setWrapText(true);liste.getChildren().add(etat);
         ScrollPane scroll=new ScrollPane(liste);scroll.setFitToWidth(true);setCenter(scroll);
         Button retour=new Button("Mes copies");retour.setOnAction(e -> router.go(Router.RESULTAT));
@@ -38,11 +40,15 @@ final class TestServeurView extends BorderPane {
                     ToggleGroup groupe=new ToggleGroup();
                     q.path("propositions").forEach(p -> {
                         RadioButton choix=new RadioButton(p.path("texte").asText());choix.setWrapText(true);
+                        choix.setAccessibleText(enonce.getText() + " — " + p.path("texte").asText());
                         choix.setToggleGroup(groupe);choix.setUserData(p.path("id").asLong());carte.getChildren().add(choix);
                     });
                     reponses.put(q.path("id").asText(),() -> groupe.getSelectedToggle()==null?JSON.nullNode():JSON.getNodeFactory().numberNode((Long)groupe.getSelectedToggle().getUserData()));
                 } else {
-                    TextArea texte=new TextArea();texte.setPrefRowCount(4);carte.getChildren().add(texte);
+                    TextArea texte=new TextArea();
+                    texte.setAccessibleText("Votre réponse : " + enonce.getText());
+                    enonce.setLabelFor(texte);
+                    texte.setPrefRowCount(4);carte.getChildren().add(texte);
                     reponses.put(q.path("id").asText(),() -> JSON.getNodeFactory().textNode(texte.getText()));
                 }
                 liste.getChildren().add(carte);

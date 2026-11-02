@@ -9,6 +9,8 @@ public class ConsoleSortie extends TextArea {
         super();
         getStyleClass().add("console");
         setEditable(false);
+        setAccessibleText("Console : sortie du programme et erreurs d’exécution");
+        setAccessibleHelp("Zone en lecture seule. Utilisez les flèches pour lire et sélectionner le texte.");
         setWrapText(false);
         setPrefRowCount(8);
         setText("La sortie du programme s'affichera ici.\n");

@@ -50,7 +50,7 @@ public class BarreLaterale extends VBox {
 
     private final Router router;
     private final Session.Role role;
-    private final Map<String, HBox> lignes = new LinkedHashMap<>();
+    private final Map<String, Button> lignes = new LinkedHashMap<>();
     private final VBox sectionParcours = new VBox(1);
 
     public BarreLaterale(Router router) {
@@ -105,7 +105,7 @@ public class BarreLaterale extends VBox {
         return label;
     }
 
-    private HBox entree(String libelle, String route, String icone) {
+    private Button entree(String libelle, String route, String icone) {
         HBox ligne = new HBox(8);
         ligne.getStyleClass().add("ligne-laterale");
         ligne.setAlignment(Pos.CENTER_LEFT);
@@ -115,13 +115,14 @@ public class BarreLaterale extends VBox {
         Label texte = new Label(libelle);
         texte.getStyleClass().add("libelle-lateral");
         ligne.getChildren().addAll(svg, texte);
-        ligne.setOnMouseClicked(e -> router.go(route));
-        lignes.put(route, ligne);
-        return ligne;
+        Button bouton = boutonNavigation(libelle, ligne);
+        bouton.setOnAction(e -> router.go(route));
+        lignes.put(route, bouton);
+        return bouton;
     }
 
     /** Une ligne par parcours : le parcours courant porte une coche, comme un favori du Finder. */
-    private HBox ligneParcours(Session.Langage langage) {
+    private Button ligneParcours(Session.Langage langage) {
         HBox ligne = new HBox(8);
         ligne.getStyleClass().addAll("ligne-laterale", "ligne-parcours");
         ligne.setAlignment(Pos.CENTER_LEFT);
@@ -138,15 +139,28 @@ public class BarreLaterale extends VBox {
         coche.setVisible(langage == Session.langage());
 
         ligne.getChildren().addAll(pastille, texte, espace, coche);
-        ligne.setOnMouseClicked(e -> {
+        Button bouton = boutonNavigation("Parcours " + langage.label(), ligne);
+        bouton.setOnAction(e -> {
             if (Session.langage() != langage) {
                 Session.setLangage(langage);
                 String route = router.current();
                 router.go(route == null ? Router.PARCOURS : route);
             }
         });
-        lignes.put("parcours:" + langage.code(), ligne);
-        return ligne;
+        lignes.put("parcours:" + langage.code(), bouton);
+        return bouton;
+    }
+
+    /** Vrai bouton : Tab, Entrée/Espace et activation du lecteur d'écran sont natifs. */
+    private Button boutonNavigation(String nom, HBox contenu) {
+        Button bouton = new Button(nom, contenu);
+        bouton.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
+        bouton.setAccessibleText(nom);
+        bouton.setMaxWidth(Double.MAX_VALUE);
+        bouton.setAlignment(Pos.CENTER_LEFT);
+        bouton.getStyleClass().addAll(contenu.getStyleClass());
+        contenu.getStyleClass().removeAll("ligne-laterale", "ligne-parcours");
+        return bouton;
     }
 
     /** Pied de barre latérale : le compte, son rôle, et la sortie. */
@@ -168,6 +182,7 @@ public class BarreLaterale extends VBox {
 
         Button sortie = new Button("⏻");
         sortie.getStyleClass().add("bouton-quitter");
+        sortie.setAccessibleText("Se déconnecter de la plateforme");
         sortie.setTooltip(new javafx.scene.control.Tooltip("Quitter la session"));
         sortie.setOnAction(e -> {
             fr.ihm2026.reseau.Reseau.deconnecter();
@@ -205,19 +220,24 @@ public class BarreLaterale extends VBox {
 
     /** Met en évidence l'écran courant, et le parcours courant. */
     public void setActive(String route) {
-        lignes.forEach((cle, ligne) -> ligne.getStyleClass().remove("active"));
-        HBox actif = lignes.get(route);
+        lignes.forEach((cle, ligne) -> {
+            ligne.getStyleClass().remove("active");
+            ligne.setAccessibleText(ligne.getText());
+        });
+        Button actif = lignes.get(route);
         if (actif != null) {
             actif.getStyleClass().add("active");
+            actif.setAccessibleText(actif.getText() + ", écran actuel");
         }
         for (Session.Langage langage : Session.Langage.values()) {
-            HBox ligne = lignes.get("parcours:" + langage.code());
+            Button ligne = lignes.get("parcours:" + langage.code());
             if (ligne == null) {
                 continue;
             }
             boolean courant = langage == Session.langage();
-            ((Label) ligne.getChildren().get(3)).setVisible(courant);
+            ((Label) ((HBox) ligne.getGraphic()).getChildren().get(3)).setVisible(courant);
             if (courant) {
+                ligne.setAccessibleText(ligne.getText() + ", parcours sélectionné");
                 if (!ligne.getStyleClass().contains("courant")) {
                     ligne.getStyleClass().add("courant");
                 }

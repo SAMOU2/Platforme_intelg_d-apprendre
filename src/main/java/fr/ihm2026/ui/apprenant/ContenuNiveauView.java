@@ -14,7 +14,7 @@ final class ContenuNiveauView extends BorderPane {
         Button suivant=new Button(entrainement?"Passer au test final — sans IA":"Continuer vers l'entraînement avec IA");
         suivant.setDisable(true);suivant.setOnAction(e -> router.go(entrainement?Router.TEST:Router.EXERCICE));
         setBottom(new VBox(8,etat,new HBox(8,parcours,suivant)));
-        TextArea code=new TextArea();code.setPromptText("Votre brouillon d'entraînement (non sauvegardé)");code.setPrefRowCount(12);
+        TextArea code=new TextArea();code.setAccessibleText("Brouillon de code de l’entraînement, non sauvegardé");code.setPromptText("Votre brouillon d'entraînement (non sauvegardé)");code.setPrefRowCount(12);
         boolean[] modifie={false},remplissage={false};
         code.textProperty().addListener((o,a,b) -> {if(!remplissage[0])modifie[0]=true;});
         PanneauAssistant[] assistant={null};
@@ -59,7 +59,7 @@ final class ContenuNiveauView extends BorderPane {
                 if(contenu.path("blocs").isEmpty())corps.getChildren().add(new Label("Cours en préparation."));
                 contenu.path("blocs").forEach(b -> {
                     if("CODE".equals(b.path("type").asText())) {
-                        TextArea exemple=new TextArea(b.path("contenu").asText());exemple.setEditable(false);exemple.setPrefRowCount(5);corps.getChildren().add(exemple);
+                        TextArea exemple=new TextArea(b.path("contenu").asText());exemple.setAccessibleText("Exemple de code du cours, en lecture seule");exemple.setEditable(false);exemple.setPrefRowCount(5);corps.getChildren().add(exemple);
                     } else {
                         Label texte=new Label(b.path("contenu").asText());texte.setWrapText(true);corps.getChildren().add(texte);
                     }

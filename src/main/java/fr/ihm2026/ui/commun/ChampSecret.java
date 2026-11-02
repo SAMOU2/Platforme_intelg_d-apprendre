@@ -12,9 +12,12 @@ public final class ChampSecret {
         clair.promptTextProperty().bind(secret.promptTextProperty());
         clair.disableProperty().bind(secret.disableProperty());
         clair.getStyleClass().addAll(secret.getStyleClass());
-        clair.setAccessibleText("Mot de passe affiché en clair");
+        clair.accessibleTextProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
+                () -> (secret.getAccessibleText() == null ? "Mot de passe" : secret.getAccessibleText())
+                        + " — affiché en clair", secret.accessibleTextProperty()));
+        secret.setAccessibleHelp("Champ confidentiel masqué. Le bouton Afficher révèle le secret : attention aux personnes présentes.");
         ToggleButton voir = new ToggleButton("Afficher");
-        voir.setAccessibleText("Afficher le mot de passe");
+        voir.setAccessibleText("Afficher : " + nom(secret));
         voir.disableProperty().bind(secret.disableProperty());
         voir.getStyleClass().add("secret-visibilite");
         clair.visibleProperty().bind(voir.selectedProperty());
@@ -29,7 +32,7 @@ public final class ChampSecret {
         boite.managedProperty().bind(secret.managedProperty());
         voir.selectedProperty().addListener((o, ancien, affiche) -> {
             voir.setText(affiche ? "Masquer" : "Afficher");
-            voir.setAccessibleText(affiche ? "Masquer le mot de passe" : "Afficher le mot de passe");
+            voir.setAccessibleText((affiche ? "Masquer : " : "Afficher : ") + nom(secret));
             secret.setFocusTraversable(!affiche);
             if (affiche) { clair.requestFocus(); clair.positionCaret(clair.getLength()); }
             else { secret.requestFocus(); secret.positionCaret(secret.getLength()); }
@@ -39,4 +42,8 @@ public final class ChampSecret {
         boite.sceneProperty().addListener((o,a,b) -> { if (b == null) voir.setSelected(false); });
         return boite;
     }
+    private static String nom(PasswordField secret) {
+        return secret.getAccessibleText() == null ? "mot de passe" : secret.getAccessibleText();
+    }
+
 }

@@ -13,8 +13,13 @@ import javafx.scene.layout.VBox;
  * L'état est porté par une pastille colorée + un libellé + la classe CSS de l'état.
  */
 public class CarteNiveau extends VBox {
+    private final Runnable action;
 
     public CarteNiveau(NiveauVM niveau, Runnable action) {
+        this.action = action;
+        setAccessibleText("Niveau " + niveau.getRang() + ", " + niveau.getTitre() + ", "
+                + niveau.getEtat().label() + ". " + niveau.getExplication() + ". Seuil : "
+                + niveau.getSeuil() + " sur 20. " + niveau.getTentativesRestantes() + " tentative(s) restante(s).");
         getStyleClass().addAll("card", "card-niveau", niveau.getEtat().styleClass());
 
         Label rang = new Label(String.valueOf(niveau.getRang()));
@@ -43,7 +48,26 @@ public class CarteNiveau extends VBox {
                 + niveau.getTentativesRestantes() + " tentative(s) restante(s)"));
 
         if (action != null) {
-            setOnMouseClicked(e -> action.run());
+            setAccessibleRole(javafx.scene.AccessibleRole.BUTTON);
+            setFocusTraversable(true);
+            setOnMouseClicked(e -> activer());
+            setOnKeyPressed(e -> {
+                if (!e.isAltDown() && !e.isControlDown() && !e.isMetaDown()
+                        && (e.getCode() == javafx.scene.input.KeyCode.ENTER
+                        || e.getCode() == javafx.scene.input.KeyCode.SPACE)) {
+                    activer();
+                    e.consume();
+                }
+            });
         }
     }
+    private void activer() {
+        if (action != null && !isDisabled() && isVisible()) action.run();
+    }
+
+    @Override public void executeAccessibleAction(javafx.scene.AccessibleAction action, Object... parametres) {
+        if (action == javafx.scene.AccessibleAction.FIRE) activer();
+        else super.executeAccessibleAction(action, parametres);
+    }
+
 }

@@ -75,6 +75,16 @@ public final class Router {
         this.contenu = new StackPane();
         this.contenu.getStyleClass().add("contenu-fenetre");
         this.barreTitre = new BarreTitre(this, stage);
+        fr.ihm2026.ui.commun.Accessibilite.region(barreTitre, "Commandes de la fenêtre");
+        fr.ihm2026.ui.commun.Accessibilite.installer(scene, () -> {
+            java.util.List<javafx.scene.Node> regions = new java.util.ArrayList<>();
+            regions.add(barreTitre);
+            if (barreLaterale != null && root.getLeft() == barreLaterale && lateraleVisible)
+                regions.add(barreLaterale);
+            if (!contenu.getChildren().isEmpty())
+                regions.add(contenu.getChildren().get(contenu.getChildren().size() - 1));
+            return regions;
+        });
     }
 
     public void register(String route, Supplier<Parent> view) {
@@ -177,6 +187,7 @@ public final class Router {
         boolean public_ = LOGIN.equals(route) || RESEAU.equals(route);
         root.getStyleClass().remove("racine--login");
         if (public_) {
+            fr.ihm2026.ui.commun.Notifications.effacer(stage);
             // Écran public : pas de barre latérale, la fenêtre est peinte par le dégradé.
             root.getStyleClass().add("racine--login");
             root.setLeft(null);
@@ -184,6 +195,7 @@ public final class Router {
             boolean nouvelle = barreLaterale == null || barreLaterale.role() != Session.role();
             if (nouvelle) {
                 barreLaterale = new BarreLaterale(this);
+                fr.ihm2026.ui.commun.Accessibilite.region(barreLaterale, "Navigation du rôle " + Session.role().label());
                 barreLaterale.prefWidthProperty().set(lateraleVisible ? Animations.LATERALE_LARGEUR : 0);
                 barreLaterale.setVisible(true);
                 barreLaterale.setManaged(true);
@@ -197,6 +209,7 @@ public final class Router {
         javafx.scene.Node ancien = contenu.getChildren().isEmpty() ? null
                 : contenu.getChildren().get(contenu.getChildren().size() - 1);
         javafx.scene.Parent vue = fabrique.get();
+        fr.ihm2026.ui.commun.Accessibilite.region(vue, "Écran : " + TITRES.getOrDefault(route, Config.APP_NAME));
         contenu.getChildren().add(vue);
         if (StyleVisuel.estRetro()) {
             // Rétro : changement de chaîne (secousse + scintillements), pas de fondu.
@@ -209,6 +222,9 @@ public final class Router {
         }
         retour = false;
         root.setCenter(contenu);
+        javafx.application.Platform.runLater(() -> {
+            if (vue.getScene() == scene && contenu.getChildren().contains(vue)) vue.requestFocus();
+        });
 
         barreTitre.rafraichir(TITRES.getOrDefault(route, ""), peutReculer(), peutAvancer());
         if (stage != null) {

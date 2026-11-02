@@ -58,6 +58,7 @@ public class BarreTitre extends HBox {
 
         Button laterale = new Button("▤");
         laterale.getStyleClass().addAll("bouton-apparence", "bouton-laterale");
+        laterale.setAccessibleText("Afficher ou masquer la navigation latérale");
         laterale.setTooltip(new Tooltip("Afficher ou masquer la barre latérale"));
         laterale.setOnAction(e -> router.basculerLaterale());
 
@@ -66,6 +67,7 @@ public class BarreTitre extends HBox {
         style.setTooltip(new Tooltip(StyleVisuel.estRetro()
                 ? "Style rétro actif — revenir au style macOS"
                 : "Passer au style rétro (old school)"));
+        style.setAccessibleText("Changer le style visuel : rétro ou moderne");
         style.setOnAction(e -> {
             StyleVisuel.setRetro(!StyleVisuel.estRetro());
             ThemeManager.appliquerStyle(router.scene().getRoot());
@@ -78,6 +80,7 @@ public class BarreTitre extends HBox {
 
         Button theme = new Button(ThemeManager.isDark() ? "☾" : "☀");
         theme.getStyleClass().add("bouton-apparence");
+        theme.setAccessibleText("Changer l’apparence claire ou sombre");
         theme.setTooltip(new Tooltip("Apparence : clair / sombre"));
         theme.setOnAction(e -> {
             boolean sombre = !ThemeManager.isDark();
@@ -88,12 +91,16 @@ public class BarreTitre extends HBox {
         Region espace = new Region();
         HBox.setHgrow(espace, Priority.ALWAYS);
 
-        getChildren().addAll(feux, retourButton(), avanceButton(), titre, espace, laterale, style, theme);
+        Button aide = new Button("Aide clavier");
+        aide.setAccessibleText("Aide accessibilité et raccourcis clavier, F1");
+        aide.setOnAction(e -> Accessibilite.aide(stage));
+        getChildren().addAll(feux, retourButton(), avanceButton(), titre, espace, laterale, style, theme, aide);
     }
 
     private Button retourButton() {
         retour.getStyleClass().add("bouton-nav");
         retour.setGraphic(chevron(CHEVRON_GAUCHE, "bouton-nav-icone"));
+        retour.setAccessibleText("Revenir à l’écran précédent");
         retour.setTooltip(new Tooltip("Revenir à l'écran précédent"));
         retour.setOnAction(e -> {
             fr.ihm2026.core.Animations.presserChevron(retour, true);
@@ -106,6 +113,7 @@ public class BarreTitre extends HBox {
     private Button avanceButton() {
         avance.getStyleClass().add("bouton-nav");
         avance.setGraphic(chevron(CHEVRON_DROIT, "bouton-nav-icone"));
+        avance.setAccessibleText("Avancer à l’écran suivant");
         avance.setTooltip(new Tooltip("Avancer (écran quitté par « retour »)"));
         avance.setOnAction(e -> {
             fr.ihm2026.core.Animations.presserChevron(avance, false);
