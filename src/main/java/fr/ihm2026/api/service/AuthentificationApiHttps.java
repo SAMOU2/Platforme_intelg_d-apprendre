@@ -127,9 +127,23 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 || corps.path("code").asText("").length() > 8000) {
             envoyerJson(exchange, 400, erreur("Contexte IA invalide.")); return;
         }
+        java.util.List<fr.ihm2026.api.ia.ContexteIa.Tour> historique=new java.util.ArrayList<>();
+        if(corps.has("historique")) {
+            var tours=corps.path("historique");
+            if(!tours.isArray() || tours.size()>fr.ihm2026.api.ia.ContexteIa.TOURS_MAX) {
+                envoyerJson(exchange,400,erreur("Historique IA invalide."));return;
+            }
+            for(var tour:tours) {
+                if(!tour.path("question").isTextual() || !tour.path("reponse").isTextual()
+                        || tour.path("question").asText().length()>2000 || tour.path("reponse").asText().length()>2400) {
+                    envoyerJson(exchange,400,erreur("Échange IA invalide."));return;
+                }
+                historique.add(new fr.ihm2026.api.ia.ContexteIa.Tour(tour.path("question").asText(),tour.path("reponse").asText()));
+            }
+        }
         var contexte = new fr.ihm2026.api.ia.ContexteIa(corps.path("rangNiveau").asInt(),
                 Session.Langage.valueOf(corps.path("langage").asText()),
-                corps.path("question").asText(), corps.path("code").asText(""));
+                corps.path("question").asText(), corps.path("code").asText(""),historique);
         if (acteur.get().role() == Session.Role.APPRENANT
                 && pedagogieRepository().evaluationEnCours(acteur.get().utilisateurId())) {
             envoyerJson(exchange, 200, MAPPER.readTree(fr.ihm2026.api.ia.SortieIa.enJson(
@@ -491,7 +505,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
 
     private static JsonNode lireCorps(HttpExchange exchange) throws IOException {
         try (InputStream corps = exchange.getRequestBody()) {
-            int limite = "/api/pedagogie".equals(exchange.getRequestURI().getPath()) ? 64 * 1024 : TAILLE_MAX_CORPS;
+            int limite = ("/api/pedagogie".equals(exchange.getRequestURI().getPath()) || "/api/ia/aide".equals(exchange.getRequestURI().getPath())) ? 64 * 1024 : TAILLE_MAX_CORPS;
             byte[] donnees = corps.readNBytes(limite + 1);
             if (donnees.length > limite) {
                 throw new IllegalArgumentException("La requête est trop volumineuse.");

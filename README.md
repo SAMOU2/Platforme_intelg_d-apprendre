@@ -934,3 +934,9 @@ adresses IPv4 physiques actives sans imposer 127.0.0.1. L'écran de connexion re
 serveurs en fond. Ce n'est pas une migration transparente des sessions existantes et cela
 ne contourne pas l'isolement des Wi-Fi publics. Lire impérativement
 [la préparation, la sécurité et les limites](docs/wifi-identite-https.md) avant activation.
+
+### Assistant pédagogique conversationnel
+
+Salutations adaptées, suivi de trois échanges récents par panneau et explications avec
+exemples limités (2400 caractères maximum), sans lever les protections du test ni donner
+à l'IA le pouvoir de noter/valider. [Fonctionnement, confidentialité et recette](docs/assistant-conversation.md).

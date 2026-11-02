@@ -125,8 +125,8 @@ SCHEMA_JSON = {
     "properties": {
         "version": {"type": "string", "const": VERSION,
                     "description": "Version du prompt, journalisée à chaque appel."},
-        "reponse": {"type": "string", "minLength": 1, "maxLength": 600,
-                    "description": "Texte affiché à l'apprenant, en français, trois phrases maximum."},
+        "reponse": {"type": "string", "minLength": 1, "maxLength": 2400,
+                    "description": "Texte affiché à l'apprenant, en français, étapes et exemple limité si utile, 2400 caractères maximum."},
         "citations": {
             "type": "array", "maxItems": 3,
             "description": "Sections du cours réellement retrouvées. Vide si et seulement si "
