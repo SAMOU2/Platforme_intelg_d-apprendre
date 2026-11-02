@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -22,44 +23,50 @@ class MemoireAppareilConfianceTest {
         String ancienProfil = System.getProperty("user.home");
         System.setProperty("user.home", profil.toString());
         try {
+            // Une seule source pour l'adresse du compte : la forme relue est dérivée de la forme
+            // écrite. Cela teste la normalisation en minuscules sans risquer deux adresses
+            // presque identiques qui produiraient deux fichiers hachés différents.
+            String emailCompte = "Samou@Example.org";
+            String emailMinuscules = emailCompte.toLowerCase(Locale.ROOT);
+            String partieLocale = emailCompte.substring(0, emailCompte.indexOf('@'));
             String jeton = "a".repeat(43);
             Instant expiration = Instant.now().plus(2, ChronoUnit.DAYS);
 
-            MemoireAppareilConfiance.ecrire("Samou@Example.org", Session.Role.ADMINISTRATEUR,
+            MemoireAppareilConfiance.ecrire(emailCompte, Session.Role.ADMINISTRATEUR,
                     jeton, expiration);
 
             var lu = MemoireAppareilConfiance.lire(
-                    "samoumegharba210@gmail.com", Session.Role.ADMINISTRATEUR);
+                    emailMinuscules, Session.Role.ADMINISTRATEUR);
             assertTrue(lu.isPresent(), () -> "Le jeton écrit dans "
                     + MemoireAppareilConfiance.dossier() + " doit pouvoir être relu. "
                     + "Diagnostic production : " + MemoireAppareilConfiance.lireAvecDiagnostic(
-                            "samoumegharba210@gmail.com", Session.Role.ADMINISTRATEUR).diagnostic()
+                            emailMinuscules, Session.Role.ADMINISTRATEUR).diagnostic()
                     + ". Fichiers présents : " + fichiersPresents());
             assertEquals(jeton, lu.get().jeton());
             assertEquals(expiration.toEpochMilli(), lu.get().expireLe().toEpochMilli());
             assertTrue(MemoireAppareilConfiance.lire(
-                    "samoumegharba210@gmail.com", Session.Role.ENSEIGNANT).isEmpty(),
+                    emailMinuscules, Session.Role.ENSEIGNANT).isEmpty(),
                     "Un autre rôle de poste ne doit pas réutiliser ce jeton.");
 
             try (var fichiers = Files.walk(MemoireAppareilConfiance.dossier())) {
                 for (Path fichier : fichiers.filter(Files::isRegularFile).toList()) {
-                    assertFalse(fichier.getFileName().toString().contains("Samou"));
+                    assertFalse(fichier.getFileName().toString().contains(partieLocale));
                     String contenu = Files.readString(fichier);
-                    assertFalse(contenu.contains("Samou@Example.org"));
+                    assertFalse(contenu.contains(emailCompte));
                     assertFalse(contenu.contains("mot-de-passe"));
                 }
             }
 
-            MemoireAppareilConfiance.ecrire("Samou@Example.org", Session.Role.ADMINISTRATEUR,
+            MemoireAppareilConfiance.ecrire(emailCompte, Session.Role.ADMINISTRATEUR,
                     "b".repeat(43), Instant.now().minus(1, ChronoUnit.SECONDS));
             assertEquals(jeton, MemoireAppareilConfiance.lire(
-                    "Samou@Example.org", Session.Role.ADMINISTRATEUR).orElseThrow().jeton(),
+                    emailCompte, Session.Role.ADMINISTRATEUR).orElseThrow().jeton(),
                     "Un jeton déjà expiré ne doit pas remplacer l'entrée valide.");
 
             MemoireAppareilConfiance.oublier(
-                    "Samou@Example.org", Session.Role.ADMINISTRATEUR);
+                    emailCompte, Session.Role.ADMINISTRATEUR);
             assertTrue(MemoireAppareilConfiance.lire(
-                    "Samou@Example.org", Session.Role.ADMINISTRATEUR).isEmpty());
+                    emailMinuscules, Session.Role.ADMINISTRATEUR).isEmpty());
         } finally {
             if (ancienProfil == null) {
                 System.clearProperty("user.home");
