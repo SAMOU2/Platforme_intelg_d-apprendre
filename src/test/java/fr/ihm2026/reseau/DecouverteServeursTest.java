@@ -6,6 +6,25 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 class DecouverteServeursTest {
+    @Test void annoncesAvecPortHttpsDynamique() {
+        var serveur=DecouverteServeurs.lireAnnonce("IHM2026:SERVER:3:49152:Salle:Python","192.168.1.20");
+        assertNotNull(serveur);assertEquals(49152,serveur.portHttps());assertEquals("Salle:Python",serveur.nom());
+        for(String port:new String[]{"0","-1","65536","abc"})
+            assertNull(DecouverteServeurs.lireAnnonce("IHM2026:SERVER:3:"+port+":Salle","192.168.1.20"));
+        assertEquals(8443,DecouverteServeurs.lireAnnonce("IHM2026:SERVER:2:Ancien","192.168.1.20").portHttps());
+    }
+    @Test void instanceUniqueEtAnnonceDuPort(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dossier) throws Exception {
+        try(var premiere=new InstanceHttpsLocale(dossier)) {
+            assertTrue(premiere.acquise());premiere.publier(49152);
+            try(var seconde=new InstanceHttpsLocale(dossier)) {assertFalse(seconde.acquise());}
+            assertEquals(49152,InstanceHttpsLocale.portActif(dossier));
+
+        }
+        assertEquals(0,InstanceHttpsLocale.portActif(dossier));
+        java.nio.file.Files.writeString(dossier.resolve("https.port"),"49152 "+ProcessHandle.current().pid()+" 0");
+        assertEquals(0,InstanceHttpsLocale.portActif(dossier));
+    }
+
     @Test void annoncesValidees() {
         var serveur = DecouverteServeurs.lireAnnonce("IHM2026:SERVER:2:Salle principale", "192.168.1.20");
         assertNotNull(serveur);

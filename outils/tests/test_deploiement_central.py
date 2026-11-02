@@ -49,6 +49,26 @@ class DeploiementCentralTest(unittest.TestCase):
         for client in ['2-administrateur-PC2', '3-enseignant-PC3', '4-apprenant-PC4']:
             self.assertNotIn('demarrer-docker', (ROOT / f'postes/{client}.bat').read_text())
 
+    def test_port_https_auto_et_decouverte(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        serveur = (base / 'api/service/ServeurAuthentificationHttps.java').read_text()
+        self.assertIn('getOrDefault("IHM_AUTH_PORT", "0")', serveur)
+        self.assertIn('new InetSocketAddress(0)', serveur)
+        self.assertIn('instance.publier(serveur.port())', serveur)
+        self.assertIn('if(!instance.acquise())', serveur)
+        registre = (base / 'reseau/InstanceHttpsLocale.java').read_text()
+        for garde in ['tryLock()', 'isAlive()', 'startInstant()', 'toEpochMilli()==debut']:
+            self.assertIn(garde, registre)
+        decouverte = (base / 'reseau/DecouverteServeurs.java').read_text()
+        self.assertIn('IHM2026:DISCOVER:3', decouverte)
+        self.assertIn('IHM2026:SERVER:3:', decouverte)
+        self.assertIn('InstanceHttpsLocale.portActif()', (base / 'reseau/ServeurLocal.java').read_text())
+        client = (base / 'ui/commun/VueConnexionServeur.java').read_text()
+        self.assertIn('choix.portHttps()', client)
+        self.assertIn('portChallenge = demande.port()', client)
+        self.assertIn('hoteServeur, portChallenge,', client)
+        self.assertIn('portHttpsManuel', client)
+
     def test_connexion_automatique_sans_scan_wifi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
         self.assertNotIn('ChoixWifi', texte)

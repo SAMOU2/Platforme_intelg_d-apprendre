@@ -115,7 +115,14 @@ public final class ServeurLocal implements AutoCloseable {
                 socketDecouverte.receive(paquet);
                 String demande = new String(paquet.getData(), paquet.getOffset(), paquet.getLength(),
                         java.nio.charset.StandardCharsets.US_ASCII);
-                if ("IHM2026:DISCOVER:2".equals(demande)) {
+                if ("IHM2026:DISCOVER:3".equals(demande)) {
+                    int https=InstanceHttpsLocale.portActif();
+                    if(https>0) {
+                        byte[] annonce=("IHM2026:SERVER:3:"+https+":"+DecouverteServeurs.nomLocal())
+                                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                        socketDecouverte.send(new java.net.DatagramPacket(annonce,annonce.length,paquet.getSocketAddress()));
+                    }
+                } else if ("IHM2026:DISCOVER:2".equals(demande)) {
                     byte[] annonce = ("IHM2026:SERVER:2:" + DecouverteServeurs.nomLocal())
                             .getBytes(java.nio.charset.StandardCharsets.UTF_8);
                     socketDecouverte.send(new java.net.DatagramPacket(annonce, annonce.length,

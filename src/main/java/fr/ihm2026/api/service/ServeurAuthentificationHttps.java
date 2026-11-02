@@ -28,12 +28,21 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
         String cleNvidia = System.getenv("NVIDIA_API_KEY");
         System.out.println("[ia-nvidia] Configuration : cle "
                 + (cleNvidia == null || cleNvidia.isBlank() ? "ABSENTE" : "PRESENTE (validite non verifiee)"));
-        serveur = HttpsServer.create(new InetSocketAddress(port), 0);
+        serveur = ouvrirPort(port);
         serveur.setHttpsConfigurator(new HttpsConfigurator(tls));
         serveur.createContext("/api/", new AuthentificationApiHttps(authentification, comptes));
         executants = Executors.newFixedThreadPool(4);
         serveur.setExecutor(executants);
         serveur.start();
+    }
+
+    static HttpsServer ouvrirPort(int prefere) throws IOException {
+        try { return HttpsServer.create(new InetSocketAddress(prefere),0); }
+        catch(java.net.BindException ex) {
+            if(prefere==0)throw ex;
+            System.out.println("[INFO] Port HTTPS prefere indisponible : selection automatique d'un port libre.");
+            return HttpsServer.create(new InetSocketAddress(0),0);
+        }
     }
 
     public static ServeurAuthentificationHttps demarrerDepuisEnvironnement() throws Exception {
@@ -42,12 +51,12 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
         String typeMagasin = System.getenv().getOrDefault("IHM_TLS_KEYSTORE_TYPE", "PKCS12");
         int port;
         try {
-            port = Integer.parseInt(System.getenv().getOrDefault("IHM_AUTH_PORT", "8443").strip());
+            port = Integer.parseInt(System.getenv().getOrDefault("IHM_AUTH_PORT", "0").strip());
         } catch (NumberFormatException ex) {
-            throw new IllegalStateException("IHM_AUTH_PORT doit être un nombre entre 1 et 65535.");
+            throw new IllegalStateException("IHM_AUTH_PORT doit être un nombre entre 0 et 65535.");
         }
-        if (port < 1 || port > 65535) {
-            throw new IllegalStateException("IHM_AUTH_PORT doit être entre 1 et 65535.");
+        if (port < 0 || port > 65535) {
+            throw new IllegalStateException("IHM_AUTH_PORT doit être entre 0 et 65535.");
         }
 
         char[] motDePasseMagasin = secretMagasin.toCharArray();
@@ -93,9 +102,16 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        try (ServeurAuthentificationHttps serveur = demarrerDepuisEnvironnement()) {
-            System.out.println("API d'authentification HTTPS prête sur le port " + serveur.port() + ".");
-            Thread.currentThread().join();
+        try (var instance = new fr.ihm2026.reseau.InstanceHttpsLocale()) {
+            if(!instance.acquise()) {
+                System.out.println("[INFO] Le serveur HTTPS de ce projet est deja lance ou en cours de demarrage. Conservez sa fenetre ouverte ; aucun doublon cree.");
+                return;
+            }
+            try (ServeurAuthentificationHttps serveur = demarrerDepuisEnvironnement()) {
+                instance.publier(serveur.port());
+                System.out.println("API d'authentification HTTPS prête sur le port " + serveur.port() + ".");
+                Thread.currentThread().join();
+            }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         } catch (Exception ex) {
