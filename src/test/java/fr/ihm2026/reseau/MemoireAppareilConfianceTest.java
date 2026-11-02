@@ -32,7 +32,9 @@ class MemoireAppareilConfianceTest {
                     "samoumegharba210@gmail.com", Session.Role.ADMINISTRATEUR);
             assertTrue(lu.isPresent(), () -> "Le jeton écrit dans "
                     + MemoireAppareilConfiance.dossier() + " doit pouvoir être relu. "
-                    + "Fichiers présents : " + fichiersPresents());
+                    + "Diagnostic production : " + MemoireAppareilConfiance.lireAvecDiagnostic(
+                            "samoumegharba210@gmail.com", Session.Role.ADMINISTRATEUR).diagnostic()
+                    + ". Fichiers présents : " + fichiersPresents());
             assertEquals(jeton, lu.get().jeton());
             assertEquals(expiration.toEpochMilli(), lu.get().expireLe().toEpochMilli());
             assertTrue(MemoireAppareilConfiance.lire(

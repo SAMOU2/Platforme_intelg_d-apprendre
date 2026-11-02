@@ -57,9 +57,14 @@ class AppareilConfiance48hTest(unittest.TestCase):
         self.assertNotIn('motDePasse', memoire)
         self.assertNotIn('codeConnexion', memoire)
         for attendu in ['ESSAIS_ECRITURE = 3', 'ESSAIS_LECTURE = 5',
-                        'Files.notExists(fichier)', "contenu.indexOf('|')",
-                        'var relu = lire(email, role)', 'pauseAvantNouvelEssai']:
+                        'NoSuchFileException', 'lireAvecDiagnostic',
+                        "contenu.indexOf('|')", 'var relu = lire(email, role)',
+                        'pauseAvantNouvelEssai', 'sans effet de bord']:
             self.assertIn(attendu, memoire)
+        lecture = memoire.split('static synchronized ResultatLecture lireAvecDiagnostic', 1)[1]
+        lecture = lecture.split('public static synchronized void ecrire', 1)[0]
+        for interdit in ['Files.notExists', 'Files.isDirectory', 'deleteIfExists']:
+            self.assertNotIn(interdit, lecture)
         deux_barres = chr(92) * 2
         service = (JAVA / 'api/persistence/PostgresAuthentificationService.java').read_text()
         self.assertIn('replaceAll("[' + deux_barres + 'p{Cntrl}]"', service)
