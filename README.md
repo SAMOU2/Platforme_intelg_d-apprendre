@@ -108,10 +108,17 @@ et peut être changé avec `IHM_TLS_KEYSTORE_TYPE`. Le fichier batch ne contient
 Laisser la fenêtre du service ouverte. Le port HTTPS doit être autorisé dans le pare-feu.
 
 Les postes **apprenant et enseignant** proposent « Créer un compte » sans demander de PIN.
-La demande (nom, e-mail, mot de passe, rôle fixé par le poste) est enregistrée **en attente** et
-inactive. L'administrateur accepte ou refuse dans « Comptes et rôles ». Une acceptation génère
-un **PIN d'activation à huit chiffres**, envoyé avec la décision par e-mail ; le compte reste
-inactif. Le demandeur choisit ensuite **« Activer mon compte avec le PIN reçu »**, saisit son
+La demande (nom, e-mail, mot de passe, rôle fixé par le poste) démarre **en attente** et inactive.
+Pour éviter qu'un administrateur doive traiter manuellement des dizaines de milliers de
+demandes, PC1 peut activer un **bot de tri à règles explicables** : en mode `DOMAINES`, seuls les
+apprenants d'un domaine institutionnel configuré sont pré-acceptés; en mode `APPRENANTS`, les
+apprenants non bloqués le sont. Le bot ne pré-accepte jamais un enseignant et n'utilise pas le
+modèle NVIDIA. Les enseignants et exceptions sont acceptés ou refusés par l'administrateur dans
+« Comptes et rôles », désormais filtré et paginé côté PostgreSQL avec traitement par lot des
+demandes cochées. Toute acceptation génère un **PIN d'activation à huit chiffres**, envoyé par
+e-mail ; le compte reste inactif jusqu'à sa saisie. Voir
+[la scalabilité des inscriptions](docs/scalabilite-inscriptions.md) et appliquer la migration
+`db\13-scalabilite-comptes.sql` sur les bases existantes sauvegardées. Le demandeur choisit ensuite **« Activer mon compte avec le PIN reçu »**, saisit son
 e-mail et le PIN, puis peut se connecter. Le PIN expire après 48 heures, est à usage unique et
 limité à cinq essais. Seule son empreinte bcrypt est conservée. En cas d'expiration, de blocage
 ou d'échec SMTP, l'administrateur peut **renvoyer le PIN d'activation** d'un compte accepté inactif ;

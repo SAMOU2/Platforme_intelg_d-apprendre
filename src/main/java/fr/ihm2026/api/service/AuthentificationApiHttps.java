@@ -14,7 +14,15 @@ import fr.ihm2026.api.persistence.PostgresAuthentificationService.SessionAuthent
 import fr.ihm2026.core.Session;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /** Routes d'authentification exposées uniquement par le serveur HTTPS dédié. */
@@ -23,10 +31,12 @@ public final class AuthentificationApiHttps implements HttpHandler {
     private static final int TAILLE_MAX_CORPS = 16 * 1024;
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String REFUS = "Identifiants invalides ou compte indisponible.";
+    private static final int LOT_DECISIONS_MAX = 20;
 
     private final PostgresAuthentificationService authentification;
     private final PostgresCompteRepository comptes;
     private final ServiceEmail email;
+    private final BotInscription botInscription = BotInscription.depuisEnvironnement();
     private final java.util.concurrent.Semaphore placeIa = new java.util.concurrent.Semaphore(1);
     private final java.util.Map<Long, Integer> quotasIa = new java.util.HashMap<>();
     private java.time.LocalDate jourIa = java.time.LocalDate.now();
@@ -41,6 +51,8 @@ public final class AuthentificationApiHttps implements HttpHandler {
         this.authentification = java.util.Objects.requireNonNull(authentification, "authentification");
         this.comptes = java.util.Objects.requireNonNull(comptes, "comptes");
         this.email = java.util.Objects.requireNonNull(email, "email");
+        System.out.println("[inscription-bot] Mode du bot de tri des apprenants : "
+                + botInscription.mode());
     }
 
     @Override
@@ -65,6 +77,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 case "/api/admin/comptes" -> administrerComptes(exchange);
                 case "/api/admin/comptes/etat" -> definirCompteActif(exchange);
                 case "/api/admin/comptes/decision" -> deciderInscription(exchange);
+                case "/api/admin/comptes/decisions" -> deciderInscriptions(exchange);
                 case "/api/admin/invitations" -> creerInvitation(exchange);
                 default -> envoyerJson(exchange, 404, erreur("Route inconnue."));
             }
@@ -235,7 +248,30 @@ public final class AuthentificationApiHttps implements HttpHandler {
         var compte = comptes.inscrireCompte(corps.path("nom").asText(),
                 corps.path("email").asText(), corps.path("motDePasse").asText().toCharArray(),
                 role);
-        envoyerJson(exchange, 201, ReponseCompte.depuis(compte));
+        String message = "Votre demande a été enregistrée et attend une décision de l'administration.";
+        var analyseBot = botInscription.analyser(compte.email(), compte.role(),
+                compte.statutInscription());
+        if (analyseBot.autoAccepter()) {
+            try {
+                var decision = comptes.accepterInscriptionParBot(compte.email());
+                compte = decision.compte();
+                try {
+                    envoyerEmailDecision(compte, true, decision.activation());
+                    message = "Votre demande apprenant a été acceptée automatiquement. "
+                            + "Consultez votre e-mail pour le PIN d'activation (48 heures), "
+                            + "puis choisissez « Activer mon compte avec le PIN reçu ».";
+                } catch (IllegalStateException ex) {
+                    message = "Votre demande apprenant a été acceptée automatiquement, "
+                            + "mais l'e-mail contenant le PIN n'a pas pu être envoyé. "
+                            + "Contactez l'administration pour demander un renvoi du PIN.";
+                }
+            } catch (IllegalArgumentException | SQLException ex) {
+                // Repli sûr : la demande reste dans la file administrateur, sans donnée personnelle au journal console.
+                System.err.println("[inscription-bot] Pré-acceptation impossible ; file administrateur conservée.");
+            }
+        }
+        envoyerJson(exchange, 201, new ReponseInscription(compte.id(), compte.nom(), compte.email(),
+                compte.role().name(), compte.actif(), compte.statutInscription(), message));
     }
 
     private void activerCompte(HttpExchange exchange) throws IOException, SQLException {
@@ -359,8 +395,11 @@ public final class AuthentificationApiHttps implements HttpHandler {
             return;
         }
         if ("GET".equals(exchange.getRequestMethod())) {
-            envoyerJson(exchange, 200, comptes.lister().stream()
-                    .map(ReponseCompte::depuis).toList());
+            var page = comptes.lister(lireFiltreComptes(exchange));
+            envoyerJson(exchange, 200, new ReponsePageComptes(
+                    page.comptes().stream().map(this::versReponseCompte).toList(),
+                    page.total(), page.page(), page.taille(), page.enAttente(), page.acceptes(),
+                    page.refuses()));
             return;
         }
         if (!"POST".equals(exchange.getRequestMethod())) {
@@ -387,7 +426,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
         var compte = comptes.creer(corps.path("nom").asText(), corps.path("email").asText(),
                 corps.path("motDePasse").asText().toCharArray(), role,
                 corps.path("actif").asBoolean(), acteur.utilisateurId());
-        envoyerJson(exchange, 201, ReponseCompte.depuis(compte));
+        envoyerJson(exchange, 201, versReponseCompte(compte));
     }
 
     private void definirCompteActif(HttpExchange exchange) throws IOException, SQLException {
@@ -414,7 +453,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
         }
         var compte = comptes.definirActif(corps.path("email").asText(),
                 corps.path("actif").asBoolean(), acteur.utilisateurId());
-        envoyerJson(exchange, 200, ReponseCompte.depuis(compte));
+        envoyerJson(exchange, 200, versReponseCompte(compte));
     }
 
     private void deciderInscription(HttpExchange exchange) throws IOException, SQLException {
@@ -444,18 +483,153 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 acceptee, acteur.utilisateurId());
         var compte = resultat.compte();
         try {
-            email.envoyer(compte.email(), "Décision sur votre compte IHM 2026",
-                    "Bonjour " + compte.nom() + ",\n\nVotre demande a été "
-                            + (acceptee ? "acceptée." : "refusée.")
-                            + (acceptee ? "\nVotre PIN d'activation : " + resultat.activation().pin()
-                                    + "\nValable 48 heures et une seule fois. Cliquez sur Activer mon compte."
-                                    : "\nContactez l'administration pour plus d'informations."));
+            envoyerEmailDecision(compte, acceptee, resultat.activation());
         } catch (IllegalStateException ex) {
             envoyerJson(exchange, 503, erreur("Décision enregistrée, mais e-mail non envoyé. "
                     + "Actualisez les comptes. Après acceptation, utilisez Renvoyer le PIN d'activation."));
             return;
         }
-        envoyerJson(exchange, 200, ReponseCompte.depuis(compte));
+        envoyerJson(exchange, 200, versReponseCompte(compte));
+    }
+
+    private void deciderInscriptions(HttpExchange exchange) throws IOException, SQLException {
+        if (!verifierAdministrateur(exchange)) {
+            return;
+        }
+        if (!"PATCH".equals(exchange.getRequestMethod())) {
+            envoyerJson(exchange, 405, erreur("Méthode non autorisée."));
+            return;
+        }
+        if (!typeJson(exchange.getRequestHeaders())) {
+            envoyerJson(exchange, 415, erreur("Type de contenu non pris en charge."));
+            return;
+        }
+        JsonNode corps = lireCorps(exchange);
+        if (corps == null || !corps.isObject() || !corps.path("emails").isArray()
+                || !corps.path("acceptee").isBoolean()) {
+            envoyerJson(exchange, 400, erreur("Requête invalide."));
+            return;
+        }
+        if (corps.path("emails").size() == 0 || corps.path("emails").size() > LOT_DECISIONS_MAX) {
+            envoyerJson(exchange, 400, erreur(
+                    "Un lot doit contenir entre 1 et " + LOT_DECISIONS_MAX + " demandes."));
+            return;
+        }
+        SessionAuthentifiee acteur = sessionAdministrateur(exchange);
+        if (acteur == null) {
+            return;
+        }
+        LinkedHashSet<String> emails = new LinkedHashSet<>();
+        for (JsonNode element : corps.path("emails")) {
+            if (!element.isTextual() || element.asText().isBlank()) {
+                envoyerJson(exchange, 400, erreur("Requête invalide."));
+                return;
+            }
+            emails.add(element.asText().strip().toLowerCase(Locale.ROOT));
+        }
+
+        boolean acceptee = corps.path("acceptee").asBoolean();
+        List<ReponseDecision> resultats = new ArrayList<>();
+        for (String adresse : emails) {
+            try {
+                var resultat = comptes.deciderInscription(adresse, acceptee, acteur.utilisateurId());
+                boolean emailEnvoye;
+                String message;
+                try {
+                    envoyerEmailDecision(resultat.compte(), acceptee, resultat.activation());
+                    emailEnvoye = true;
+                    message = acceptee ? "Décision enregistrée ; PIN envoyé par e-mail."
+                            : "Décision enregistrée ; e-mail envoyé.";
+                } catch (IllegalStateException ex) {
+                    emailEnvoye = false;
+                    message = "Décision enregistrée, mais e-mail non envoyé.";
+                }
+                resultats.add(new ReponseDecision(adresse, true, emailEnvoye, message,
+                        versReponseCompte(resultat.compte())));
+            } catch (IllegalArgumentException ex) {
+                resultats.add(new ReponseDecision(adresse, false, false,
+                        "Demande introuvable ou déjà traitée.", null));
+            } catch (SQLException ex) {
+                resultats.add(new ReponseDecision(adresse, false, false,
+                        "Service de comptes indisponible pour cette demande.", null));
+            }
+        }
+        int succes = (int) resultats.stream().filter(ReponseDecision::traite).count();
+        envoyerJson(exchange, 200, new ReponseDecisions(resultats, succes,
+                resultats.size() - succes));
+    }
+
+    private void envoyerEmailDecision(PostgresCompteRepository.Compte compte, boolean acceptee,
+            PostgresCompteRepository.Invitation activation) {
+        email.envoyer(compte.email(), "Décision sur votre compte IHM 2026",
+                "Bonjour " + compte.nom() + ",\n\nVotre demande a été "
+                        + (acceptee ? "acceptée." : "refusée.")
+                        + (acceptee ? "\nVotre PIN d'activation : " + activation.pin()
+                                + "\nValable 48 heures et une seule fois. Cliquez sur Activer mon compte."
+                                : "\nContactez l'administration pour plus d'informations."));
+    }
+
+    private PostgresCompteRepository.FiltreComptes lireFiltreComptes(HttpExchange exchange) {
+        Map<String, String> parametres = parametresRequete(exchange.getRequestURI().getRawQuery());
+        Session.Role role = null;
+        String roleBrut = parametres.get("role");
+        if (roleBrut != null && !roleBrut.isBlank()) {
+            role = Session.Role.valueOf(roleBrut.strip().toUpperCase(Locale.ROOT));
+        }
+        Boolean actif = null;
+        String actifBrut = parametres.get("actif");
+        if (actifBrut != null && !actifBrut.isBlank()) {
+            if ("true".equalsIgnoreCase(actifBrut.strip())) {
+                actif = Boolean.TRUE;
+            } else if ("false".equalsIgnoreCase(actifBrut.strip())) {
+                actif = Boolean.FALSE;
+            } else {
+                throw new IllegalArgumentException("Paramètre actif invalide.");
+            }
+        }
+        return new PostgresCompteRepository.FiltreComptes(
+                parametres.get("recherche"), role, parametres.get("statut"), actif,
+                parametres.get("domaine"), entierRequete(parametres.get("page"), 1),
+                entierRequete(parametres.get("taille"), 50));
+    }
+
+    private ReponseCompte versReponseCompte(PostgresCompteRepository.Compte compte) {
+        var analyse = botInscription.analyser(compte.email(), compte.role(),
+                compte.statutInscription());
+        return new ReponseCompte(compte.id(), compte.nom(), compte.email(), compte.role().name(),
+                compte.actif(), compte.statutInscription(),
+                compte.creeLe() == null ? null : compte.creeLe().toString(),
+                analyse.recommandation().name(), analyse.motif());
+    }
+
+    private static Map<String, String> parametresRequete(String requete) {
+        Map<String, String> parametres = new LinkedHashMap<>();
+        if (requete == null || requete.isBlank()) {
+            return parametres;
+        }
+        for (String paire : requete.split("&")) {
+            if (paire.isBlank()) {
+                continue;
+            }
+            String[] morceaux = paire.split("=", 2);
+            String cle = URLDecoder.decode(morceaux[0], StandardCharsets.UTF_8);
+            String valeur = morceaux.length > 1
+                    ? URLDecoder.decode(morceaux[1], StandardCharsets.UTF_8)
+                    : "";
+            parametres.put(cle, valeur);
+        }
+        return parametres;
+    }
+
+    private static int entierRequete(String valeur, int parDefaut) {
+        if (valeur == null || valeur.isBlank()) {
+            return parDefaut;
+        }
+        try {
+            return Integer.parseInt(valeur.strip());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Paramètre de pagination invalide.", ex);
+        }
     }
 
     private boolean verifierAdministrateur(HttpExchange exchange) throws SQLException, IOException {
@@ -542,12 +716,22 @@ public final class AuthentificationApiHttps implements HttpHandler {
     public record ReponseInvitation(String email, String role, String expireLe, String message) {
     }
 
-    public record ReponseCompte(long id, String nom, String email, String role, boolean actif,
-            String statutInscription) {
+    public record ReponseInscription(long id, String nom, String email, String role, boolean actif,
+            String statutInscription, String message) {
+    }
 
-        private static ReponseCompte depuis(PostgresCompteRepository.Compte compte) {
-            return new ReponseCompte(compte.id(), compte.nom(), compte.email(),
-                    compte.role().name(), compte.actif(), compte.statutInscription());
-        }
+    public record ReponseCompte(long id, String nom, String email, String role, boolean actif,
+            String statutInscription, String creeLe, String recommandationBot, String motifBot) {
+    }
+
+    public record ReponsePageComptes(List<ReponseCompte> comptes, long total, int page, int taille,
+            long enAttente, long acceptes, long refuses) {
+    }
+
+    public record ReponseDecision(String email, boolean traite, boolean emailEnvoye, String message,
+            ReponseCompte compte) {
+    }
+
+    public record ReponseDecisions(List<ReponseDecision> resultats, int succes, int echecs) {
     }
 }

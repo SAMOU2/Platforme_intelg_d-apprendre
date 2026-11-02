@@ -45,6 +45,22 @@ class AdminApiTest {
     }
 
     @Test
+    @DisplayName("La liste d'administration peut être filtrée et paginée")
+    void filtrerEtPaginerComptes() {
+        var recherche = AdminApi.comptes(new AdminApi.FiltreComptes(
+                "nadia", null, null, null, null, 1, 10));
+        assertEquals(1, recherche.total());
+        assertEquals("nadia.cherif@univ.dz", recherche.comptes().get(0).getEmail());
+
+        var premierePage = AdminApi.comptes(new AdminApi.FiltreComptes(
+                null, Session.Role.APPRENANT, null, null, "univ.dz", 1, 2));
+        assertTrue(premierePage.total() >= 3);
+        assertEquals(2, premierePage.comptes().size());
+        assertTrue(premierePage.comptes().stream()
+                .allMatch(compte -> compte.getEmail().endsWith("@univ.dz")));
+    }
+
+    @Test
     @DisplayName("La création avec mot de passe temporaire efface le secret après usage")
     void creerCompteEffaceLeMotDePasse() {
         String email = "test-secret-" + UUID.randomUUID() + "@univ.dz";

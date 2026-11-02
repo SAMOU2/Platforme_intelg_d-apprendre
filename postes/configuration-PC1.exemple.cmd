@@ -27,6 +27,14 @@ REM set "IHM_SMTP_USER=utilisateur-smtp"
 REM set "IHM_SMTP_PASSWORD=REMPLACER_PAR_VOTRE_SECRET"
 set "IHM_SMTP_PORT=587"
 
+REM Scalabilite des inscriptions : bot de tri des apprenants uniquement.
+REM Sans ces lignes, le mode MANUEL historique reste actif. Les enseignants restent toujours
+REM valides manuellement. DOMAINES pre-accepte les apprenants du domaine (et sous-domaines),
+REM mais le compte reste inactif jusqu'au PIN envoye par e-mail.
+REM set "IHM_INSCRIPTION_BOT_MODE=DOMAINES"
+REM set "IHM_INSCRIPTION_DOMAINES_AUTO=univ.dz"
+REM set "IHM_INSCRIPTION_DOMAINES_BLOQUES=jetable.example"
+
 REM Seulement si aucun administrateur n'existe dans la base :
 REM set "IHM_BOOTSTRAP_ADMIN_NAME=Votre nom"
 REM set "IHM_BOOTSTRAP_ADMIN_EMAIL=votre-adresse@example.org"

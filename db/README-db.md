@@ -80,6 +80,9 @@ sa méthode `main` :
 | `IHM_SMTP_FROM` | requis pour l'envoi d'e-mails | Adresse d'expédition |
 | `IHM_SMTP_USER` | non | Compte SMTP si authentification requise |
 | `IHM_SMTP_PASSWORD` | non | Secret SMTP, fourni par l'environnement |
+| `IHM_INSCRIPTION_BOT_MODE` | non | `MANUEL` par défaut ; `DOMAINES` ou `APPRENANTS` pour pré-accepter certains apprenants |
+| `IHM_INSCRIPTION_DOMAINES_AUTO` | si mode `DOMAINES` | Domaines apprenants pré-acceptés, séparés par des virgules |
+| `IHM_INSCRIPTION_DOMAINES_BLOQUES` | non | Domaines jamais pré-acceptés par le bot |
 
 Au premier démarrage, si aucun compte administrateur n'existe, les trois variables
 `IHM_BOOTSTRAP_ADMIN_*` sont obligatoires pour créer un administrateur actif et accepté. Ce compte
@@ -96,17 +99,19 @@ Routes disponibles :
 
 | Méthode et route | Accès | Résultat |
 |---|---|---|
-| `POST /api/auth/inscription` | Public, HTTPS uniquement | Crée une demande `EN_ATTENTE` après vérification du PIN individuel lié à l'e-mail et au rôle |
+| `POST /api/auth/inscription` | Public, HTTPS uniquement | Crée une demande inactive ; le bot PC1 peut pré-accepter un apprenant éligible, sans supprimer l'activation par PIN e-mail |
 | `POST /api/auth/connexion` | Public, HTTPS uniquement | Vérifie les identifiants et envoie un code à usage unique par e-mail |
 | `POST /api/auth/code` | Public, HTTPS uniquement | Vérifie le code et retourne le jeton et l'identité chargés depuis PostgreSQL |
 | `GET /api/auth/session` | Jeton actif | Vérifie et renouvelle l'expiration d'inactivité |
 | `POST /api/auth/deconnexion` | Jeton actif | Révoque la session et retourne `204` |
-| `GET /api/admin/comptes` | Administrateur | Liste les comptes et demandes d'inscription |
+| `GET /api/admin/comptes` | Administrateur | Liste filtrée et paginée dans PostgreSQL (`recherche`, `domaine`, `statut`, `role`, `actif`, `page`, `taille`) avec avis du bot |
 | `PATCH /api/admin/comptes/decision` | Administrateur | Accepte ou refuse une demande et notifie le demandeur par e-mail |
+| `PATCH /api/admin/comptes/decisions` | Administrateur | Traite un lot borné de demandes cochées et rapporte chaque e-mail non envoyé |
 | `POST /api/admin/invitations` | Administrateur | Génère un PIN individuel et l'envoie à l'adresse e-mail liée |
 
-Une inscription, quel que soit le rôle demandé, reste en attente jusqu'à l'acceptation d'un
-administrateur. Le PIN d'invitation est valable 48 heures, lié à un seul e-mail et rôle, limité à
+Une inscription démarre inactive et en attente. Selon la politique PC1, le bot peut
+pré-accepter uniquement un apprenant éligible; les enseignants et les exceptions restent soumis
+à l'administrateur. Dans tous les cas, le PIN d'activation est valable 48 heures, lié à un seul e-mail et rôle, limité à
 cinq essais, à usage unique et stocké uniquement sous forme bcrypt dans `invitations_inscription`.
 Il n'est jamais conservé en clair dans un fichier JSON. Un compte refusé ou en attente ne peut pas
 se connecter. Le code de connexion par e-mail est également à usage unique, haché en base et expire
@@ -200,6 +205,13 @@ Voir [les étapes par niveau](../docs/parcours-par-niveau.md).
 aucun niveau existant et ne modifie aucune copie. Appliquer après 11 sur base sauvegardée.
 La première publication d'un niveau du nouvel enseignant active ce parcours pour ses
 apprenants affectés dans ce langage. Lire [la procédure de bascule](../docs/niveaux-enseignant.md).
+
+## Migration 13 — index de la file des comptes
+
+`13-scalabilite-comptes.sql` ajoute uniquement des index pour filtrer et paginer les comptes
+par statut, rôle, date d'arrivée et domaine e-mail. Elle ne supprime ni ne réécrit les comptes.
+Sauvegarder la base, arrêter HTTPS, appliquer après 12, puis relancer. Détails et recette :
+[scalabilité des inscriptions](../docs/scalabilite-inscriptions.md).
 
 ## Lanceur automatique Docker / PostgreSQL sous Windows (PC1)
 

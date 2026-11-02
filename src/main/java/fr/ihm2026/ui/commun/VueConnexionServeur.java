@@ -605,8 +605,10 @@ public class VueConnexionServeur extends StackPane {
             email.setText(compte.email());
             codeInvitation.clear();
             actualiserModeInscription();
-            etat.setText("Demande de compte " + role.label()
-                    + " envoyée. L'administrateur doit l'accepter avant votre première connexion.");
+            etat.setText(compte.message() != null && !compte.message().isBlank()
+                    ? compte.message()
+                    : "Demande de compte " + role.label()
+                            + " envoyée. Elle doit être traitée avant votre première connexion.");
         }, erreur -> {
             definirChampsActifs(true);
             etat.setText(erreur instanceof ClientReseau.ErreurReseau
@@ -648,7 +650,7 @@ public class VueConnexionServeur extends StackPane {
                 : attenteCodeConnexion ? "Valider le code" : "Se connecter");
         connecter.setDefaultButton(true);
         etat.setText(modeActivation ? "Après acceptation : saisissez votre e-mail et le PIN reçu (48 heures)." : modeInscription
-                ? "Votre demande sera en attente jusqu'à la décision d'un administrateur."
+                ? "Votre demande sera traitée selon la politique du serveur : pré-acceptation possible pour certains apprenants, sinon décision d'un administrateur."
                 : "version " + fr.ihm2026.core.Config.VERSION + " · poste " + IdentitePoste.nom()
                         + " · rôle fixé : " + role.label());
     }

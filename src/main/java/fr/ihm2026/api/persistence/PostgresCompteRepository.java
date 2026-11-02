@@ -8,6 +8,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +37,7 @@ public final class PostgresCompteRepository {
 
     public List<Compte> lister() throws SQLException {
         String sql = """
-                SELECT id, nom, email, role::text AS role, actif, statut_inscription
+                SELECT id, nom, email, role::text AS role, actif, statut_inscription, cree_le
                 FROM utilisateurs
                 ORDER BY CASE statut_inscription WHEN 'EN_ATTENTE' THEN 0 ELSE 1 END, nom, email
                 """;
@@ -48,6 +50,133 @@ public final class PostgresCompteRepository {
             }
             return List.copyOf(comptes);
         }
+    }
+
+    /**
+     * Liste d'administration scalable : filtrage et pagination sont exécutés dans PostgreSQL.
+     * L'interface ne reçoit donc jamais les 100 000 comptes d'un seul coup.
+     */
+    public PageComptes lister(FiltreComptes filtre) throws SQLException {
+        Objects.requireNonNull(filtre, "filtre");
+        ClauseFiltre clauseBase = construireClause(filtre, false);
+        ClauseFiltre clausePage = construireClause(filtre, true);
+        try (Connection connexion = ouvrir()) {
+            long total = compter(connexion, clausePage);
+            Compteurs compteurs = compterParStatut(connexion, clauseBase);
+            String sql = """
+                    SELECT id, nom, email, role::text AS role, actif, statut_inscription, cree_le
+                    FROM utilisateurs
+                    """ + clausePage.sql() + """
+                    ORDER BY CASE statut_inscription WHEN 'EN_ATTENTE' THEN 0 ELSE 1 END,
+                             cree_le ASC, id ASC
+                    LIMIT ? OFFSET ?
+                    """;
+            try (PreparedStatement requete = connexion.prepareStatement(sql)) {
+                int index = remplir(requete, clausePage.parametres(), 1);
+                requete.setInt(index++, filtre.taille());
+                requete.setLong(index, filtre.decalage());
+                try (ResultSet resultat = requete.executeQuery()) {
+                    List<Compte> comptes = new ArrayList<>();
+                    while (resultat.next()) {
+                        comptes.add(lireCompte(resultat));
+                    }
+                    return new PageComptes(List.copyOf(comptes), total, filtre.page(), filtre.taille(),
+                            compteurs.enAttente(), compteurs.acceptes(), compteurs.refuses());
+                }
+            }
+        }
+    }
+
+    private static ClauseFiltre construireClause(FiltreComptes filtre, boolean inclureStatut) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> parametres = new ArrayList<>();
+        if (filtre.recherche() != null) {
+            String motif = "%" + echapperLike(filtre.recherche().toLowerCase(Locale.ROOT)) + "%";
+            conditions.add("(lower(nom) LIKE ? ESCAPE '\\' OR lower(email) LIKE ? ESCAPE '\\')");
+            parametres.add(motif);
+            parametres.add(motif);
+        }
+        if (filtre.role() != null) {
+            conditions.add("role = ?::role_utilisateur");
+            parametres.add(filtre.role().name());
+        }
+        if (inclureStatut && filtre.statut() != null) {
+            conditions.add("statut_inscription = ?");
+            parametres.add(filtre.statut());
+        }
+        if (filtre.actif() != null) {
+            conditions.add("actif = ?");
+            parametres.add(filtre.actif());
+        }
+        if (filtre.domaine() != null) {
+            conditions.add("lower(split_part(email, '@', 2)) = ?");
+            parametres.add(filtre.domaine());
+        }
+        String sql = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
+        return new ClauseFiltre(sql, List.copyOf(parametres));
+    }
+
+    private static int remplir(PreparedStatement requete, List<Object> parametres, int debut)
+            throws SQLException {
+        int index = debut;
+        for (Object parametre : parametres) {
+            if (parametre instanceof Boolean booleen) {
+                requete.setBoolean(index++, booleen);
+            } else {
+                requete.setString(index++, String.valueOf(parametre));
+            }
+        }
+        return index;
+    }
+
+    private static long compter(Connection connexion, ClauseFiltre clause) throws SQLException {
+        try (PreparedStatement requete = connexion.prepareStatement(
+                "SELECT count(*) FROM utilisateurs" + clause.sql())) {
+            remplir(requete, clause.parametres(), 1);
+            try (ResultSet resultat = requete.executeQuery()) {
+                if (!resultat.next()) {
+                    throw new SQLException("Impossible de compter les comptes.");
+                }
+                return resultat.getLong(1);
+            }
+        }
+    }
+
+    private static Compteurs compterParStatut(Connection connexion, ClauseFiltre clause)
+            throws SQLException {
+        long enAttente = 0;
+        long acceptes = 0;
+        long refuses = 0;
+        try (PreparedStatement requete = connexion.prepareStatement("""
+                SELECT statut_inscription, count(*)
+                FROM utilisateurs
+                """ + clause.sql() + """
+                GROUP BY statut_inscription
+                """)) {
+            remplir(requete, clause.parametres(), 1);
+            try (ResultSet resultat = requete.executeQuery()) {
+                while (resultat.next()) {
+                    switch (resultat.getString(1)) {
+                        case "EN_ATTENTE" -> enAttente = resultat.getLong(2);
+                        case "ACCEPTE" -> acceptes = resultat.getLong(2);
+                        case "REFUSE" -> refuses = resultat.getLong(2);
+                        default -> {
+                        }
+                    }
+                }
+            }
+        }
+        return new Compteurs(enAttente, acceptes, refuses);
+    }
+
+    private static String echapperLike(String texte) {
+        return texte.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    private record ClauseFiltre(String sql, List<Object> parametres) {
+    }
+
+    private record Compteurs(long enAttente, long acceptes, long refuses) {
     }
 
     public Compte creer(String nom, String email, char[] motDePasse, Session.Role role, boolean actif)
@@ -80,7 +209,7 @@ public final class PostgresCompteRepository {
         try (Connection connexion = ouvrir()) {
             connexion.setAutoCommit(false);
             try (PreparedStatement q = connexion.prepareStatement("""
-                    SELECT id, nom, email, role::text AS role, actif, statut_inscription
+                    SELECT id, nom, email, role::text AS role, actif, statut_inscription, cree_le
                     FROM utilisateurs WHERE lower(email) = ? FOR UPDATE
                     """)) {
                 q.setString(1, normaliserEmail(email));
@@ -101,7 +230,7 @@ public final class PostgresCompteRepository {
         }
     }
 
-    private Invitation creerPinActivation(Connection connexion, Compte compte, long acteurId) throws SQLException {
+    private Invitation creerPinActivation(Connection connexion, Compte compte, Long acteurId) throws SQLException {
         String pin = String.format(Locale.ROOT, "%08d", ALEA.nextInt(100_000_000));
         try (PreparedStatement q = connexion.prepareStatement("""
                 UPDATE invitations_inscription SET utilise_le = now()
@@ -121,7 +250,11 @@ public final class PostgresCompteRepository {
             q.setString(2, compte.email());
             q.setString(3, compte.role().name());
             q.setString(4, pin);
-            q.setLong(5, acteurId);
+            if (acteurId == null) {
+                q.setNull(5, java.sql.Types.BIGINT);
+            } else {
+                q.setLong(5, acteurId);
+            }
             try (ResultSet r = q.executeQuery()) {
                 if (!r.next()) throw new SQLException("Création du PIN impossible.");
                 journaliser(connexion, acteurId, "CREATION_PIN_ACTIVATION", compte.email(), compte.role().name(), false);
@@ -264,7 +397,7 @@ public final class PostgresCompteRepository {
                     INSERT INTO utilisateurs
                         (nom, email, mot_de_passe, role, actif, statut_inscription)
                     VALUES (?, ?, crypt(?, gen_salt('bf', 12)), ?::role_utilisateur, ?, ?)
-                    RETURNING id, nom, email, role::text AS role, actif, statut_inscription
+                    RETURNING id, nom, email, role::text AS role, actif, statut_inscription, cree_le
                     """;
             try (Connection connexion = ouvrir();
                  PreparedStatement requete = connexion.prepareStatement(sql)) {
@@ -309,7 +442,7 @@ public final class PostgresCompteRepository {
 
                 Compte existant;
                 try (PreparedStatement requete = connexion.prepareStatement("""
-                        SELECT id, nom, email, role::text AS role, actif, statut_inscription
+                        SELECT id, nom, email, role::text AS role, actif, statut_inscription, cree_le
                         FROM utilisateurs
                         WHERE lower(email) = ?
                         FOR UPDATE
@@ -350,7 +483,7 @@ public final class PostgresCompteRepository {
                         UPDATE utilisateurs
                         SET actif = ?
                         WHERE id = ?
-                        RETURNING id, nom, email, role::text AS role, actif, statut_inscription
+                        RETURNING id, nom, email, role::text AS role, actif, statut_inscription, cree_le
                         """)) {
                     maj.setBoolean(1, actif);
                     maj.setLong(2, existant.id());
@@ -374,6 +507,19 @@ public final class PostgresCompteRepository {
     }
 
     public DecisionInscription deciderInscription(String email, boolean acceptee, long acteurId) throws SQLException {
+        return deciderInscription(email, acceptee, Long.valueOf(acteurId), false);
+    }
+
+    /**
+     * Pré-acceptation par le bot de tri. La condition SQL limite cette voie aux apprenants
+     * encore en attente : même en cas d'erreur d'appel, un enseignant ne peut pas passer par là.
+     */
+    public DecisionInscription accepterInscriptionParBot(String email) throws SQLException {
+        return deciderInscription(email, true, null, true);
+    }
+
+    private DecisionInscription deciderInscription(String email, boolean acceptee, Long acteurId,
+            boolean parBot) throws SQLException {
         String normalise = normaliserEmail(email);
         try (Connection connexion = ouvrir()) {
             connexion.setAutoCommit(false);
@@ -383,11 +529,13 @@ public final class PostgresCompteRepository {
                         UPDATE utilisateurs
                         SET statut_inscription = ?, actif = ?
                         WHERE lower(email) = ? AND statut_inscription = 'EN_ATTENTE'
-                        RETURNING id, nom, email, role::text AS role, actif, statut_inscription
+                          AND (? = false OR role = 'APPRENANT'::role_utilisateur)
+                        RETURNING id, nom, email, role::text AS role, actif, statut_inscription, cree_le
                         """)) {
                     requete.setString(1, statut);
                     requete.setBoolean(2, false);
                     requete.setString(3, normalise);
+                    requete.setBoolean(4, parBot);
                     try (ResultSet resultat = requete.executeQuery()) {
                         if (!resultat.next()) {
                             throw new IllegalArgumentException(
@@ -395,7 +543,8 @@ public final class PostgresCompteRepository {
                         }
                         Compte compte = lireCompte(resultat);
                         journaliser(connexion, acteurId,
-                                acceptee ? "ACCEPTATION_INSCRIPTION" : "REFUS_INSCRIPTION",
+                                parBot ? "ACCEPTATION_BOT_INSCRIPTION"
+                                        : acceptee ? "ACCEPTATION_INSCRIPTION" : "REFUS_INSCRIPTION",
                                 compte.email(), compte.role().name(), compte.actif());
                         Invitation activation = acceptee ? creerPinActivation(connexion, compte, acteurId) : null;
                         connexion.commit();
@@ -477,13 +626,81 @@ public final class PostgresCompteRepository {
     }
 
     private static Compte lireCompte(ResultSet resultat) throws SQLException {
+        Timestamp creeLe = resultat.getTimestamp("cree_le");
         return new Compte(resultat.getLong("id"), resultat.getString("nom"),
                 resultat.getString("email"), Session.Role.valueOf(resultat.getString("role")),
-                resultat.getBoolean("actif"), resultat.getString("statut_inscription"));
+                resultat.getBoolean("actif"), resultat.getString("statut_inscription"),
+                creeLe == null ? null : creeLe.toInstant());
+    }
+
+    private static String texteFiltreOuNull(String valeur, int longueurMax) {
+        if (valeur == null || valeur.isBlank()) {
+            return null;
+        }
+        String texte = valeur.strip();
+        if (texte.length() > longueurMax) {
+            throw new IllegalArgumentException("Filtre de comptes trop long.");
+        }
+        return texte;
+    }
+
+    private static String normaliserStatutFiltre(String statut) {
+        String texte = texteFiltreOuNull(statut, 30);
+        if (texte == null) {
+            return null;
+        }
+        String normalise = texte.toUpperCase(Locale.ROOT);
+        if (!normalise.equals("EN_ATTENTE") && !normalise.equals("ACCEPTE")
+                && !normalise.equals("REFUSE")) {
+            throw new IllegalArgumentException("Statut d'inscription invalide.");
+        }
+        return normalise;
+    }
+
+    private static String normaliserDomaineFiltre(String domaine) {
+        String texte = texteFiltreOuNull(domaine, 253);
+        if (texte == null) {
+            return null;
+        }
+        String normalise = texte.toLowerCase(Locale.ROOT);
+        int arobase = normalise.lastIndexOf('@');
+        if (arobase >= 0) {
+            normalise = normalise.substring(arobase + 1);
+        }
+        while (normalise.startsWith("@")) {
+            normalise = normalise.substring(1);
+        }
+        while (normalise.endsWith(".")) {
+            normalise = normalise.substring(0, normalise.length() - 1);
+        }
+        if (!normalise.matches("^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$")) {
+            throw new IllegalArgumentException("Domaine e-mail invalide.");
+        }
+        return normalise;
+    }
+
+    public record FiltreComptes(String recherche, Session.Role role, String statut, Boolean actif,
+            String domaine, int page, int taille) {
+
+        public FiltreComptes {
+            recherche = texteFiltreOuNull(recherche, 100);
+            statut = normaliserStatutFiltre(statut);
+            domaine = normaliserDomaineFiltre(domaine);
+            page = Math.max(1, page);
+            taille = Math.max(1, Math.min(200, taille));
+        }
+
+        long decalage() {
+            return (long) (page - 1) * taille;
+        }
+    }
+
+    public record PageComptes(List<Compte> comptes, long total, int page, int taille,
+            long enAttente, long acceptes, long refuses) {
     }
 
     public record Compte(long id, String nom, String email, Session.Role role, boolean actif,
-            String statutInscription) {
+            String statutInscription, Instant creeLe) {
     }
 
     public record Invitation(String email, Session.Role role, String pin, java.time.Instant expireLe) {
