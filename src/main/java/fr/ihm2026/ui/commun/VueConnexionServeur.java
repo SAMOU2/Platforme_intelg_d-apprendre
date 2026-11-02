@@ -14,9 +14,11 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -47,6 +49,10 @@ public class VueConnexionServeur extends StackPane {
     private final Label etiquetteConfirmation = new Label("Confirmer le mot de passe");
     private final Label etiquetteCodeConnexion = new Label("Code reçu par e-mail");
     private final Label etat = new Label();
+    private final Label symboleEtat = new Label("ℹ");
+    private final ProgressIndicator indicateurChargement = new ProgressIndicator();
+    private final HBox bandeauEtat = new HBox(8, symboleEtat, etat, indicateurChargement);
+    private ScrollPane defilementConnexion;
     private final Button connecter = new Button("Se connecter");
     private final CheckBox memoriserAppareil =
             new CheckBox("Faire confiance à ce poste pendant 2 jours");
@@ -76,16 +82,7 @@ public class VueConnexionServeur extends StackPane {
             try { portChoisi=Integer.parseInt(b.strip()); } catch(NumberFormatException ex){portChoisi=-1;}
         });
         getStyleClass().add("login-view");
-        etat.textProperty().addListener((o, ancien, message) -> {
-            if (getScene() == null || message == null) return;
-            if (message.startsWith("Compte activé") || message.startsWith("Demande de compte"))
-                Notifications.afficher(getScene().getWindow(), Notifications.Type.SUCCES,
-                        "Votre demande a abouti. Consultez les indications du formulaire.");
-            else if (message.startsWith("Les mots de passe ne correspondent")
-                    || message.startsWith("Le mot de passe doit") || message.startsWith("Le nom et l'e-mail"))
-                Notifications.afficher(getScene().getWindow(), Notifications.Type.AVERTISSEMENT,
-                        "Vérifiez les champs du formulaire.");
-        });
+        etat.textProperty().addListener((o, ancien, message) -> actualiserPresentationEtat(message));
 
         Label marque = new Label("IHM 2026");
         marque.getStyleClass().add("login-marque");
@@ -110,6 +107,10 @@ public class VueConnexionServeur extends StackPane {
         parametresWifi.setManaged(parametresWifi.isVisible());
         Label etatDecouverte = new Label();
         etatDecouverte.setWrapText(true);
+        etatDecouverte.setMaxWidth(Double.MAX_VALUE);
+        etatDecouverte.getStyleClass().addAll("etat-reseau", "etat-information");
+        etatDecouverte.textProperty().addListener((o, ancien, message) ->
+                actualiserPresentationReseau(etatDecouverte, message));
         javafx.scene.control.TitledPane avance = new javafx.scene.control.TitledPane(
                 "Options avancées — adresse manuelle", new VBox(8,new Label("Adresse du serveur"),adresseServeur,
                         new Label("Port HTTPS (annoncé automatiquement, saisie manuelle en secours)"),portHttpsManuel));
@@ -226,6 +227,20 @@ public class VueConnexionServeur extends StackPane {
         });
         etat.setFocusTraversable(true);
         etat.setAccessibleHelp("État de la connexion ou erreur. Utilisez les commandes de lecture du lecteur d’écran.");
+        bandeauEtat.setId("connexion-bandeau-etat");
+        bandeauEtat.getStyleClass().addAll("etat-formulaire", "etat-information");
+        bandeauEtat.setAlignment(Pos.CENTER_LEFT);
+        bandeauEtat.setMaxWidth(Double.MAX_VALUE);
+        symboleEtat.getStyleClass().add("etat-symbole");
+        symboleEtat.setFocusTraversable(false);
+        symboleEtat.setAccessibleText("Information");
+        etat.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(etat, Priority.ALWAYS);
+        indicateurChargement.getStyleClass().add("indicateur-chargement");
+        indicateurChargement.setPrefSize(16, 16);
+        indicateurChargement.setVisible(false);
+        indicateurChargement.setManaged(false);
+        indicateurChargement.setAccessibleText("Chargement en cours");
         etatDecouverte.setFocusTraversable(true);
         etiquetteEmail.setLabelFor(email);
         etiquetteMotDePasse.setLabelFor(motDePasse);
@@ -308,7 +323,7 @@ public class VueConnexionServeur extends StackPane {
         VBox actionsCompte = new VBox(8, inscription, activation, oublierAppareil);
         actionsCompte.setAlignment(Pos.CENTER);
 
-        etat.getStyleClass().add("login-mode");
+        etat.getStyleClass().add("etat-texte");
         etat.setWrapText(true);
         etat.setText("version " + fr.ihm2026.core.Config.VERSION + " · poste " + IdentitePoste.nom()
                 + " · rôle fixé : " + this.role.label());
@@ -323,7 +338,7 @@ public class VueConnexionServeur extends StackPane {
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
                 etiquetteMotDePasse, ChampSecret.envelopper(motDePasse),
                 etiquetteConfirmation, ChampSecret.envelopper(confirmationMotDePasse), etiquetteCodeConnexion, codeConnexion,
-                memoriserAppareil, ligne, actionsCompte, etat, aide);
+                memoriserAppareil, ligne, bandeauEtat, actionsCompte, aide);
         carte.getStyleClass().addAll("card", "login-card", "carte-reseau");
         carte.setAlignment(Pos.CENTER);
         carte.setMaxWidth(560);
@@ -335,6 +350,7 @@ public class VueConnexionServeur extends StackPane {
         StackPane contenu = new StackPane(carte);
         contenu.setPadding(new javafx.geometry.Insets(24));
         ScrollPane defilement = new ScrollPane(contenu);
+        defilementConnexion = defilement;
         defilement.setId("connexion-defilement");
         defilement.getStyleClass().add("connexion-scroll");
         defilement.setFitToWidth(true);
@@ -381,6 +397,117 @@ public class VueConnexionServeur extends StackPane {
             email.requestFocus();
             placer.run();
         });
+    }
+
+    /**
+     * Le message d'état reste près du bouton principal. Le symbole et la couleur
+     * doublent le texte ; aucun des deux ne remplace l'explication complète.
+     */
+    private void actualiserPresentationEtat(String message) {
+        String texte = message == null ? "" : message;
+        String minuscules = texte.toLowerCase(java.util.Locale.ROOT);
+        boolean chargement = texte.endsWith("…");
+        String classe;
+        String symbole;
+        String nature;
+        if (chargement) {
+            classe = "etat-chargement";
+            symbole = "↻";
+            nature = "Chargement";
+        } else if (minuscules.contains("impossible") || minuscules.contains("indisponible")
+                || minuscules.contains("inaccessible") || minuscules.contains("invalide")
+                || minuscules.contains("expir") || minuscules.contains("interromp")
+                || minuscules.contains("annulée") || minuscules.contains("illisible")
+                || minuscules.contains("incomplète") || minuscules.contains("n'a pas répondu")
+                || minuscules.contains("réservée") || minuscules.contains("refus")
+                || minuscules.contains("associé au rôle") || minuscules.contains("n'a pas pu")) {
+            classe = "etat-erreur";
+            symbole = "✕";
+            nature = "Erreur";
+        } else if (minuscules.startsWith("compte activé")
+                || minuscules.startsWith("poste de confiance oublié")
+                || minuscules.startsWith("demande de compte")
+                || minuscules.startsWith("un code")
+                || minuscules.contains("demande envoyée")) {
+            classe = "etat-succes";
+            symbole = "✓";
+            nature = "Succès";
+        } else if (minuscules.startsWith("saisissez") || minuscules.startsWith("attendez")
+                || minuscules.startsWith("le nom") || minuscules.startsWith("les mots")
+                || minuscules.startsWith("le mot de passe doit")
+                || minuscules.startsWith("aucun poste")
+                || minuscules.startsWith("après acceptation")
+                || minuscules.startsWith("votre demande sera")
+                || minuscules.startsWith("vérification annulée")
+                || minuscules.startsWith("poste oublié sur cet ordinateur")) {
+            classe = "etat-avertissement";
+            symbole = "⚠";
+            nature = "À vérifier";
+        } else {
+            classe = "etat-information";
+            symbole = "ℹ";
+            nature = "Information";
+        }
+        bandeauEtat.getStyleClass().removeAll("etat-information", "etat-chargement",
+                "etat-succes", "etat-avertissement", "etat-erreur");
+        bandeauEtat.getStyleClass().add(classe);
+        symboleEtat.setText(symbole);
+        symboleEtat.setAccessibleText(nature);
+        etat.setAccessibleText(texte.isBlank() ? nature : nature + " : " + texte);
+        indicateurChargement.setVisible(chargement);
+        indicateurChargement.setManaged(chargement);
+        if (chargement || "etat-erreur".equals(classe) || "etat-succes".equals(classe)) {
+            javafx.application.Platform.runLater(this::rendreEtatVisible);
+        }
+    }
+
+    private static void actualiserPresentationReseau(Label etiquette, String message) {
+        String texte = message == null ? "" : message;
+        String minuscules = texte.toLowerCase(java.util.Locale.ROOT);
+        String classe;
+        String nature;
+        if (texte.endsWith("…")) {
+            classe = "etat-chargement";
+            nature = "Recherche réseau en cours";
+        } else if (minuscules.startsWith("plateforme sélectionnée")
+                || minuscules.startsWith("adresse manuelle conservée")
+                || minuscules.startsWith("windows gère")) {
+            classe = "etat-succes";
+            nature = "Plateforme prête";
+        } else if (minuscules.startsWith("aucun serveur") || minuscules.contains("impossible")) {
+            classe = "etat-erreur";
+            nature = "Plateforme introuvable";
+        } else if (minuscules.startsWith("plusieurs plateformes")
+                || minuscules.startsWith("ouvrez les paramètres")) {
+            classe = "etat-avertissement";
+            nature = "Choix réseau à vérifier";
+        } else {
+            classe = "etat-information";
+            nature = "État du réseau";
+        }
+        etiquette.getStyleClass().removeAll("etat-information", "etat-chargement",
+                "etat-succes", "etat-avertissement", "etat-erreur");
+        etiquette.getStyleClass().add(classe);
+        etiquette.setAccessibleText(texte.isBlank() ? nature : nature + " : " + texte);
+    }
+
+    private void rendreEtatVisible() {
+        if (defilementConnexion == null || bandeauEtat.getScene() == null) {
+            return;
+        }
+        javafx.scene.Node contenu = defilementConnexion.getContent();
+        if (contenu == null || contenu.getScene() == null) {
+            return;
+        }
+        double hauteurContenu = contenu.getBoundsInLocal().getHeight();
+        double hauteurVisible = defilementConnexion.getViewportBounds().getHeight();
+        double defilable = hauteurContenu - hauteurVisible;
+        if (defilable <= 0) {
+            return;
+        }
+        double hautBandeau = bandeauEtat.localToScene(0, 0).getY()
+                - contenu.localToScene(0, 0).getY();
+        defilementConnexion.setVvalue(Math.max(0, Math.min(1, (hautBandeau - 16) / defilable)));
     }
 
     /** Écran d'accueil du rôle : c'est le seul endroit où le rôle choisit une destination. */
@@ -636,6 +763,7 @@ public class VueConnexionServeur extends StackPane {
             return;
         }
         definirChampsActifs(false);
+        etat.setText("Activation du compte…");
         TaskRunner.run(() -> {
             String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
             ClientAuthentificationHttps.activerCompte(hote, portHttpsPour(hote),

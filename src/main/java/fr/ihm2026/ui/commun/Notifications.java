@@ -14,11 +14,17 @@ public final class Notifications {
     private static final Object DERNIERE_NOTIFICATION = new Object();
     private static Popup courant;
     private static PauseTransition delai;
+    private static Type typeCourant;
+    private static String messageCourant;
     private Notifications() { }
     public static void afficher(Window owner, Type type, String message) {
         if (owner == null || !owner.isShowing() || message == null || message.isBlank()) return;
         if (owner.getScene() != null)
             owner.getScene().getRoot().getProperties().put(DERNIERE_NOTIFICATION, type.name() + " — " + message);
+        // Les rafraîchissements automatiques peuvent signaler la même panne toutes
+        // les quelques secondes : ne pas recréer ni faire clignoter le même popup.
+        if (courant != null && courant.isShowing() && courant.getOwnerWindow() == owner
+                && typeCourant == type && message.equals(messageCourant)) return;
         if (courant != null) courant.hide();
         if (delai != null) delai.stop();
         Label texte = new Label(type.name() + " — " + message);
@@ -37,6 +43,16 @@ public final class Notifications {
         popup.setHideOnEscape(true);
         fermer.setOnAction(e -> popup.hide());
         courant = popup;
+        typeCourant = type;
+        messageCourant = message;
+        popup.setOnHidden(e -> {
+            if (courant == popup) {
+                courant = null;
+                typeCourant = null;
+                messageCourant = null;
+                if (delai != null) { delai.stop(); delai = null; }
+            }
+        });
         popup.show(owner, owner.getX() + Math.max(12, owner.getWidth() - 410), owner.getY() + 65);
         // Les erreurs restent visibles jusqu'à fermeture explicite.
         if (type != Type.ERREUR) {
@@ -69,9 +85,14 @@ public final class Notifications {
         }
     }
 
-    public static void erreurActive() {
+    public static void erreurActive(Throwable erreur) {
+        String detail = erreur == null || erreur.getMessage() == null || erreur.getMessage().isBlank()
+                ? "Veuillez réessayer."
+                : erreur.getMessage().strip();
+        String message = detail.toLowerCase(java.util.Locale.ROOT).startsWith("l'action n'a pas abouti")
+                ? detail
+                : "L'action n'a pas abouti : " + detail;
         Window.getWindows().stream().filter(w -> w.isShowing() && w.isFocused() && !(w instanceof Popup))
-                .findFirst().ifPresent(w -> afficher(w, Type.ERREUR,
-                        "L'action n'a pas abouti. Consultez le message de l'écran et réessayez."));
+                .findFirst().ifPresent(w -> afficher(w, Type.ERREUR, message));
     }
 }

@@ -143,7 +143,7 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('bindBidirectional(secret.textProperty())', secret)
         self.assertIn('voir.setSelected(false)', secret)
         self.assertIn('appliquerTheme(alert.getDialogPane(), owner)', (base / 'ui/commun/Dialogue.java').read_text())
-        self.assertIn('Notifications.erreurActive()', (base / 'core/TaskRunner.java').read_text())
+        self.assertIn('Notifications.erreurActive(task.getException())', (base / 'core/TaskRunner.java').read_text())
         css = (ROOT / 'src/main/resources/fr/ihm2026/css/theme-dark.css').read_text()
         self.assertIn('-fx-prompt-text-fill: #b8bcc6', css)
         self.assertIn('.combo-box-popup .list-cell', css)
@@ -266,7 +266,7 @@ class DeploiementCentralTest(unittest.TestCase):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
         self.assertIn('new ScrollPane(contenu)', texte)
         self.assertIn('defilement.setFitToWidth(true)', texte)
-        self.assertIn('ligne, actionsCompte, etat, aide', texte)
+        self.assertIn('ligne, bandeauEtat, actionsCompte, aide', texte)
         self.assertIn('decouverteServeur.setLabelFor(serveurs)', texte)
 
     def test_bat_auth_diagnostic_sans_affichage_des_secrets(self):

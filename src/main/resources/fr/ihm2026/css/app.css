@@ -968,6 +968,50 @@
     -fx-text-fill: -color-texte-3;
     -fx-padding: 16 0 0 0;
 }
+
+/* Retours d'état placés près de l'action : la couleur double un symbole et un
+   texte complet, elle n'est jamais le seul moyen de comprendre le message. */
+.etat-formulaire, .etat-reseau {
+    -fx-background-color: -color-surface-2;
+    -fx-background-radius: 8;
+    -fx-border-color: -color-encours;
+    -fx-border-radius: 8;
+    -fx-border-width: 1 1 1 5;
+}
+.etat-formulaire {
+    -fx-padding: 9 11 9 11;
+}
+.etat-reseau {
+    -fx-padding: 7 9 7 9;
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-texte;
+}
+.etat-formulaire .label { -fx-text-fill: -color-texte; }
+.etat-information, .etat-chargement { -fx-border-color: -color-encours; }
+.etat-succes { -fx-border-color: -color-valide; }
+.etat-avertissement { -fx-border-color: -color-alerte; }
+.etat-erreur { -fx-border-color: -color-danger; }
+.etat-symbole {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-min-width: 18;
+    -fx-alignment: center;
+}
+.etat-formulaire.etat-information .etat-symbole,
+.etat-formulaire.etat-chargement .etat-symbole { -fx-text-fill: -color-encours; }
+.etat-formulaire.etat-succes .etat-symbole { -fx-text-fill: -color-valide; }
+.etat-formulaire.etat-avertissement .etat-symbole { -fx-text-fill: -color-alerte; }
+.etat-formulaire.etat-erreur .etat-symbole { -fx-text-fill: -color-danger; }
+.etat-texte {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -color-texte;
+}
+.indicateur-chargement { -fx-progress-color: -color-encours; }
+.etat-formulaire:focused, .etat-reseau:focused, .etat-texte:focused {
+    -fx-border-color: -color-texte;
+    -fx-border-style: segments(4, 3);
+}
+.etat-texte:focused { -fx-underline: true; }
 .role-card {
     -fx-padding: 18;
     -fx-min-height: 156;

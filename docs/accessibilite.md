@@ -19,7 +19,14 @@ pas une certification WCAG/RGAA ni une garantie que toute la plateforme est acce
 - Boutons à icône de la barre de titre et déconnexion : noms explicites.
 - Formulaire de connexion : noms explicites des champs, y compris OTP, PIN, confirmation,
   case « Faire confiance à ce poste pendant 2 jours », bouton d'oubli du poste et port de
-  secours. Les états de connexion/découverte sont atteignables par Tab.
+  secours. Les états de connexion/découverte sont atteignables par Tab. L'état principal
+  est un bandeau sous le bouton d'action ; son texte accessible commence par sa nature
+  (« Chargement », « Succès », « À vérifier » ou « Erreur »), et le défilement vers ce
+  bandeau ne déplace pas le focus.
+- Liste administrateur des comptes : bandeau d'état nommé au-dessus du tableau, vrai
+  bouton « Réessayer » après échec, et mention explicite lorsque les lignes conservées
+  proviennent du chargement précédent. Les notifications asynchrones donnent la cause
+  exacte et ne recréent pas le même popup déjà visible ; F8 reste la relecture explicite.
 - Champs de réponse du test serveur : énoncé associé au champ ou au choix QCM. Aucun
   corrigé ni indice supplémentaire n'est introduit. Console, éditeurs/brouillon et
   champ de question IA nommés.
