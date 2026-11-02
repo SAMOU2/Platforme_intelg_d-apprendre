@@ -162,7 +162,7 @@ class StrategieModeleTest {
 
     // ------------------------------------------------------------------ l'encapsulation
     @Test
-    @DisplayName("Deux sorties réseau, nommées : le serveur de la plateforme et le fournisseur de modèle")
+    @DisplayName("Inventaire explicite des transports réseau et du gestionnaire TLS serveur")
     void sortiesReseauInventoriees() throws IOException {
         // La règle utile n'est pas « une seule connexion dans tout le projet » — l'application
         // parle aussi à son propre serveur. C'est : toute connexion existante est nommée ici, et
@@ -190,8 +190,10 @@ class StrategieModeleTest {
         java.util.Collections.sort(avecHttpClient);
         // ClientAuthentificationHttps est l'unique client des identifiants ; il impose HTTPS et
         // n'envoie le jeton qu'au service d'authentification configuré.
+        // IdentiteTlsReseau est aussi détecté : ses callbacks X509ExtendedKeyManager reçoivent
+        // java.net.Socket. Il participe au TLS entrant sans ouvrir de connexion sortante.
         assertEquals(List.of("ApiClient.java", "ClientAuthentificationHttps.java",
-                        "ClientReseau.java", "ServeurLocal.java", "TransportHttp.java"),
+                        "ClientReseau.java", "IdentiteTlsReseau.java", "ServeurLocal.java", "TransportHttp.java"),
                 avecHttpClient,
                 "Inventaire des sorties réseau : API métier, authentification HTTPS, serveur de "
                         + "salle et fournisseur de modèle. Tout nouveau fichier doit être ajouté "
@@ -201,6 +203,21 @@ class StrategieModeleTest {
                         + avecCleFournisseur);
         assertEquals(List.of("AideIaApi.java"), instantiateurs,
                 "Le modèle distant ne doit être instancié qu'au service : " + instantiateurs);
+    }
+
+    @Test
+    @DisplayName("Le gestionnaire TLS serveur ne crée aucun client réseau sortant")
+    void gestionnaireTlsSansConnexionSortante() throws IOException {
+        String source = Files.readString(Path.of(
+                "src/main/java/fr/ihm2026/api/service/IdentiteTlsReseau.java"), StandardCharsets.UTF_8);
+        assertTrue(source.contains("extends X509ExtendedKeyManager"));
+        assertFalse(java.util.regex.Pattern.compile(
+                "\\bnew\\s+(?:java\\.net\\.)?(?:Socket|DatagramSocket|URL)\\s*\\(")
+                .matcher(source).find(), "Le gestionnaire TLS ne doit pas ouvrir de socket sortant");
+        for (String interdit : List.of("HttpClient", "java.net.http.HttpRequest", "URLConnection",
+                ".openConnection(", ".connect(")) {
+            assertFalse(source.contains(interdit), "Client réseau inattendu dans le gestionnaire TLS : " + interdit);
+        }
     }
 
     @Test
