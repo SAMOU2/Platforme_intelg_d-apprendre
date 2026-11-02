@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -64,21 +64,15 @@ public final class MemoireAppareilConfiance {
         try {
             Files.createDirectories(fichier.getParent());
             restreindreAcces(fichier.getParent(), true);
-            Path temporaire = Files.createTempFile(fichier.getParent(), "confiance-", ".tmp");
-            try {
-                Files.writeString(temporaire, jeton + "|" + expireLe.toEpochMilli()
-                        + System.lineSeparator(), StandardCharsets.UTF_8);
-                restreindreAcces(temporaire, false);
-                try {
-                    Files.move(temporaire, fichier, StandardCopyOption.REPLACE_EXISTING,
-                            StandardCopyOption.ATOMIC_MOVE);
-                } catch (IOException ex) {
-                    Files.move(temporaire, fichier, StandardCopyOption.REPLACE_EXISTING);
-                }
-                restreindreAcces(fichier, false);
-            } finally {
-                Files.deleteIfExists(temporaire);
-            }
+            // Écriture directe, comme MemoireAdresse : sous Windows, le fichier temporaire
+            // suivi d'un déplacement s'est révélé fragile dans le test d'intégration local.
+            // Une écriture interrompue produit au pire un fichier rejeté à la lecture, donc
+            // un nouveau code e-mail demandé.
+            Files.writeString(fichier, jeton + "|" + expireLe.toEpochMilli()
+                    + System.lineSeparator(), StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE);
+            restreindreAcces(fichier, false);
         } catch (IOException | RuntimeException ignore) {
             // La mémorisation est un confort : son échec ne doit pas bloquer la session déjà ouverte.
         }
@@ -127,24 +121,16 @@ public final class MemoireAppareilConfiance {
             var vue = Files.getFileAttributeView(chemin,
                     java.nio.file.attribute.PosixFileAttributeView.class);
             if (vue != null) {
-                vue.setPermissions(PosixFilePermissions.fromString(dossier ? "rwx------" : "rw-------"));
-                return;
+                vue.setPermissions(PosixFilePermissions.fromString(
+                        dossier ? "rwx------" : "rw-------"));
             }
+            // Sur Windows, Files.getFileAttributeView(Posix) retourne null. On conserve alors
+            // volontairement les ACL héritées du profil utilisateur. Les méthodes historiques
+            // java.io.File n'y offrent pas d'équivalent POSIX fiable pour ce besoin (lecture et
+            // exécution sont essentiellement sans effet, l'écriture bascule l'attribut DOS
+            // lecture-seule) ; elles n'apportaient donc pas la confidentialité recherchée.
         } catch (IOException | RuntimeException ignore) {
-            // Windows protège déjà le profil par ses ACL ; on tente seulement un durcissement opportuniste.
-        }
-        try {
-            var fichier = chemin.toFile();
-            fichier.setReadable(false, false);
-            fichier.setWritable(false, false);
-            fichier.setExecutable(false, false);
-            fichier.setReadable(true, true);
-            fichier.setWritable(true, true);
-            if (dossier) {
-                fichier.setExecutable(true, true);
-            }
-        } catch (RuntimeException ignore) {
-            // Voir ci-dessus.
+            // Le durcissement POSIX est opportuniste ; il ne doit jamais empêcher l'écriture.
         }
     }
 
