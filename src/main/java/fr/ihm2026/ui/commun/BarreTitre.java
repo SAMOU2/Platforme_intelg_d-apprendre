@@ -17,9 +17,10 @@ import javafx.stage.Stage;
  * Barre de titre unifiée, à la manière de macOS (Big Sur et suivants).
  *
  * <p>De gauche à droite : les trois <b>pastilles</b> — fermer, réduire, agrandir, réellement
- * actives — puis les chevrons <b>retour / avance</b> de la fenêtre, le <b>titre de l'écran</b>
- * courant, et à droite le réglage d'apparence. Tout ce qui n'agit sur rien n'est pas là : macOS
- * réserve la décoration au strict nécessaire.</p>
+ * actives — puis le bouton qui <b>réduit ou agrandit la barre latérale</b>, aligné avec elle,
+ * les chevrons <b>retour / avance</b>, le <b>titre de l'écran</b> courant, et à droite les
+ * réglages d'apparence. Tout ce qui n'agit sur rien n'est pas là : macOS réserve la décoration
+ * au strict nécessaire.</p>
  *
  * <p>La barre est translucide : elle laisse transparaître la couleur de la fenêtre, ce qui est le
  * signe distinctif d'une fenêtre macOS par rapport à une barre de titre peinte.</p>
@@ -28,12 +29,16 @@ public class BarreTitre extends HBox {
 
     private static final String CHEVRON_GAUCHE = "M10 2 L4.5 8 L10 14 L8 16 L0.5 8 L8 0 Z";
     private static final String CHEVRON_DROIT = "M6 2 L11.5 8 L6 14 L8 16 L15.5 8 L8 0 Z";
+    private static final String ICONE_LATERALE = "M2 3.1 H14 V5 H2 Z "
+            + "M2 7.05 H14 V8.95 H2 Z M2 11 H14 V12.9 H2 Z";
 
     private final Router router;
     private final Stage stage;
     private final Label titre = new Label();
     private final Button retour = new Button();
     private final Button avance = new Button();
+    private final Button laterale = new Button();
+    private final Tooltip infoLaterale = new Tooltip();
     /** Action à exécuter quand le style change (installer ou retirer le balayage cathodique). */
     private static Runnable retroActif = () -> { };
 
@@ -55,12 +60,6 @@ public class BarreTitre extends HBox {
         feux.setVisible(!StyleVisuel.estRetro());
         feux.setManaged(!StyleVisuel.estRetro());
         titre.getStyleClass().add("titre-fenetre");
-
-        Button laterale = new Button("▤");
-        laterale.getStyleClass().addAll("bouton-apparence", "bouton-laterale");
-        laterale.setAccessibleText("Afficher ou masquer la navigation latérale");
-        laterale.setTooltip(new Tooltip("Afficher ou masquer la barre latérale"));
-        laterale.setOnAction(e -> router.basculerLaterale());
 
         Button style = new Button(StyleVisuel.estRetro() ? "▚" : "▞");
         style.getStyleClass().addAll("bouton-apparence", "bouton-style");
@@ -94,7 +93,32 @@ public class BarreTitre extends HBox {
         Button aide = new Button("Aide clavier");
         aide.setAccessibleText("Aide accessibilité et raccourcis clavier, F1");
         aide.setOnAction(e -> Accessibilite.aide(stage));
-        getChildren().addAll(feux, retourButton(), avanceButton(), titre, espace, laterale, style, theme, aide);
+        // Le bouton de la barre latérale reste en haut à gauche, dans le même axe visuel que
+        // la navigation qu'il réduit ou agrandit ; les réglages d'apparence restent à droite.
+        getChildren().addAll(feux, boutonLaterale(), retourButton(), avanceButton(), titre,
+                espace, style, theme, aide);
+    }
+
+    private Button boutonLaterale() {
+        laterale.getStyleClass().addAll("bouton-apparence", "bouton-laterale");
+        laterale.setGraphic(chevron(ICONE_LATERALE, "icone-bouton-laterale"));
+        laterale.setTooltip(infoLaterale);
+        laterale.setOnAction(e -> router.basculerLaterale());
+        rafraichirLaterale(router.lateraleReduite());
+        return laterale;
+    }
+
+    /** Nomme l'action réellement disponible, au lieu d'un libellé générique afficher/masquer. */
+    public void rafraichirLaterale(boolean reduite) {
+        String action = reduite
+                ? "Agrandir la barre latérale avec les libellés"
+                : "Réduire la barre latérale en icônes";
+        laterale.setAccessibleText(action);
+        infoLaterale.setText(action);
+        laterale.getStyleClass().remove("bouton-laterale-reduite");
+        if (reduite) {
+            laterale.getStyleClass().add("bouton-laterale-reduite");
+        }
     }
 
     private Button retourButton() {
@@ -167,6 +191,7 @@ public class BarreTitre extends HBox {
         titre.setText(titreEcran);
         retour.setDisable(!peutReculer);
         avance.setDisable(!peutAvancer);
+        rafraichirLaterale(router.lateraleReduite());
     }
 
     /** Le titre est aussi celui de la fenêtre : la barre des tâches doit dire la même chose. */

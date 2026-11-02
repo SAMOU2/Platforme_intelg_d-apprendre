@@ -26,7 +26,8 @@ class AccessibiliteTest(unittest.TestCase):
             self.assertNotIn(interdit, source)
         routeur = (ROOT / 'src/main/java/fr/ihm2026/core/Router.java').read_text()
         self.assertEqual(1, routeur.count('Accessibilite.installer(scene'))
-        self.assertIn('root.getLeft() == barreLaterale && lateraleVisible', routeur)
+        self.assertIn('root.getLeft() == barreLaterale', routeur)
+        self.assertIn('lateraleReduite', routeur)
         self.assertIn('Notifications.effacer(stage)', routeur)
 
     def test_cartes_activables_par_technologie_assistance(self):

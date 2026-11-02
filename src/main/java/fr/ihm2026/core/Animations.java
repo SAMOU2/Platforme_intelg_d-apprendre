@@ -67,6 +67,8 @@ public final class Animations {
 
     /** Largeur dépliée de la barre latérale : une seule valeur, lue par le routeur et l'animation. */
     public static final double LATERALE_LARGEUR = 244;
+    /** Largeur réduite : assez pour des cibles d'icônes lisibles, sans faire disparaître la navigation. */
+    public static final double LATERALE_LARGEUR_REDUITE = 76;
 
     private static boolean actives =
             !"off".equalsIgnoreCase(System.getProperty("ihm.animations", "on"));
@@ -291,40 +293,43 @@ public final class Animations {
     }
 
     /**
-     * Repli ou déploiement de la barre latérale : la largeur glisse, l'opacité suit, et le contenu
-     * reprend la place progressivement (comme ⌃⌘S dans le Finder).
+     * Réduit ou agrandit la barre latérale : la largeur glisse entre le mode complet
+     * (icônes + libellés) et le mode compact (icônes seules), sans jamais retirer la
+     * navigation de la mise en page. Le contenu reprend ou cède donc la place
+     * progressivement, tout en conservant un repère spatial stable à gauche.
      *
-     * <p>La largeur est animée par {@code prefWidth}, mais aussi par {@code minWidth} : la feuille
-     * de style impose une largeur minimale de 244 px, et une animation qui ne touche que la
-     * préférence ne produit <b>aucun</b> mouvement visible. Constaté à la première exécution : la
-     * barre ne bougeait pas alors que l'animation « tournait ».</p>
+     * <p>La largeur est animée par {@code prefWidth}, mais {@code minWidth} est relâché
+     * pendant le glissement : la feuille de style impose la largeur de l'état courant, et
+     * une animation qui ne touche que la préférence ne produirait aucun mouvement visible.</p>
      */
-    public static void basculerLaterale(Region laterale, boolean visible) {
-        final double ouverte = LATERALE_LARGEUR;
-        if (!actives) {
-            laterale.setVisible(visible);
-            laterale.setManaged(visible);
-            laterale.setMinWidth(visible ? ouverte : 0);
-            laterale.setPrefWidth(visible ? ouverte : 0);
-            return;
-        }
-        double depart = visible ? 0 : Math.max(0, laterale.getWidth());
+    public static void basculerLaterale(Region laterale, boolean reduite) {
+        final double cible = reduite ? LATERALE_LARGEUR_REDUITE : LATERALE_LARGEUR;
         laterale.setVisible(true);
         laterale.setManaged(true);
+        laterale.setOpacity(1);
+        if (!actives) {
+            laterale.setMinWidth(cible);
+            laterale.setPrefWidth(cible);
+            laterale.setMaxWidth(cible);
+            laterale.requestLayout();
+            return;
+        }
+        double depart = laterale.getWidth();
+        if (depart <= 0) {
+            depart = reduite ? LATERALE_LARGEUR : LATERALE_LARGEUR_REDUITE;
+        }
         laterale.setMinWidth(0);
+        laterale.setMaxWidth(Double.MAX_VALUE);
         laterale.setPrefWidth(depart);
-        laterale.setOpacity(visible ? 0.4 : 1);
 
         Timeline glisse = new Timeline(new KeyFrame(AMPLE,
-                new KeyValue(laterale.prefWidthProperty(), visible ? ouverte : 0, Interpolator.EASE_BOTH),
-                new KeyValue(laterale.opacityProperty(), visible ? 1 : 0.4, Interpolator.EASE_BOTH)));
+                new KeyValue(laterale.prefWidthProperty(), cible, Interpolator.EASE_BOTH)));
         lancer(glisse, () -> {
-            if (!visible) {
-                laterale.setVisible(false);
-                laterale.setManaged(false);
-            } else {
-                laterale.setMinWidth(ouverte);
-            }
+            laterale.setMinWidth(cible);
+            laterale.setPrefWidth(cible);
+            laterale.setMaxWidth(cible);
+            laterale.setVisible(true);
+            laterale.setManaged(true);
             laterale.setOpacity(1);
             laterale.requestLayout();
         });
