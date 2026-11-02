@@ -4,6 +4,7 @@ import fr.ihm2026.core.Session;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -34,57 +35,82 @@ public final class MemoireAppareilConfiance {
     }
 
     public static synchronized Optional<Confiance> lire(String email, Session.Role role) {
+        return lireAvecDiagnostic(email, role).confiance();
+    }
+
+    /**
+     * Lecture détaillée réservée au paquetage pour le dépannage et les tests. Le diagnostic ne
+     * contient jamais le jeton : uniquement la branche prise, des longueurs et, en cas d'échec
+     * d'entrée/sortie, le type d'exception.
+     */
+    static synchronized ResultatLecture lireAvecDiagnostic(String email, Session.Role role) {
         if (email == null || email.isBlank() || role == null) {
-            return Optional.empty();
+            return new ResultatLecture(Optional.empty(), "paramètres invalides");
         }
         Path fichier = fichierPour(email, role);
+        String nomFichier = fichier.getFileName().toString();
         for (int essai = 0; essai < ESSAIS_LECTURE; essai++) {
             try {
-                // Ne pas dépendre uniquement de isRegularFile() sous Windows : ses attributs
-                // peuvent être momentanément indéterminés ou classer un point de réanalyse
-                // comme « autre » alors que le contenu reste lisible. Si l'existence est
-                // incertaine, Files.readString ci-dessous tranchera et sera réessayé.
-                if (Files.notExists(fichier) || Files.isDirectory(fichier)) {
-                    return Optional.empty();
-                }
+                // Lecture directe, sans pré-contrôle d'existence ni suppression : Files.readString
+                // est seul juge. Sous Windows, les contrôles d'attributs et les suppressions
+                // pendant une simple lecture peuvent interférer avec un fichier qui vient d'être
+                // écrit (antivirus/indexation, suppression en attente). Une lecture doit rester
+                // sans effet de bord ; oublier() et ecrire() se chargent du nettoyage/remplacement.
                 String contenu = Files.readString(fichier, StandardCharsets.UTF_8).strip();
                 if (contenu.startsWith("\ufeff")) {
                     contenu = contenu.substring(1).strip();
                 }
                 int separateur = contenu.indexOf('|');
                 if (separateur <= 0 || separateur != contenu.lastIndexOf('|')) {
-                    supprimerSilencieusement(fichier);
-                    return Optional.empty();
+                    return new ResultatLecture(Optional.empty(),
+                            "contenu mal formé dans " + nomFichier + " (longueur="
+                                    + contenu.length() + ", séparateur=" + separateur
+                                    + ", dernierSéparateur=" + contenu.lastIndexOf('|') + ")");
                 }
                 String jeton = contenu.substring(0, separateur).strip();
                 String expiration = contenu.substring(separateur + 1).strip();
                 if (!jetonValide(jeton)) {
-                    supprimerSilencieusement(fichier);
-                    return Optional.empty();
+                    return new ResultatLecture(Optional.empty(),
+                            "jeton invalide dans " + nomFichier + " (longueur=" + jeton.length()
+                                    + ", caractèresAutorisés=" + caracteresJetonAutorises(jeton)
+                                    + ")");
                 }
                 Instant expireLe;
                 try {
                     expireLe = Instant.ofEpochMilli(Long.parseLong(expiration));
                 } catch (NumberFormatException ex) {
-                    supprimerSilencieusement(fichier);
-                    return Optional.empty();
+                    return new ResultatLecture(Optional.empty(),
+                            "expiration illisible dans " + nomFichier + " (longueur="
+                                    + expiration.length() + ")");
                 }
-                if (!expireLe.isAfter(Instant.now())) {
-                    supprimerSilencieusement(fichier);
-                    return Optional.empty();
+                Instant maintenant = Instant.now();
+                if (!expireLe.isAfter(maintenant)) {
+                    return new ResultatLecture(Optional.empty(),
+                            "confiance expirée dans " + nomFichier + " (retardSecondes="
+                                    + Math.max(0, maintenant.getEpochSecond()
+                                            - expireLe.getEpochSecond()) + ")");
                 }
-                return Optional.of(new Confiance(jeton, expireLe));
+                return new ResultatLecture(Optional.of(new Confiance(jeton, expireLe)),
+                        "lecture réussie dans " + nomFichier + " (jeton=" + jeton.length()
+                                + " caractères, expirationFuture=true)");
+            } catch (NoSuchFileException ex) {
+                return new ResultatLecture(Optional.empty(), "fichier absent : " + nomFichier);
             } catch (IOException ex) {
                 // Sous Windows, un antivirus ou l'indexation peut brièvement verrouiller un
                 // fichier qui vient d'être écrit dans AppData\Local\Temp ou le profil.
                 if (essai == ESSAIS_LECTURE - 1 || !pauseAvantNouvelEssai(essai)) {
-                    return Optional.empty();
+                    return new ResultatLecture(Optional.empty(),
+                            "IOException après " + (essai + 1) + " essai(s) sur " + nomFichier
+                                    + " : " + ex.getClass().getSimpleName() + " : "
+                                    + ex.getMessage());
                 }
             } catch (RuntimeException ex) {
-                return Optional.empty();
+                return new ResultatLecture(Optional.empty(),
+                        "RuntimeException sur " + nomFichier + " : "
+                                + ex.getClass().getSimpleName() + " : " + ex.getMessage());
             }
         }
-        return Optional.empty();
+        return new ResultatLecture(Optional.empty(), "lecture abandonnée : " + nomFichier);
     }
 
     public static synchronized void ecrire(String email, Session.Role role, String jeton,
@@ -135,15 +161,6 @@ public final class MemoireAppareilConfiance {
         }
     }
 
-    private static void supprimerSilencieusement(Path fichier) {
-        try {
-            Files.deleteIfExists(fichier);
-        } catch (IOException | RuntimeException ignore) {
-            // Un fichier corrompu mais momentanément verrouillé reste sans effet : il sera
-            // rejeté à la prochaine lecture et ne donne aucun accès.
-        }
-    }
-
     private static boolean pauseAvantNouvelEssai(int essai) {
         try {
             Thread.sleep(10L * (essai + 1));
@@ -175,10 +192,14 @@ public final class MemoireAppareilConfiance {
 
     private static boolean jetonValide(String jeton) {
         return jeton != null && jeton.length() >= 32 && jeton.length() <= 128
-                && jeton.chars().allMatch(caractere -> caractere == '-' || caractere == '_'
-                        || (caractere >= 'A' && caractere <= 'Z')
-                        || (caractere >= 'a' && caractere <= 'z')
-                        || (caractere >= '0' && caractere <= '9'));
+                && caracteresJetonAutorises(jeton);
+    }
+
+    private static boolean caracteresJetonAutorises(String jeton) {
+        return jeton.chars().allMatch(caractere -> caractere == '-' || caractere == '_'
+                || (caractere >= 'A' && caractere <= 'Z')
+                || (caractere >= 'a' && caractere <= 'z')
+                || (caractere >= '0' && caractere <= '9'));
     }
 
     private static void restreindreAcces(Path chemin, boolean dossier) {
@@ -200,5 +221,9 @@ public final class MemoireAppareilConfiance {
     }
 
     public record Confiance(String jeton, Instant expireLe) {
+    }
+
+    /** Résultat diagnostique sans valeur de jeton, visible seulement dans le paquetage. */
+    record ResultatLecture(Optional<Confiance> confiance, String diagnostic) {
     }
 }
