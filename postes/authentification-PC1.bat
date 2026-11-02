@@ -12,18 +12,28 @@ if not "%ENV_OK%"=="1" exit /b 1
 
 REM Afficher les noms manquants, jamais la valeur des secrets.
 set "CONFIG_MANQUANTE="
-for %%V in (IHM_DB_URL IHM_DB_USER IHM_DB_PASSWORD IHM_TLS_KEYSTORE IHM_TLS_PASSWORD IHM_SMTP_HOST IHM_SMTP_FROM) do (
+for %%V in (IHM_DB_URL IHM_DB_USER IHM_DB_PASSWORD IHM_TLS_PASSWORD IHM_SMTP_HOST IHM_SMTP_FROM) do (
     if not defined %%V (
         echo [ERREUR] Variable obligatoire absente : %%V
         set "CONFIG_MANQUANTE=1"
     )
 )
 if defined CONFIG_MANQUANTE goto :configuration_manquante
+if "%IHM_TLS_RESEAU_AUTO%"=="1" goto :tls_reseau
+if not defined IHM_TLS_KEYSTORE goto :configuration_manquante
 if not exist "%IHM_TLS_KEYSTORE%" (
-    echo [ERREUR] Le fichier indique par IHM_TLS_KEYSTORE est introuvable.
-    echo          Utiliser de preference un chemin absolu.
+    echo [ERREUR] Magasin TLS introuvable. Verifier IHM_TLS_KEYSTORE.
     goto :echec
 )
+goto :tls_pret
+:tls_reseau
+if not defined IHM_TLS_CA_KEYSTORE goto :configuration_manquante
+if not defined IHM_TLS_CA_PASSWORD goto :configuration_manquante
+if not exist "%IHM_TLS_CA_KEYSTORE%" (
+    echo [ERREUR] Autorite privee absente. Executer preparer-identite-reseau-PC1.bat une seule fois.
+    goto :echec
+)
+:tls_pret
 
 REM Demarrage de la base locale avant compilation et lancement HTTPS.
 call "%~dp0demarrer-docker-PC1.bat" /auth

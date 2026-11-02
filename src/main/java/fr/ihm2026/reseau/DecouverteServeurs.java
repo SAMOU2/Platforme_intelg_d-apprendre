@@ -26,10 +26,9 @@ public final class DecouverteServeurs {
         if (port < 1 || port > 65535) throw new IllegalArgumentException("Port invalide");
         Map<String, Serveur> trouves = new LinkedHashMap<>();
         Set<InetAddress> destinations = new LinkedHashSet<>();
-        destinations.add(InetAddress.getByName("127.0.0.1"));
         destinations.add(InetAddress.getByName("255.255.255.255"));
         for (NetworkInterface carte : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-            if (!carte.isUp() || carte.isLoopback()) continue;
+            if (!interfaceReseau(carte)) continue;
             for (InterfaceAddress adresse : carte.getInterfaceAddresses()) {
                 if (adresse.getBroadcast() != null) destinations.add(adresse.getBroadcast());
             }
@@ -51,7 +50,9 @@ public final class DecouverteServeurs {
                 DatagramPacket paquet = new DatagramPacket(new byte[512], 512);
                 try { socket.receive(paquet); }
                 catch (SocketTimeoutException termine) { break; }
-                if (paquet.getPort() != port) continue;
+                if (paquet.getPort() != port || paquet.getAddress().isLoopbackAddress()) continue;
+                NetworkInterface locale=NetworkInterface.getByInetAddress(paquet.getAddress());
+                if(locale!=null && !interfaceReseau(locale))continue;
                 String texte = new String(paquet.getData(), paquet.getOffset(), paquet.getLength(), StandardCharsets.UTF_8);
                 Serveur serveur = lireAnnonce(texte, paquet.getAddress().getHostAddress());
                 if (serveur != null) {
@@ -63,6 +64,12 @@ public final class DecouverteServeurs {
             }
         }
         return List.copyOf(trouves.values());
+    }
+
+    private static boolean interfaceReseau(NetworkInterface carte) throws SocketException {
+        String nom=(carte.getName()+" "+carte.getDisplayName()).toLowerCase(Locale.ROOT);
+        return carte.isUp() && !carte.isLoopback() && !carte.isVirtual() && !nom.contains("vethernet")
+                && !nom.contains("docker") && !nom.contains("virtualbox") && !nom.contains("vmware");
     }
 
     static Serveur lireAnnonce(String texte, String hote) {

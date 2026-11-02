@@ -20,6 +20,7 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
 
     private final HttpsServer serveur;
     private final ExecutorService executants;
+    private IdentiteTlsReseau identiteReseau;
 
     private ServeurAuthentificationHttps(int port, SSLContext tls,
             PostgresAuthentificationService authentification,
@@ -46,6 +47,20 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
     }
 
     public static ServeurAuthentificationHttps demarrerDepuisEnvironnement() throws Exception {
+        if("1".equals(System.getenv("IHM_TLS_RESEAU_AUTO"))) {
+            var configuration=PostgresConfiguration.depuisEnvironnement();
+            var service=new PostgresAuthentificationService(configuration);
+            var comptes=new PostgresCompteRepository(configuration);comptes.assurerAdministrateurInitialDepuisEnvironnement();
+            int prefere;
+            try {prefere=Integer.parseInt(System.getenv().getOrDefault("IHM_AUTH_PORT","0").strip());}
+            catch(NumberFormatException ex){throw new IllegalStateException("IHM_AUTH_PORT invalide");}
+            if(prefere<0 || prefere>65535)throw new IllegalStateException("IHM_AUTH_PORT doit être entre 0 et 65535.");
+            var identite=new IdentiteTlsReseau();
+            try {
+                var resultat=new ServeurAuthentificationHttps(prefere,identite.contexte(),service,comptes);
+                resultat.identiteReseau=identite;return resultat;
+            } catch(Exception ex){identite.close();throw ex;}
+        }
         String fichierMagasin = variableObligatoire("IHM_TLS_KEYSTORE");
         String secretMagasin = variableObligatoire("IHM_TLS_PASSWORD");
         String typeMagasin = System.getenv().getOrDefault("IHM_TLS_KEYSTORE_TYPE", "PKCS12");
@@ -133,11 +148,11 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
                         + "et renouveler le certificat dans IHM_TLS_KEYSTORE.";
             }
             if (cause instanceof java.nio.file.NoSuchFileException) {
-                return "Magasin TLS introuvable. Vérifier le chemin IHM_TLS_KEYSTORE "
+                return "Magasin TLS introuvable. Vérifier le chemin IHM_TLS_KEYSTORE (ou IHM_TLS_CA_KEYSTORE en mode réseau) "
                         + "depuis le dossier racine du projet, ou utiliser un chemin absolu.";
             }
             if (cause instanceof java.nio.file.AccessDeniedException) {
-                return "Le compte serveur ne peut pas lire IHM_TLS_KEYSTORE. Vérifier ses permissions.";
+                return "Le compte serveur ne peut pas lire le magasin TLS/CA. Vérifier IHM_TLS_KEYSTORE ou IHM_TLS_CA_KEYSTORE et ses permissions.";
             }
             if (cause instanceof java.security.UnrecoverableKeyException) {
                 return "Mot de passe du magasin ou de la clé privée incorrect. Vérifier IHM_TLS_PASSWORD.";
@@ -171,6 +186,7 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
     public void close() {
         serveur.stop(0);
         executants.shutdownNow();
+        if(identiteReseau!=null)identiteReseau.close();
     }
 
     private static String variableObligatoire(String nom) {
