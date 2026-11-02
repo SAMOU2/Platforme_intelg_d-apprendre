@@ -34,7 +34,7 @@ public record SortieIa(
     public static final List<String> NOTIONS =
             List.of("VAR", "COND", "BOUCLE", "FONC", "COLL", "ERREUR", "DIVERS");
     public static final List<String> LANGAGES = List.of("python", "java", "cpp");
-    public static final int LONGUEUR_MAX_REPONSE = 600;
+    public static final int LONGUEUR_MAX_REPONSE = 2400;
     public static final int CITATIONS_MAX = 3;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

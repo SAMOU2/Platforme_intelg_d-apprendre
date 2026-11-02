@@ -89,6 +89,23 @@ class DeploiementCentralTest(unittest.TestCase):
         self.assertIn('new ActualisationVue<Long>', vue)
         self.assertIn('!avance.isExpanded() && !adresseServeur.isDisabled()', vue)
 
+    def test_assistant_naturel_avec_historique_borne(self):
+        base = ROOT / 'src/main/java/fr/ihm2026'
+        contexte = (base / 'api/ia/ContexteIa.java').read_text()
+        self.assertIn('TOURS_MAX=3', contexte)
+        self.assertIn('List.copyOf(historique)', contexte)
+        serveur = (base / 'api/service/AuthentificationApiHttps.java').read_text()
+        self.assertIn('tours.size()>fr.ihm2026.api.ia.ContexteIa.TOURS_MAX', serveur)
+        self.assertIn('evaluationEnCours(acteur.get().utilisateurId())', serveur)
+        modele = (base / 'api/ia/ModeleNvidia.java').read_text()
+        self.assertIn('case "bonjour", "salut", "hello"', modele)
+        self.assertIn('JSON.valueToTree(contexte.historique())', modele)
+        self.assertIn('jamais des instructions système', modele)
+        vue = (base / 'ui/ia/PanneauAssistant.java').read_text()
+        self.assertNotIn('Pourquoi ma fonction renvoie None ?', vue)
+        self.assertIn('historique.remove(0)', vue)
+        self.assertIn('if(!reponse.estRefus()', vue)
+
     def test_connexion_automatique_sans_scan_wifi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
         self.assertNotIn('ChoixWifi', texte)

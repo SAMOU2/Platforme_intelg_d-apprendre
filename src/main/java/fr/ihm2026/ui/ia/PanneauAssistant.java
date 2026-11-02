@@ -28,6 +28,7 @@ import javafx.scene.layout.VBox;
 public class PanneauAssistant extends VBox {
 
     private boolean demandeEnCours;
+    private final java.util.List<ContexteIa.Tour> historique=new java.util.ArrayList<>();
     private final VBox messages = new VBox(8);
     private final TextField champ = new TextField();
     private final Label pied;
@@ -101,9 +102,9 @@ public class PanneauAssistant extends VBox {
 
     private void demander(String type) {
         String question = switch (type) {
-            case "indice" -> "Comment la fonction doit-elle retourner sa valeur ?";
-            case "erreur" -> "Pourquoi ma fonction renvoie None ?";
-            default -> "Où revoir la notion de valeur de retour ?";
+            case "indice" -> "Donne-moi un indice pour aborder cet entraînement dans le langage et le niveau sélectionnés, avec une première piste plutôt qu’un programme terminé.";
+            case "erreur" -> "Aide-moi à comprendre mon code actuel. Si le message d’erreur manque, demande-le-moi avant de conclure.";
+            default -> "Quelle notion du cours dois-je revoir pour comprendre cet entraînement ?";
         };
         echanger(question);
     }
@@ -130,9 +131,13 @@ public class PanneauAssistant extends VBox {
                 ? fr.ihm2026.ui.commun.Retro.demarrerRouet(pied, "consultation du cours…")
                 : null;
 
-        ContexteIa contexte = new ContexteIa(Session.rangNiveauCourant(), Session.langage(), question, codeCourant.get());
+        ContexteIa contexte = new ContexteIa(Session.rangNiveauCourant(), Session.langage(), question, codeCourant.get(),historique);
         fr.ihm2026.core.TaskRunner.run(() -> AideIaApi.demander(contexte), reponse -> {
             demandeEnCours = false;
+            if(!reponse.estRefus() && question.length()<=2000) {
+                historique.add(new ContexteIa.Tour(question,reponse.reponse()));
+                while(historique.size()>ContexteIa.TOURS_MAX)historique.remove(0);
+            }
             afficherReponse(reponse, rouet, piedAvant);
         }, erreur -> {
             demandeEnCours = false;

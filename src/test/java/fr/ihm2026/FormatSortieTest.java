@@ -126,6 +126,7 @@ class FormatSortieTest {
     @DisplayName("Le schéma de sortie décrit les cinq champs, et ses motifs sont ceux du code")
     void schemaCoherentAvecLeCode() throws Exception {
         JsonNode schema = MAPPER.readTree(ressource("/fr/ihm2026/ia/sortie-schema.json"));
+        assertEquals(SortieIa.LONGUEUR_MAX_REPONSE,schema.path("properties").path("reponse").path("maxLength").asInt());
         List<String> requis = new ArrayList<>();
         schema.path("required").forEach(n -> requis.add(n.asText()));
         assertEquals(List.of("version", "reponse", "citations", "notion", "refus"), requis);
