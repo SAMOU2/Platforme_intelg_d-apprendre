@@ -25,6 +25,10 @@ if not exist "%IHM_TLS_KEYSTORE%" (
     goto :echec
 )
 
+REM Demarrage de la base locale avant compilation et lancement HTTPS.
+call "%~dp0demarrer-docker-PC1.bat" /auth
+if errorlevel 1 goto :echec
+
 if not defined IHM_AUTH_PORT set "IHM_AUTH_PORT=8443"
 
 echo.
