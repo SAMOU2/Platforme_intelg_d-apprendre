@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.ihm2026.core.Session;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -72,9 +73,32 @@ class MemoireAppareilConfianceTest {
             return "dossier absent";
         }
         try (var fichiers = Files.list(dossier)) {
-            return fichiers.map(fichier -> fichier.getFileName().toString()).toList().toString();
+            return fichiers.map(MemoireAppareilConfianceTest::decrireFichier).toList().toString();
         } catch (Exception ex) {
-            return "liste impossible (" + ex.getClass().getSimpleName() + ")";
+            return "liste impossible (" + ex.getClass().getSimpleName() + " : "
+                    + ex.getMessage() + ")";
+        }
+    }
+
+    private static String decrireFichier(Path fichier) {
+        String description = fichier.getFileName() + " (régulier="
+                + Files.isRegularFile(fichier);
+        try {
+            String contenu = Files.readString(fichier, StandardCharsets.UTF_8).strip();
+            int separateur = contenu.indexOf('|');
+            String expiration = separateur >= 0 && separateur + 1 <= contenu.length()
+                    ? contenu.substring(separateur + 1)
+                    : "";
+            return description + ", taille=" + Files.size(fichier)
+                    + ", contenu=" + contenu.length() + " caractères"
+                    + ", séparateur=" + separateur
+                    + ", expiration=" + expiration.length() + " caractères"
+                    + ", expirationNumérique="
+                    + (!expiration.isEmpty() && expiration.chars().allMatch(Character::isDigit))
+                    + ")";
+        } catch (Exception ex) {
+            return description + ", lecture impossible=" + ex.getClass().getSimpleName()
+                    + " : " + ex.getMessage() + ")";
         }
     }
 }

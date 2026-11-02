@@ -26,6 +26,10 @@ import java.util.Optional;
  */
 public final class MemoireAppareilConfiance {
 
+    /** Petits réessais contre les verrouillages transitoires Windows (antivirus/indexation). */
+    private static final int ESSAIS_ECRITURE = 3;
+    private static final int ESSAIS_LECTURE = 5;
+
     private MemoireAppareilConfiance() {
     }
 
@@ -34,24 +38,53 @@ public final class MemoireAppareilConfiance {
             return Optional.empty();
         }
         Path fichier = fichierPour(email, role);
-        try {
-            if (!Files.isRegularFile(fichier)) {
+        for (int essai = 0; essai < ESSAIS_LECTURE; essai++) {
+            try {
+                // Ne pas dépendre uniquement de isRegularFile() sous Windows : ses attributs
+                // peuvent être momentanément indéterminés ou classer un point de réanalyse
+                // comme « autre » alors que le contenu reste lisible. Si l'existence est
+                // incertaine, Files.readString ci-dessous tranchera et sera réessayé.
+                if (Files.notExists(fichier) || Files.isDirectory(fichier)) {
+                    return Optional.empty();
+                }
+                String contenu = Files.readString(fichier, StandardCharsets.UTF_8).strip();
+                if (contenu.startsWith("\ufeff")) {
+                    contenu = contenu.substring(1).strip();
+                }
+                int separateur = contenu.indexOf('|');
+                if (separateur <= 0 || separateur != contenu.lastIndexOf('|')) {
+                    supprimerSilencieusement(fichier);
+                    return Optional.empty();
+                }
+                String jeton = contenu.substring(0, separateur).strip();
+                String expiration = contenu.substring(separateur + 1).strip();
+                if (!jetonValide(jeton)) {
+                    supprimerSilencieusement(fichier);
+                    return Optional.empty();
+                }
+                Instant expireLe;
+                try {
+                    expireLe = Instant.ofEpochMilli(Long.parseLong(expiration));
+                } catch (NumberFormatException ex) {
+                    supprimerSilencieusement(fichier);
+                    return Optional.empty();
+                }
+                if (!expireLe.isAfter(Instant.now())) {
+                    supprimerSilencieusement(fichier);
+                    return Optional.empty();
+                }
+                return Optional.of(new Confiance(jeton, expireLe));
+            } catch (IOException ex) {
+                // Sous Windows, un antivirus ou l'indexation peut brièvement verrouiller un
+                // fichier qui vient d'être écrit dans AppData\Local\Temp ou le profil.
+                if (essai == ESSAIS_LECTURE - 1 || !pauseAvantNouvelEssai(essai)) {
+                    return Optional.empty();
+                }
+            } catch (RuntimeException ex) {
                 return Optional.empty();
             }
-            String[] champs = Files.readString(fichier, StandardCharsets.UTF_8).strip().split("\\|", -1);
-            if (champs.length != 2 || !jetonValide(champs[0])) {
-                Files.deleteIfExists(fichier);
-                return Optional.empty();
-            }
-            Instant expireLe = Instant.ofEpochMilli(Long.parseLong(champs[1]));
-            if (!expireLe.isAfter(Instant.now())) {
-                Files.deleteIfExists(fichier);
-                return Optional.empty();
-            }
-            return Optional.of(new Confiance(champs[0], expireLe));
-        } catch (IOException | RuntimeException ex) {
-            return Optional.empty();
         }
+        return Optional.empty();
     }
 
     public static synchronized void ecrire(String email, Session.Role role, String jeton,
@@ -61,20 +94,33 @@ public final class MemoireAppareilConfiance {
             return;
         }
         Path fichier = fichierPour(email, role);
-        try {
-            Files.createDirectories(fichier.getParent());
-            restreindreAcces(fichier.getParent(), true);
-            // Écriture directe, comme MemoireAdresse : sous Windows, le fichier temporaire
-            // suivi d'un déplacement s'est révélé fragile dans le test d'intégration local.
-            // Une écriture interrompue produit au pire un fichier rejeté à la lecture, donc
-            // un nouveau code e-mail demandé.
-            Files.writeString(fichier, jeton + "|" + expireLe.toEpochMilli()
-                    + System.lineSeparator(), StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
-                    StandardOpenOption.WRITE);
-            restreindreAcces(fichier, false);
-        } catch (IOException | RuntimeException ignore) {
-            // La mémorisation est un confort : son échec ne doit pas bloquer la session déjà ouverte.
+        String contenu = jeton + "|" + expireLe.toEpochMilli() + System.lineSeparator();
+        for (int essai = 0; essai < ESSAIS_ECRITURE; essai++) {
+            try {
+                Files.createDirectories(fichier.getParent());
+                restreindreAcces(fichier.getParent(), true);
+                // Écriture directe, comme MemoireAdresse. La relecture de contrôle ci-dessous
+                // détecte une écriture Windows transitoirement incomplète ou verrouillée et
+                // déclenche un nouvel essai au lieu de laisser silencieusement un fichier
+                // inutilisable. Après le dernier échec, la session déjà ouverte continue :
+                // seul le confort des 48 heures sera perdu et un code sera redemandé.
+                Files.writeString(fichier, contenu, StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                        StandardOpenOption.WRITE);
+                restreindreAcces(fichier, false);
+                var relu = lire(email, role);
+                if (relu.isPresent() && relu.get().jeton().equals(jeton)
+                        && relu.get().expireLe().toEpochMilli() == expireLe.toEpochMilli()) {
+                    return;
+                }
+                if (essai == ESSAIS_ECRITURE - 1 || !pauseAvantNouvelEssai(essai)) {
+                    return;
+                }
+            } catch (IOException | RuntimeException ex) {
+                if (essai == ESSAIS_ECRITURE - 1 || !pauseAvantNouvelEssai(essai)) {
+                    return;
+                }
+            }
         }
     }
 
@@ -86,6 +132,25 @@ public final class MemoireAppareilConfiance {
             Files.deleteIfExists(fichierPour(email, role));
         } catch (IOException | RuntimeException ignore) {
             // Le jeton peut aussi être révoqué côté serveur par l'appelant.
+        }
+    }
+
+    private static void supprimerSilencieusement(Path fichier) {
+        try {
+            Files.deleteIfExists(fichier);
+        } catch (IOException | RuntimeException ignore) {
+            // Un fichier corrompu mais momentanément verrouillé reste sans effet : il sera
+            // rejeté à la prochaine lecture et ne donne aucun accès.
+        }
+    }
+
+    private static boolean pauseAvantNouvelEssai(int essai) {
+        try {
+            Thread.sleep(10L * (essai + 1));
+            return true;
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return false;
         }
     }
 
