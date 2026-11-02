@@ -227,7 +227,8 @@ class DeploiementCentralTest(unittest.TestCase):
 
     def test_les_trois_parcours_utilisent_le_serveur_choisi(self):
         texte = (ROOT / 'src/main/java/fr/ihm2026/ui/commun/VueConnexionServeur.java').read_text()
-        self.assertEqual(3, texte.count('ClientReseau.choisirHote(adresse, IdentitePoste.port())'))
+        # Connexion, inscription, activation et oubli d'un poste de confiance.
+        self.assertEqual(4, texte.count('ClientReseau.choisirHote(adresse, IdentitePoste.port())'))
         self.assertIn('adresseServeur.setDisable(true)', texte)
 
     def test_auth_refuse_configuration_absente(self):

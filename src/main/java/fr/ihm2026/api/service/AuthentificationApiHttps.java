@@ -70,6 +70,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 case "/api/ia/aide" -> aideIa(exchange);
                 case "/api/auth/connexion" -> connexion(exchange);
                 case "/api/auth/code" -> confirmerCodeConnexion(exchange);
+                case "/api/auth/appareil-confiance/oublier" -> oublierAppareilConfiance(exchange);
                 case "/api/auth/activation" -> activerCompte(exchange);
                 case "/api/auth/inscription" -> inscrireApprenant(exchange);
                 case "/api/auth/session" -> session(exchange);
@@ -205,9 +206,23 @@ public final class AuthentificationApiHttps implements HttpHandler {
             return;
         }
 
-        var challenge = authentification.demanderCodeConnexion(email.textValue(),
+        JsonNode jetonConfianceNode = corps.get("jetonConfiance");
+        if (jetonConfianceNode != null && !jetonConfianceNode.isNull()
+                && !jetonConfianceNode.isTextual()) {
+            envoyerJson(exchange, 400, erreur("Requête invalide."));
+            return;
+        }
+        String jetonConfiance = jetonConfianceNode == null || jetonConfianceNode.isNull()
+                ? null : jetonConfianceNode.textValue();
+
+        var debut = authentification.commencerConnexion(email.textValue(),
                 motDePasse.textValue().toCharArray(),
-                exchange.getRemoteAddress().getAddress().getHostAddress());
+                exchange.getRemoteAddress().getAddress().getHostAddress(), jetonConfiance);
+        if (!debut.codeRequis()) {
+            envoyerJson(exchange, 200, versReponseConnexion(debut.session()));
+            return;
+        }
+        var challenge = debut.challenge();
         try {
             this.email.envoyer(challenge.email(), "Votre code de connexion IHM 2026",
                     "Bonjour " + challenge.nom() + ",\n\n"
@@ -350,15 +365,44 @@ public final class AuthentificationApiHttps implements HttpHandler {
         }
         JsonNode corps = lireCorps(exchange);
         if (corps == null || !corps.isObject()
-                || !texte(corps, "identifiant") || !texte(corps, "code")) {
+                || !texte(corps, "identifiant") || !texte(corps, "code")
+                || (corps.has("memoriserAppareil") && !corps.path("memoriserAppareil").isBoolean())
+                || (corps.hasNonNull("libelleAppareil") && !texte(corps, "libelleAppareil"))) {
             envoyerJson(exchange, 400, erreur("Requête invalide."));
             return;
         }
         ResultatConnexion resultat = authentification.confirmerCodeConnexion(
-                corps.path("identifiant").asText(), corps.path("code").asText());
+                corps.path("identifiant").asText(), corps.path("code").asText(),
+                corps.path("memoriserAppareil").asBoolean(false),
+                corps.path("libelleAppareil").asText(null));
+        envoyerJson(exchange, 200, versReponseConnexion(resultat));
+    }
+
+    private ReponseConnexion versReponseConnexion(ResultatConnexion resultat) {
         var session = resultat.session();
-        envoyerJson(exchange, 200, new ReponseConnexion(resultat.jeton(), session.utilisateurId(),
-                session.nom(), session.email(), session.role().name(), session.expireLe().toString()));
+        var appareil = resultat.appareilConfiance();
+        return new ReponseConnexion(resultat.jeton(), session.utilisateurId(), session.nom(),
+                session.email(), session.role().name(), session.expireLe().toString(),
+                appareil == null ? null : appareil.jeton(),
+                appareil == null ? null : appareil.expireLe().toString());
+    }
+
+    private void oublierAppareilConfiance(HttpExchange exchange) throws IOException, SQLException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            envoyerJson(exchange, 405, erreur("Méthode non autorisée."));
+            return;
+        }
+        if (!typeJson(exchange.getRequestHeaders())) {
+            envoyerJson(exchange, 415, erreur("Type de contenu non pris en charge."));
+            return;
+        }
+        JsonNode corps = lireCorps(exchange);
+        if (corps == null || !corps.isObject() || !texte(corps, "jetonConfiance")) {
+            envoyerJson(exchange, 400, erreur("Requête invalide."));
+            return;
+        }
+        authentification.revoquerAppareilConfiance(corps.path("jetonConfiance").asText());
+        envoyerJson(exchange, 200, Map.of("message", "Appareil de confiance oublié."));
     }
 
     private void session(HttpExchange exchange) throws IOException, SQLException {
@@ -703,7 +747,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
     }
 
     public record ReponseConnexion(String jeton, long utilisateurId, String nom, String email,
-            String role, String expireLe) {
+            String role, String expireLe, String jetonConfiance, String confianceExpireLe) {
     }
 
     public record ReponseSession(long utilisateurId, String nom, String email, String role,

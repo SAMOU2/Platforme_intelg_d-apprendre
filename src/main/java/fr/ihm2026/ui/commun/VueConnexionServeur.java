@@ -7,9 +7,11 @@ import fr.ihm2026.core.TaskRunner;
 import fr.ihm2026.reseau.ClientReseau;
 import fr.ihm2026.reseau.EtatReseau;
 import fr.ihm2026.reseau.IdentitePoste;
+import fr.ihm2026.reseau.MemoireAppareilConfiance;
 import fr.ihm2026.reseau.Reseau;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ScrollPane;
@@ -46,6 +48,9 @@ public class VueConnexionServeur extends StackPane {
     private final Label etiquetteCodeConnexion = new Label("Code reçu par e-mail");
     private final Label etat = new Label();
     private final Button connecter = new Button("Se connecter");
+    private final CheckBox memoriserAppareil =
+            new CheckBox("Faire confiance à ce poste pendant 2 jours");
+    private final Button oublierAppareil = new Button("Oublier ce poste de confiance");
     private final Button inscription = new Button("Créer un compte");
     private boolean modeActivation;
     private final Button activation = new Button("Activer mon compte avec le PIN reçu");
@@ -208,6 +213,17 @@ public class VueConnexionServeur extends StackPane {
         confirmationMotDePasse.setAccessibleText("Confirmation du mot de passe");
         codeInvitation.setAccessibleText("PIN d’activation, reçu après acceptation du compte");
         codeConnexion.setAccessibleText("Code de connexion reçu par e-mail, six chiffres");
+        memoriserAppareil.setAccessibleText("Faire confiance à ce poste pendant deux jours. "
+                + "Le mot de passe restera demandé, mais le code e-mail ne sera pas redemandé "
+                + "avant quarante-huit heures. Ne cochez pas cette case sur un poste partagé.");
+        oublierAppareil.setAccessibleText("Oublier ce poste de confiance pour l'adresse e-mail saisie");
+        oublierAppareil.setOnAction(e -> oublierAppareilConfiance());
+        email.textProperty().addListener((observable, ancien, nouveau) -> {
+            if (!modeActivation && !modeInscription
+                    && MemoireAppareilConfiance.lire(nouveau, role).isPresent()) {
+                memoriserAppareil.setSelected(true);
+            }
+        });
         etat.setFocusTraversable(true);
         etat.setAccessibleHelp("État de la connexion ou erreur. Utilisez les commandes de lecture du lecteur d’écran.");
         etatDecouverte.setFocusTraversable(true);
@@ -247,6 +263,8 @@ public class VueConnexionServeur extends StackPane {
         email.setId("connexion-email");
         motDePasse.setId("connexion-mot-de-passe");
         codeConnexion.setId("connexion-code");
+        memoriserAppareil.setId("connexion-appareil-confiance");
+        oublierAppareil.setId("connexion-oublier-appareil");
         etat.setId("connexion-etat");
         connecter.getStyleClass().add("btn-primary");
         connecter.setDefaultButton(true);
@@ -287,7 +305,7 @@ public class VueConnexionServeur extends StackPane {
 
         HBox ligne = new HBox(10, connecter);
         ligne.setAlignment(Pos.CENTER);
-        VBox actionsCompte = new VBox(8, inscription, activation);
+        VBox actionsCompte = new VBox(8, inscription, activation, oublierAppareil);
         actionsCompte.setAlignment(Pos.CENTER);
 
         etat.getStyleClass().add("login-mode");
@@ -296,7 +314,8 @@ public class VueConnexionServeur extends StackPane {
                 + " · rôle fixé : " + this.role.label());
 
         Label aide = new Label("Envoyez votre demande sans PIN. Après acceptation, un PIN d'activation "
-                + "vous sera envoyé par e-mail. Un code distinct est envoyé à chaque connexion.");
+                + "vous sera envoyé par e-mail. Sur un poste de confiance, le code e-mail de connexion "
+                + "n'est redemandé qu'après 2 jours ; le mot de passe reste demandé à chaque ouverture.");
         aide.getStyleClass().add("login-mode");
         aide.setWrapText(true);
 
@@ -304,7 +323,7 @@ public class VueConnexionServeur extends StackPane {
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
                 etiquetteMotDePasse, ChampSecret.envelopper(motDePasse),
                 etiquetteConfirmation, ChampSecret.envelopper(confirmationMotDePasse), etiquetteCodeConnexion, codeConnexion,
-                ligne, actionsCompte, etat, aide);
+                memoriserAppareil, ligne, actionsCompte, etat, aide);
         carte.getStyleClass().addAll("card", "login-card", "carte-reseau");
         carte.setAlignment(Pos.CENTER);
         carte.setMaxWidth(560);
@@ -412,17 +431,40 @@ public class VueConnexionServeur extends StackPane {
         email.setDisable(true);
         motDePasse.setDisable(true);
         adresseServeur.setDisable(true);
-        etat.setText("Connexion au serveur central et envoi du code de sécurité…");
+        boolean utiliserConfiance = memoriserAppareil.isSelected();
+        memoriserAppareil.setDisable(true);
+        oublierAppareil.setDisable(true);
+        etat.setText("Connexion au serveur central…");
         TaskRunner.run(() -> {
             try {
                 String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
-                var challenge = ClientAuthentificationHttps.demanderCodeConnexion(
-                        hote, portHttpsPour(hote), identifiant, secret);
-                return new DemandeCode(hote, portHttpsPour(hote), challenge);
+                int port = portHttpsPour(hote);
+                var confiance = utiliserConfiance
+                        ? MemoireAppareilConfiance.lire(identifiant, role)
+                        : java.util.Optional.<MemoireAppareilConfiance.Confiance>empty();
+                var debut = ClientAuthentificationHttps.commencerConnexion(
+                        hote, port, identifiant, secret,
+                        confiance.map(MemoireAppareilConfiance.Confiance::jeton).orElse(null));
+                if (!debut.codeRequis()) {
+                    return new ResultatDebutConnexion(hote, port,
+                            preparerSession(debut.session(), hote, false), null,
+                            confiance.isPresent());
+                }
+                return new ResultatDebutConnexion(hote, port, null, debut.challenge(),
+                        confiance.isPresent());
             } finally {
                 java.util.Arrays.fill(secret, '\0');
             }
         }, demande -> {
+            if (demande.sessionDirecte() != null) {
+                terminerConnexion(demande.sessionDirecte());
+                return;
+            }
+            if (demande.confianceEnvoyee()) {
+                // L'ancien jeton est expiré/révoqué ; la case reste cochée afin que
+                // le code sur le point d'être validé ouvre une nouvelle fenêtre de 48 h.
+                MemoireAppareilConfiance.oublier(identifiant, role);
+            }
             hoteServeur = demande.hote();
             portChallenge = demande.port();
             identifiantChallenge = demande.challenge().identifiant();
@@ -435,6 +477,8 @@ public class VueConnexionServeur extends StackPane {
             inscription.setText("Annuler");
             inscription.setVisible(true);
             inscription.setManaged(true);
+            oublierAppareil.setVisible(false);
+            oublierAppareil.setManaged(false);
             definirChampsActifs(true);
             adresseServeur.setDisable(true);
             email.setDisable(true);
@@ -458,35 +502,25 @@ public class VueConnexionServeur extends StackPane {
             etat.setText("Saisissez le code de sécurité à six chiffres reçu par e-mail.");
             return;
         }
+        boolean memoriser = memoriserAppareil.isSelected();
         activation.setDisable(true);
         connecter.setDisable(true);
         inscription.setDisable(true);
         codeConnexion.setDisable(true);
+        memoriserAppareil.setDisable(true);
+        oublierAppareil.setDisable(true);
         etat.setText("Vérification du code de sécurité…");
         TaskRunner.run(() -> {
             ClientAuthentificationHttps session = ClientAuthentificationHttps.confirmerCodeConnexion(
                     hoteServeur, portChallenge,
-                    identifiantChallenge, code.strip());
-            if (session.compte().role() != role) {
-                session.close();
-                throw new CodeConsommeException(
-                        "Cette demande de compte est associée au rôle « "
-                                + session.compte().role().label() + " », pas au rôle « "
-                                + role.label() + " » de ce poste.");
-            }
-            try {
-                Reseau.connecter(hoteServeur + ":" + IdentitePoste.port(), role);
-                return session;
-            } catch (RuntimeException ex) {
-                session.close();
-                throw new CodeConsommeException(ex.getMessage());
-            }
+                    identifiantChallenge, code.strip(), memoriser, IdentitePoste.libelle());
+            return preparerSession(session, hoteServeur, true);
         }, session -> {
-            Reseau.installerAuthentification(session);
-            Session.setRole(session.compte().role());
-            router.go(ecranDuRole());
+            terminerConnexion(session);
         }, erreur -> {
             inscription.setDisable(false);
+            memoriserAppareil.setDisable(false);
+            oublierAppareil.setDisable(false);
             if (erreur instanceof CodeConsommeException) {
                 attenteCodeConnexion = false;
                 identifiantChallenge = null;
@@ -514,6 +548,79 @@ public class VueConnexionServeur extends StackPane {
         private CodeConsommeException(String message) {
             super(message);
         }
+    }
+
+    private ClientAuthentificationHttps preparerSession(ClientAuthentificationHttps session,
+            String hote, boolean apresCode) {
+        if (session.compte().role() != role) {
+            String message = "Ce compte est associé au rôle « "
+                    + session.compte().role().label() + " », pas au rôle « "
+                    + role.label() + " » de ce poste.";
+            session.close();
+            if (apresCode) {
+                throw new CodeConsommeException(message);
+            }
+            throw new ClientAuthentificationHttps.ErreurAuthentification(message);
+        }
+        try {
+            Reseau.connecter(hote + ":" + IdentitePoste.port(), role);
+            return session;
+        } catch (RuntimeException ex) {
+            session.close();
+            if (apresCode) {
+                throw new CodeConsommeException(ex.getMessage());
+            }
+            throw ex;
+        }
+    }
+
+    private void terminerConnexion(ClientAuthentificationHttps session) {
+        session.appareilConfiance().ifPresent(confiance -> MemoireAppareilConfiance.ecrire(
+                session.compte().email(), role, confiance.jeton(), confiance.expireLe()));
+        Reseau.installerAuthentification(session);
+        Session.setRole(session.compte().role());
+        router.go(ecranDuRole());
+    }
+
+    private void oublierAppareilConfiance() {
+        if (modeActivation || modeInscription || attenteCodeConnexion) {
+            return;
+        }
+        String identifiant = email.getText();
+        if (identifiant == null || identifiant.isBlank()) {
+            etat.setText("Saisissez d'abord l'adresse e-mail du compte dont ce poste doit être oublié.");
+            email.requestFocus();
+            return;
+        }
+        var confiance = MemoireAppareilConfiance.lire(identifiant, role);
+        MemoireAppareilConfiance.oublier(identifiant, role);
+        memoriserAppareil.setSelected(false);
+        if (confiance.isEmpty()) {
+            etat.setText("Aucun poste de confiance n'est enregistré localement pour ce compte.");
+            return;
+        }
+        String adresse = adresseServeur.getText();
+        if (adresse == null || adresse.isBlank()) {
+            etat.setText("Poste oublié sur cet ordinateur : son jeton local a été supprimé. "
+                    + "L'enregistrement serveur éventuel expirera au plus tard après 48 heures.");
+            return;
+        }
+        String jeton = confiance.get().jeton();
+        oublierAppareil.setDisable(true);
+        etat.setText("Oubli du poste de confiance…");
+        TaskRunner.run(() -> {
+            String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
+            ClientAuthentificationHttps.oublierAppareilConfiance(
+                    hote, portHttpsPour(hote), jeton);
+            return true;
+        }, ok -> {
+            oublierAppareil.setDisable(false);
+            etat.setText("Poste de confiance oublié. Un code e-mail sera demandé à la prochaine connexion.");
+        }, erreur -> {
+            oublierAppareil.setDisable(false);
+            etat.setText("Poste oublié sur cet ordinateur, mais la révocation n'a pas pu être "
+                    + "confirmée par le serveur. Le jeton expirera au plus tard après 48 heures.");
+        });
     }
 
     private void activerCompte() {
@@ -642,6 +749,11 @@ public class VueConnexionServeur extends StackPane {
         etiquetteCodeConnexion.setManaged(attenteCodeConnexion && !modeInscription);
         codeConnexion.setVisible(attenteCodeConnexion && !modeInscription);
         codeConnexion.setManaged(attenteCodeConnexion && !modeInscription);
+        boolean connexionCompte = !modeActivation && !modeInscription;
+        memoriserAppareil.setVisible(connexionCompte);
+        memoriserAppareil.setManaged(connexionCompte);
+        oublierAppareil.setVisible(connexionCompte && !attenteCodeConnexion);
+        oublierAppareil.setManaged(connexionCompte && !attenteCodeConnexion);
         inscription.setText(modeActivation ? "Retour à la connexion" : modeInscription ? "J'ai déjà un compte" : "Créer un compte");
         if (attenteCodeConnexion) {
             inscription.setText("Annuler");
@@ -666,11 +778,15 @@ public class VueConnexionServeur extends StackPane {
         motDePasse.setDisable(!actifs);
         confirmationMotDePasse.setDisable(!actifs);
         codeConnexion.setDisable(!actifs);
+        memoriserAppareil.setDisable(!actifs);
+        oublierAppareil.setDisable(!actifs);
         inscription.setDisable(!actifs);
     }
 
-    private record DemandeCode(String hote, int port,
-            ClientAuthentificationHttps.ChallengeConnexion challenge) {
+    private record ResultatDebutConnexion(String hote, int port,
+            ClientAuthentificationHttps sessionDirecte,
+            ClientAuthentificationHttps.ChallengeConnexion challenge,
+            boolean confianceEnvoyee) {
     }
 
     /** Résumé affiché après coup par d'autres écrans : « PC3 → 192.168.1.10:7777 (3 postes) ». */

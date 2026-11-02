@@ -100,8 +100,9 @@ Routes disponibles :
 | Méthode et route | Accès | Résultat |
 |---|---|---|
 | `POST /api/auth/inscription` | Public, HTTPS uniquement | Crée une demande inactive ; le bot PC1 peut pré-accepter un apprenant éligible, sans supprimer l'activation par PIN e-mail |
-| `POST /api/auth/connexion` | Public, HTTPS uniquement | Vérifie les identifiants et envoie un code à usage unique par e-mail |
-| `POST /api/auth/code` | Public, HTTPS uniquement | Vérifie le code et retourne le jeton et l'identité chargés depuis PostgreSQL |
+| `POST /api/auth/connexion` | Public, HTTPS uniquement | Vérifie les identifiants ; ouvre directement la session si le poste de confiance est encore dans ses 48 heures, sinon envoie un code à usage unique par e-mail |
+| `POST /api/auth/code` | Public, HTTPS uniquement | Vérifie le code et retourne le jeton et l'identité chargés depuis PostgreSQL ; peut créer un appareil de confiance de 48 heures si l'utilisateur l'a demandé |
+| `POST /api/auth/appareil-confiance/oublier` | Jeton de confiance présenté, HTTPS uniquement | Révoque l'appareil de confiance correspondant |
 | `GET /api/auth/session` | Jeton actif | Vérifie et renouvelle l'expiration d'inactivité |
 | `POST /api/auth/deconnexion` | Jeton actif | Révoque la session et retourne `204` |
 | `GET /api/admin/comptes` | Administrateur | Liste filtrée et paginée dans PostgreSQL (`recherche`, `domaine`, `statut`, `role`, `actif`, `page`, `taille`) avec avis du bot |
@@ -115,7 +116,9 @@ pré-accepter uniquement un apprenant éligible; les enseignants et les exceptio
 cinq essais, à usage unique et stocké uniquement sous forme bcrypt dans `invitations_inscription`.
 Il n'est jamais conservé en clair dans un fichier JSON. Un compte refusé ou en attente ne peut pas
 se connecter. Le code de connexion par e-mail est également à usage unique, haché en base et expire
-après 10 minutes. L'envoi d'e-mail exige une configuration SMTP valide. La découverte du serveur
+après 10 minutes. Après ce code, l'utilisateur peut faire confiance à son poste pendant 48 heures :
+le mot de passe reste vérifié, mais aucun nouveau code n'est envoyé avant expiration ou révocation.
+L'envoi d'e-mail exige une configuration SMTP valide. La découverte du serveur
 local se fait automatiquement en UDP, sans PIN de salle.
 Si l'envoi du PIN échoue après sa création, l'interface affiche l'erreur SMTP; une nouvelle
 génération invalide l'invitation précédente et envoie un nouveau PIN.
@@ -212,6 +215,13 @@ apprenants affectés dans ce langage. Lire [la procédure de bascule](../docs/ni
 par statut, rôle, date d'arrivée et domaine e-mail. Elle ne supprime ni ne réécrit les comptes.
 Sauvegarder la base, arrêter HTTPS, appliquer après 12, puis relancer. Détails et recette :
 [scalabilité des inscriptions](../docs/scalabilite-inscriptions.md).
+
+## Migration 14 — appareils de confiance de 48 heures
+
+`14-appareils-confiance-48h.sql` crée la table des empreintes de jetons de poste de confiance.
+Elle ne modifie ni les comptes ni les sessions. Sauvegarder la base, arrêter HTTPS, appliquer
+après 13, puis relancer. Détails et recette :
+[appareil de confiance de 48 heures](../docs/appareil-confiance-48h.md).
 
 ## Lanceur automatique Docker / PostgreSQL sous Windows (PC1)
 

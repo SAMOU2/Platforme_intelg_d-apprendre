@@ -33,6 +33,16 @@ public final class PostgresAuthentificationService {
 
     public ChallengeConnexion demanderCodeConnexion(String email, char[] motDePasse,
             String adresseSource) throws SQLException {
+        return commencerConnexion(email, motDePasse, adresseSource, null).challenge();
+    }
+
+    /**
+     * Commence une connexion par mot de passe. Un jeton d'appareil de confiance encore
+     * valable (48 heures au maximum, sans prolongation) permet d'ouvrir directement la
+     * session ; sinon un code e-mail à usage unique reste obligatoire.
+     */
+    public DebutConnexion commencerConnexion(String email, char[] motDePasse,
+            String adresseSource, String jetonConfiance) throws SQLException {
         Objects.requireNonNull(motDePasse, "motDePasse");
         if (adresseSource == null || adresseSource.isBlank()) {
             java.util.Arrays.fill(motDePasse, '\0');
@@ -59,7 +69,11 @@ public final class PostgresAuthentificationService {
             }
 
             effacerEchecs(emailNormalise, empreinte(adresseSource));
-            return creerCodeConnexion(compte);
+            var sessionDirecte = ouvrirSessionAvecAppareilConfiance(compte, jetonConfiance);
+            if (sessionDirecte.isPresent()) {
+                return new DebutConnexion(null, sessionDirecte.get());
+            }
+            return new DebutConnexion(creerCodeConnexion(compte), null);
         } finally {
             java.util.Arrays.fill(motDePasse, '\0');
         }
@@ -67,6 +81,11 @@ public final class PostgresAuthentificationService {
 
     public ResultatConnexion confirmerCodeConnexion(String identifiant, String code)
             throws SQLException {
+        return confirmerCodeConnexion(identifiant, code, false, null);
+    }
+
+    public ResultatConnexion confirmerCodeConnexion(String identifiant, String code,
+            boolean memoriserAppareil, String libellePoste) throws SQLException {
         java.util.UUID id;
         try {
             id = java.util.UUID.fromString(identifiant);
@@ -128,8 +147,24 @@ public final class PostgresAuthentificationService {
                         supprimer.executeUpdate();
                     }
                     ResultatConnexion session = creerSession(connexion, compte);
+                    AppareilConfiance appareilConfiance = null;
+                    if (memoriserAppareil) {
+                        var avantConfiance = connexion.setSavepoint();
+                        try {
+                            appareilConfiance = creerAppareilConfiance(
+                                    connexion, compte, libellePoste);
+                        } catch (SQLException ex) {
+                            if (!"42P01".equals(ex.getSQLState())) {
+                                throw ex;
+                            }
+                            // PC1 pas encore migré : la session reste valable, sans confiance.
+                            connexion.rollback(avantConfiance);
+                        }
+                    }
                     connexion.commit();
-                    return session;
+                    return appareilConfiance == null ? session
+                            : new ResultatConnexion(session.jeton(), session.session(),
+                                    appareilConfiance);
                 }
             } catch (SQLException | RuntimeException ex) {
                 connexion.rollback();
@@ -259,10 +294,7 @@ public final class PostgresAuthentificationService {
 
     private ResultatConnexion creerSession(Connection connexion, CompteAuthentifie compte)
             throws SQLException {
-        byte[] aleatoire = new byte[32];
-        ALEA.nextBytes(aleatoire);
-        String jeton = Base64.getUrlEncoder().withoutPadding().encodeToString(aleatoire);
-        java.util.Arrays.fill(aleatoire, (byte) 0);
+        String jeton = nouveauJetonOpaque();
 
         String sql = """
                 INSERT INTO sessions
@@ -285,6 +317,127 @@ public final class PostgresAuthentificationService {
                 return new ResultatConnexion(jeton, session);
             }
         }
+    }
+
+    private AppareilConfiance creerAppareilConfiance(Connection connexion,
+            CompteAuthentifie compte, String libellePoste) throws SQLException {
+        String jeton = nouveauJetonOpaque();
+        try (PreparedStatement requete = connexion.prepareStatement("""
+                INSERT INTO appareils_confiance
+                    (utilisateur_id, empreinte_jeton, libelle_poste, expire_le)
+                VALUES (?, ?, ?, now() + INTERVAL '48 hours')
+                RETURNING expire_le
+                """)) {
+            requete.setLong(1, compte.id());
+            requete.setString(2, empreinte(jeton));
+            requete.setString(3, nettoyerLibellePoste(libellePoste));
+            try (ResultSet resultat = requete.executeQuery()) {
+                if (!resultat.next()) {
+                    throw new SQLException("PostgreSQL n'a retourné aucun appareil de confiance.");
+                }
+                return new AppareilConfiance(jeton, resultat.getTimestamp(1).toInstant());
+            }
+        }
+    }
+
+    private Optional<ResultatConnexion> ouvrirSessionAvecAppareilConfiance(
+            CompteAuthentifie compte, String jetonConfiance) throws SQLException {
+        if (!jetonOpaqueValide(jetonConfiance)) {
+            return Optional.empty();
+        }
+        try (Connection connexion = ouvrir()) {
+            connexion.setAutoCommit(false);
+            try (PreparedStatement requete = connexion.prepareStatement("""
+                    SELECT a.id, a.expire_le
+                    FROM appareils_confiance a
+                    JOIN utilisateurs u ON u.id = a.utilisateur_id
+                    WHERE a.utilisateur_id = ?
+                      AND a.empreinte_jeton = ?
+                      AND a.revoque_le IS NULL
+                      AND a.expire_le > now()
+                      AND u.actif
+                      AND u.statut_inscription = 'ACCEPTE'
+                    FOR UPDATE OF a, u
+                    """)) {
+                requete.setLong(1, compte.id());
+                requete.setString(2, empreinte(jetonConfiance));
+                java.util.UUID appareilId;
+                Instant expireLe;
+                try (ResultSet resultat = requete.executeQuery()) {
+                    if (!resultat.next()) {
+                        connexion.rollback();
+                        return Optional.empty();
+                    }
+                    appareilId = resultat.getObject("id", java.util.UUID.class);
+                    expireLe = resultat.getTimestamp("expire_le").toInstant();
+                }
+                try (PreparedStatement toucher = connexion.prepareStatement("""
+                        UPDATE appareils_confiance
+                        SET derniere_utilisation = now()
+                        WHERE id = ?
+                        """)) {
+                    toucher.setObject(1, appareilId);
+                    toucher.executeUpdate();
+                }
+                ResultatConnexion session = creerSession(connexion, compte);
+                connexion.commit();
+                return Optional.of(new ResultatConnexion(session.jeton(), session.session(),
+                        new AppareilConfiance(jetonConfiance, expireLe)));
+            } catch (SQLException | RuntimeException ex) {
+                connexion.rollback();
+                if (ex instanceof SQLException sql && "42P01".equals(sql.getSQLState())) {
+                    return Optional.empty();
+                }
+                throw ex;
+            }
+        }
+    }
+
+    /** Révoque un appareil de confiance ; le prochain accès exigera un nouveau code. */
+    public void revoquerAppareilConfiance(String jetonConfiance) throws SQLException {
+        if (!jetonOpaqueValide(jetonConfiance)) {
+            return;
+        }
+        try (Connection connexion = ouvrir();
+             PreparedStatement requete = connexion.prepareStatement("""
+                     UPDATE appareils_confiance
+                     SET revoque_le = now()
+                     WHERE empreinte_jeton = ? AND revoque_le IS NULL
+                     """)) {
+            requete.setString(1, empreinte(jetonConfiance));
+            requete.executeUpdate();
+        } catch (SQLException ex) {
+            if (!"42P01".equals(ex.getSQLState())) {
+                throw ex;
+            }
+        }
+    }
+
+    private static String nouveauJetonOpaque() {
+        byte[] aleatoire = new byte[32];
+        ALEA.nextBytes(aleatoire);
+        String jeton = Base64.getUrlEncoder().withoutPadding().encodeToString(aleatoire);
+        java.util.Arrays.fill(aleatoire, (byte) 0);
+        return jeton;
+    }
+
+    private static boolean jetonOpaqueValide(String jeton) {
+        return jeton != null && jeton.length() >= 32 && jeton.length() <= 128
+                && jeton.chars().allMatch(caractere -> caractere == '-' || caractere == '_'
+                        || (caractere >= 'A' && caractere <= 'Z')
+                        || (caractere >= 'a' && caractere <= 'z')
+                        || (caractere >= '0' && caractere <= '9'));
+    }
+
+    private static String nettoyerLibellePoste(String libelle) {
+        if (libelle == null) {
+            return null;
+        }
+        String propre = libelle.replaceAll("[\\p{Cntrl}]", " ").strip();
+        if (propre.isBlank()) {
+            return null;
+        }
+        return propre.length() <= 80 ? propre : propre.substring(0, 80).strip();
     }
 
     private ChallengeConnexion creerCodeConnexion(CompteAuthentifie compte) throws SQLException {
@@ -395,7 +548,20 @@ public final class PostgresAuthentificationService {
             Instant expireLe) {
     }
 
-    public record ResultatConnexion(String jeton, SessionAuthentifiee session) {
+    public record DebutConnexion(ChallengeConnexion challenge, ResultatConnexion session) {
+        public boolean codeRequis() {
+            return session == null;
+        }
+    }
+
+    public record AppareilConfiance(String jeton, Instant expireLe) {
+    }
+
+    public record ResultatConnexion(String jeton, SessionAuthentifiee session,
+            AppareilConfiance appareilConfiance) {
+        public ResultatConnexion(String jeton, SessionAuthentifiee session) {
+            this(jeton, session, null);
+        }
     }
 
     public static final class AuthentificationRefuseeException extends RuntimeException {

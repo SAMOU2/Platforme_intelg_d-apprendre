@@ -10,10 +10,13 @@ poste, mais ne constitue jamais une identité ni une autorisation.
   utilisé dans l'adresse serveur. Il n'y a pas de repli silencieux vers HTTP.
 - La connexion identifie une personne par son e-mail et son mot de passe, puis exige un code à usage
   unique envoyé à cette adresse. Le code expire après 10 minutes, est haché en base, ne peut servir
-  qu'une fois et autorise au plus cinq essais.
+  qu'une fois et autorise au plus cinq essais. Après la validation de ce code, l'utilisateur peut
+  explicitement faire confiance au poste pendant **48 heures au maximum** : le mot de passe reste
+  alors vérifié à chaque ouverture, mais aucun nouveau code n'est envoyé avant l'expiration,
+  la révocation ou l'oubli du poste.
 - Le serveur normalise l'e-mail (espaces extérieurs supprimés, casse ignorée), vérifie le mot de
-  passe et retourne le rôle enregistré en base après validation du code. Le serveur ignore tout
-  rôle fourni à la connexion.
+  passe et retourne le rôle enregistré en base après validation du code ou d'un appareil de
+  confiance encore valable. Le serveur ignore tout rôle fourni à la connexion.
 - Les réponses en cas d'e-mail inconnu, de mauvais mot de passe ou de compte désactivé sont
   identiques côté client.
 
@@ -61,6 +64,26 @@ poste, mais ne constitue jamais une identité ni une autorisation.
 - Les jetons ne figurent ni dans les journaux, ni dans les paramètres de lancement, ni dans les
   messages d'erreur.
 
+## Appareils de confiance — code e-mail tous les 2 jours
+
+- La confiance est un choix explicite sur l'écran de connexion et n'est créée qu'après un mot de
+  passe correct **et** un code e-mail valide. Ne pas cocher cette option sur un poste partagé.
+- Le serveur émet un jeton opaque distinct de 256 bits et ne conserve que son empreinte SHA-256
+  dans `appareils_confiance`. Le client conserve le jeton dans le profil utilisateur, dans un
+  fichier séparé par compte et rôle de poste sous `~/.ihm2026/appareils-confiance/`. Ni le mot de
+  passe ni le code e-mail ne sont enregistrés.
+- L'expiration est absolue : 48 heures après la validation du code. Les utilisations mettent à
+  jour la dernière utilisation, mais ne prolongent jamais cette échéance.
+- À chaque nouvelle ouverture, le serveur revérifie le mot de passe, la limitation des échecs,
+  l'état actif et le statut `ACCEPTE` du compte. Un jeton de confiance seul ne suffit donc jamais.
+- Fermer la fenêtre ou se déconnecter révoque la session courante, sans effacer automatiquement
+  la confiance du poste. **« Oublier ce poste de confiance »** supprime le jeton local et demande
+  sa révocation au serveur ; le prochain accès exigera un nouveau code. La désactivation du compte
+  révoque définitivement tous ses appareils de confiance.
+- Si une personne obtient à la fois le fichier local et le mot de passe pendant la fenêtre de
+  48 heures, elle n'aura pas besoin du code e-mail : c'est le compromis de confort explicitement
+  accepté en cochant l'option. Le profil Windows doit donc rester protégé.
+
 ## Limitation et erreurs
 
 - La connexion est limitée à 5 échecs par compte et par adresse source sur une fenêtre de 15 minutes.
@@ -71,7 +94,8 @@ poste, mais ne constitue jamais une identité ni une autorisation.
 
 - La sonde de santé peut rester publique et ne révèle que l'état/version du service.
 - Inscription publique sans PIN, activation par PIN après acceptation, demande de code et
-  validation du code sont publiques en HTTPS. Le renvoi d'un PIN et les décisions manuelles ou
+  validation du code sont publiques en HTTPS. La révocation d'un appareil de confiance exige la
+  présentation de son jeton opaque sur HTTPS. Le renvoi d'un PIN et les décisions manuelles ou
   par lot sont réservés à l'administrateur; déconnexion et toutes les routes métier requièrent
   un jeton actif. La liste des comptes est filtrée et paginée côté PostgreSQL.
 - Le rôle est dérivé de la session côté serveur. L'autorisation est vérifiée sur chaque route,
@@ -86,6 +110,9 @@ poste, mais ne constitue jamais une identité ni une autorisation.
 3. Absence, falsification, expiration et révocation du jeton.
 4. Appels directs de routes par un rôle non autorisé.
 5. Seuil de limitation de tentatives et refus du transport HTTP en clair.
+6. Poste de confiance : création seulement après le code, mot de passe toujours exigé, absence
+   de code avant 48 heures, nouveau code après expiration/révocation et refus d'un jeton falsifié.
 
-Voir aussi [la scalabilité des inscriptions](scalabilite-inscriptions.md) pour les modes du bot,
+Voir aussi [l'appareil de confiance de 48 heures](appareil-confiance-48h.md) et
+[la scalabilité des inscriptions](scalabilite-inscriptions.md) pour les modes du bot,
 les filtres administrateur, la migration d'index et les limites de charge restantes.
