@@ -8,15 +8,18 @@ import fr.ihm2026.model.UtilisateurVM;
 import fr.ihm2026.ui.commun.Dialogue;
 import fr.ihm2026.ui.commun.EnteteVue;
 import fr.ihm2026.ui.commun.EtatVide;
+import javafx.animation.PauseTransition;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -28,8 +31,10 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /** AD1 — administrer les comptes et les rôles (un seul rôle par compte, confirmation avant suppression). */
@@ -51,6 +56,16 @@ public class ComptesView extends BorderPane {
     private final Button pageSuivante = new Button("Page suivante");
     private final Button accepterLot = new Button("Accepter la sélection");
     private final Button refuserLot = new Button("Refuser la sélection");
+    private final Label symboleEtatListe = new Label("ℹ");
+    private final Label etatListe = new Label("Chargement des comptes…");
+    private final ProgressIndicator indicateurListe = new ProgressIndicator();
+    private final Button reessayerListe = new Button("↻ Réessayer");
+    private final HBox bandeauEtatListe = new HBox(8, symboleEtatListe, etatListe,
+            indicateurListe, reessayerListe);
+    private final PauseTransition delaiRecherche = new PauseTransition(Duration.millis(400));
+    private boolean chargementListeEnCours;
+    private boolean rechargementListeEnAttente;
+    private boolean reinitialisationFiltres;
     private final Set<String> emailsCoches = new LinkedHashSet<>();
     private int pageCourante = 1;
     private long totalComptesFiltres;
@@ -63,7 +78,7 @@ public class ComptesView extends BorderPane {
         // Les colonnes se partagent la largeur : plus de colonne vide en bout de tableau.
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         table.getStyleClass().add("table-comptes");
-        table.setPlaceholder(new EtatVide("Aucun compte enregistré."));
+        table.setPlaceholder(new EtatVide("Chargement des comptes…"));
 
         TableColumn<UtilisateurVM, Boolean> cSelection = new TableColumn<>("Lot");
         cSelection.setPrefWidth(52);
@@ -146,25 +161,42 @@ public class ComptesView extends BorderPane {
         table.getColumns().addAll(cSelection, cNom, cEmail, cRole, cEtat, cCreeLe, cBot);
         VBox.setVgrow(table, Priority.ALWAYS);
 
+        bandeauEtatListe.getStyleClass().addAll("etat-formulaire", "etat-chargement");
+        bandeauEtatListe.setId("comptes-bandeau-etat");
+        bandeauEtatListe.setAlignment(Pos.CENTER_LEFT);
+        bandeauEtatListe.setMaxWidth(Double.MAX_VALUE);
+        symboleEtatListe.getStyleClass().add("etat-symbole");
+        symboleEtatListe.setText("↻");
+        symboleEtatListe.setFocusTraversable(false);
+        symboleEtatListe.setAccessibleText("Chargement");
+        etatListe.getStyleClass().add("etat-texte");
+        etatListe.setWrapText(true);
+        etatListe.setMaxWidth(Double.MAX_VALUE);
+        etatListe.setFocusTraversable(true);
+        etatListe.setAccessibleText("Chargement : chargement des comptes");
+        etatListe.setAccessibleHelp("État du chargement de la liste des comptes.");
+        HBox.setHgrow(etatListe, Priority.ALWAYS);
+        indicateurListe.getStyleClass().add("indicateur-chargement");
+        indicateurListe.setPrefSize(16, 16);
+        indicateurListe.setAccessibleText("Chargement de la liste en cours");
+        reessayerListe.setVisible(false);
+        reessayerListe.setManaged(false);
+        reessayerListe.setAccessibleText("Réessayer le chargement de la liste des comptes");
+        reessayerListe.setOnAction(e -> chargerComptes());
+
         Label etiquetteRecherche = new Label("Recherche");
         etiquetteRecherche.setLabelFor(recherche);
         recherche.setPromptText("Nom ou e-mail");
         recherche.getStyleClass().add("champ");
         recherche.setAccessibleText("Rechercher un compte par nom ou e-mail");
-        recherche.setOnAction(e -> {
-            pageCourante = 1;
-            chargerComptes();
-        });
+        recherche.setOnAction(e -> appliquerFiltres());
 
         Label etiquetteDomaine = new Label("Domaine");
         etiquetteDomaine.setLabelFor(domaine);
         domaine.setPromptText("ex. univ.dz");
         domaine.getStyleClass().add("champ");
         domaine.setAccessibleText("Filtrer par domaine e-mail, par exemple univ.dz");
-        domaine.setOnAction(e -> {
-            pageCourante = 1;
-            chargerComptes();
-        });
+        domaine.setOnAction(e -> appliquerFiltres());
 
         Label etiquetteStatut = new Label("Statut");
         etiquetteStatut.setLabelFor(filtreStatut);
@@ -184,26 +216,35 @@ public class ComptesView extends BorderPane {
         filtreActif.setValue("Tous les états");
         filtreActif.setAccessibleText("Filtrer par compte actif ou inactif");
 
+        // Les listes déroulantes s'appliquent immédiatement ; la saisie attend
+        // une courte pause pour éviter une requête serveur à chaque caractère.
+        recherche.textProperty().addListener((obs, ancien, nouveau) -> planifierApplicationFiltres());
+        domaine.textProperty().addListener((obs, ancien, nouveau) -> planifierApplicationFiltres());
+        delaiRecherche.setOnFinished(e -> appliquerFiltres());
+        sceneProperty().addListener((obs, ancienneScene, nouvelleScene) -> {
+            if (nouvelleScene == null) delaiRecherche.stop();
+        });
+        filtreStatut.valueProperty().addListener((obs, ancien, nouveau) -> {
+            if (!Objects.equals(ancien, nouveau)) appliquerFiltres();
+        });
+        filtreRole.valueProperty().addListener((obs, ancien, nouveau) -> {
+            if (!Objects.equals(ancien, nouveau)) appliquerFiltres();
+        });
+        filtreActif.valueProperty().addListener((obs, ancien, nouveau) -> {
+            if (!Objects.equals(ancien, nouveau)) appliquerFiltres();
+        });
+
         Button filtrer = new Button("Filtrer");
         filtrer.getStyleClass().add("btn-primary");
-        filtrer.setOnAction(e -> {
-            pageCourante = 1;
-            chargerComptes();
-        });
-        Button reinitialiserFiltres = new Button("Réinitialiser les filtres");
-        reinitialiserFiltres.setOnAction(e -> {
-            recherche.clear();
-            domaine.clear();
-            filtreStatut.setValue("Tous les statuts");
-            filtreRole.setValue("Tous les rôles");
-            filtreActif.setValue("Tous les états");
-            pageCourante = 1;
-            chargerComptes();
-        });
+        filtrer.setTooltip(new Tooltip("Appliquer maintenant les filtres et recharger la liste"));
+        filtrer.setAccessibleText("Appliquer maintenant les filtres et recharger la liste");
+        filtrer.setOnAction(e -> appliquerFiltres());
+        Button boutonReinitialiserFiltres = new Button("Réinitialiser les filtres");
+        boutonReinitialiserFiltres.setOnAction(e -> reinitialiserFiltres());
         FlowPane filtres = new FlowPane(8, 8, etiquetteRecherche, recherche,
                 etiquetteDomaine, domaine, etiquetteStatut, filtreStatut,
                 etiquetteRole, filtreRole, etiquetteActif, filtreActif,
-                filtrer, reinitialiserFiltres);
+                filtrer, boutonReinitialiserFiltres);
         filtres.getStyleClass().addAll("barre-actions", "barre-filtres");
 
         etatPagination.getStyleClass().add("texte-secondaire");
@@ -288,7 +329,7 @@ public class ComptesView extends BorderPane {
         Button publierContenus = new Button("Publier le cours et l'entraînement d'un niveau");
         publierContenus.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
         publierContenus.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.publierContenus(getScene().getWindow()));
-        VBox contenu = new VBox(12, resumeInscriptions, filtres, table, pagination, barre,
+        VBox contenu = new VBox(12, resumeInscriptions, filtres, bandeauEtatListe, table, pagination, barre,
                 affectations, publierContenus, preparerTest, note);
         contenu.getStyleClass().add("colonne");
         setCenter(contenu);
@@ -331,17 +372,119 @@ public class ComptesView extends BorderPane {
         chargerComptes();
     }
 
-    private void chargerComptes() {
-        if (operationCompteEnCours) {
+    private void appliquerFiltres() {
+        if (reinitialisationFiltres) {
             return;
         }
+        delaiRecherche.stop();
+        pageCourante = 1;
+        chargerComptes();
+    }
+
+    private void planifierApplicationFiltres() {
+        if (!reinitialisationFiltres) {
+            delaiRecherche.playFromStart();
+        }
+    }
+
+    private void reinitialiserFiltres() {
+        delaiRecherche.stop();
+        reinitialisationFiltres = true;
+        try {
+            recherche.clear();
+            domaine.clear();
+            filtreStatut.setValue("Tous les statuts");
+            filtreRole.setValue("Tous les rôles");
+            filtreActif.setValue("Tous les états");
+        } finally {
+            reinitialisationFiltres = false;
+        }
+        pageCourante = 1;
+        chargerComptes();
+    }
+
+    private void afficherEtatListe(String message, String classe, String symbole, String nature,
+            boolean chargement, boolean afficherReessayer) {
+        bandeauEtatListe.getStyleClass().removeAll("etat-information", "etat-chargement",
+                "etat-succes", "etat-avertissement", "etat-erreur");
+        bandeauEtatListe.getStyleClass().add(classe);
+        symboleEtatListe.setText(symbole);
+        symboleEtatListe.setAccessibleText(nature);
+        etatListe.setText(message);
+        etatListe.setAccessibleText(nature + " : " + message);
+        indicateurListe.setVisible(chargement);
+        indicateurListe.setManaged(chargement);
+        reessayerListe.setVisible(afficherReessayer);
+        reessayerListe.setManaged(afficherReessayer);
+    }
+
+    private boolean reprendreChargementPlusRecent(AdminApi.FiltreComptes filtreDemande) {
+        AdminApi.FiltreComptes filtreActuel = filtreCourant();
+        if (!rechargementListeEnAttente && filtreDemande.equals(filtreActuel)) {
+            return false;
+        }
+        boolean criteresDifferents = !Objects.equals(filtreDemande.recherche(), filtreActuel.recherche())
+                || !Objects.equals(filtreDemande.role(), filtreActuel.role())
+                || !Objects.equals(filtreDemande.statut(), filtreActuel.statut())
+                || !Objects.equals(filtreDemande.actif(), filtreActuel.actif())
+                || !Objects.equals(filtreDemande.domaine(), filtreActuel.domaine());
+        if (criteresDifferents) {
+            pageCourante = 1;
+        }
+        rechargementListeEnAttente = false;
+        chargerComptes();
+        return true;
+    }
+
+    private static boolean filtreUtilisateurActif(AdminApi.FiltreComptes filtre) {
+        return filtre.recherche() != null || filtre.role() != null || filtre.statut() != null
+                || filtre.actif() != null || filtre.domaine() != null;
+    }
+
+    private void actualiserPlaceholderListe(AdminApi.PageComptes page,
+            AdminApi.FiltreComptes filtre) {
+        String texte = page.total() > 0
+                ? "Aucun compte à afficher dans cette page."
+                : filtreUtilisateurActif(filtre)
+                        ? "Aucun compte ne correspond aux filtres. Modifiez un critère ou réinitialisez les filtres."
+                        : "Aucun compte enregistré pour le moment.";
+        EtatVide vide = new EtatVide(texte);
+        vide.setAccessibleText(texte);
+        table.setPlaceholder(vide);
+    }
+
+    private void chargerComptes() {
+        if (operationCompteEnCours) {
+            // Un filtre peut changer pendant la requête : garder la demande la
+            // plus récente au lieu de perdre silencieusement ce changement.
+            rechargementListeEnAttente = true;
+            if (chargementListeEnCours) {
+                afficherEtatListe("Actualisation en cours… Les derniers filtres seront appliqués juste après.",
+                        "etat-chargement", "↻", "Chargement", true, false);
+            }
+            return;
+        }
+        rechargementListeEnAttente = false;
         operationCompteEnCours = true;
+        chargementListeEnCours = true;
         table.setDisable(true);
         actualiserBoutonsLot();
+        if (table.getItems().isEmpty()) {
+            table.setPlaceholder(new EtatVide("Chargement des comptes…"));
+            afficherEtatListe("Chargement des comptes…", "etat-chargement", "↻",
+                    "Chargement", true, false);
+        } else {
+            afficherEtatListe("Actualisation en cours… Les lignes affichées sont encore celles du chargement précédent.",
+                    "etat-chargement", "↻", "Chargement", true, false);
+        }
         AdminApi.FiltreComptes filtre = filtreCourant();
         TaskRunner.run(() -> AdminApi.comptes(filtre), page -> {
             operationCompteEnCours = false;
+            chargementListeEnCours = false;
             table.setDisable(false);
+            if (reprendreChargementPlusRecent(filtre)) {
+                return;
+            }
             int pages = nombrePages(page.total(), page.taille());
             if (page.total() > 0 && pageCourante > pages) {
                 pageCourante = pages;
@@ -352,14 +495,40 @@ public class ComptesView extends BorderPane {
             pageCourante = page.page();
             emailsCoches.clear();
             table.getItems().setAll(page.comptes());
+            actualiserPlaceholderListe(page, filtre);
             actualiserResumeInscriptions(page);
             actualiserPagination(page);
             actualiserBoutonsLot();
+            if (page.total() == 0) {
+                afficherEtatListe(filtreUtilisateurActif(filtre)
+                                ? "Aucun compte ne correspond aux filtres. Modifiez un critère ou réinitialisez les filtres."
+                                : "Aucun compte enregistré pour le moment.",
+                        "etat-avertissement", "⚠", "Aucun résultat", false, false);
+            } else {
+                afficherEtatListe("Liste à jour · " + page.total() + " résultat(s) filtré(s), page "
+                                + page.page() + "/" + pages + ".",
+                        "etat-succes", "✓", "Succès", false, false);
+            }
         }, erreur -> {
             operationCompteEnCours = false;
+            chargementListeEnCours = false;
             table.setDisable(false);
+            if (reprendreChargementPlusRecent(filtre)) {
+                return;
+            }
             actualiserBoutonsLot();
-            Dialogue.erreur(fenetre(), "Actualisation impossible", messageErreur(erreur));
+            boolean anciennesLignes = !table.getItems().isEmpty();
+            if (!anciennesLignes) {
+                EtatVide vide = new EtatVide(
+                        "Aucune ligne n'a pu être chargée. Vérifiez le service, puis réessayez.");
+                vide.setAccessibleText(vide.getText());
+                table.setPlaceholder(vide);
+            }
+            afficherEtatListe("Actualisation impossible : " + messageErreur(erreur)
+                            + (anciennesLignes
+                                    ? " Les lignes ci-dessous sont celles du chargement précédent."
+                                    : " Aucune ligne n'a pu être chargée."),
+                    "etat-erreur", "✕", "Erreur", false, true);
         });
     }
 

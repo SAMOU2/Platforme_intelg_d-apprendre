@@ -19,7 +19,7 @@ public final class TaskRunner {
         };
         task.setOnSucceeded(e -> onSuccess.accept(task.getValue()));
         task.setOnFailed(e -> {
-            fr.ihm2026.ui.commun.Notifications.erreurActive();
+            fr.ihm2026.ui.commun.Notifications.erreurActive(task.getException());
             onFailure.accept(task.getException());
         });
         Thread thread = new Thread(task, "ihm-task");

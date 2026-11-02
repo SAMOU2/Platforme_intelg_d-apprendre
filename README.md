@@ -38,7 +38,11 @@ via les lanceurs de rôle Windows/Linux. PostgreSQL est publié uniquement sur l
 sur PC1 (`127.0.0.1:5433`).
 
 Les lanceurs Windows existent aussi en `.bat`. L'écran de connexion est désormais défilant
-pour garder les champs et actions accessibles sur petit écran.
+pour garder les champs et actions accessibles sur petit écran. Son état (chargement, succès,
+point à vérifier ou erreur exacte) s'affiche juste sous le bouton principal. Dans
+« Comptes et rôles », les filtres s'appliquent automatiquement et un bandeau distingue le
+chargement, les anciennes lignes conservées après erreur et l'absence de résultat : voir
+[l'amélioration UX des retours d'état et des filtres](docs/amelioration-ux-retours-filtres.md).
 
 Voir [le guide et les limites des preuves](docs/preuves/README.md) pour la configuration,
 les contrôles exécutés et les PNG. Les anciens passages imposant la découverte automatique
