@@ -30,16 +30,19 @@ poste, mais ne constitue jamais une identité ni une autorisation.
   temporaire à la prochaine connexion.
 - Les comptes `demo` insérés par le seed restent exclusivement destinés au développement et ne
   doivent pas être utilisés en production.
-- Toute inscription publique crée un compte `EN_ATTENTE`, quel que soit le rôle demandé. Seul un
-  administrateur authentifié peut l'accepter ou le refuser. La décision est journalisée et notifiée
-  par e-mail; seul un compte accepté peut ouvrir une session.
+- Toute inscription publique crée d'abord un compte `EN_ATTENTE` et inactif. Si le bot de tri
+  de PC1 est explicitement configuré, il peut pré-accepter uniquement un **apprenant** éligible
+  selon le domaine e-mail; le compte reste inactif jusqu'à l'activation par PIN. Les enseignants
+  et tous les cas hors politique restent soumis à la décision d'un administrateur authentifié.
+  Les décisions sont journalisées et notifiées par e-mail; seul un compte accepté puis activé
+  peut ouvrir une session.
 - Le serveur est découvert automatiquement par diffusion UDP sur le réseau local. Aucun PIN de salle
   partagé n'est utilisé.
-- L'administrateur crée un PIN d'inscription unique lié à l'e-mail et au rôle du futur compte.
-  Le serveur l'envoie par e-mail à cette adresse; il est valable 48 heures, limité à cinq essais et
-  consommable une fois. Seul son hachage bcrypt est stocké en base; le PIN n'est pas renvoyé ni
-  affiché dans l'interface administrateur. L'inscription n'envoie donc pas de code à une adresse
-  dont le compte n'existe pas encore.
+- Après acceptation par l'administrateur ou pré-acceptation d'un apprenant par le bot, le serveur
+  crée un PIN d'activation unique lié à l'e-mail et au rôle du compte. Il l'envoie par e-mail à
+  cette adresse; il est valable 48 heures, limité à cinq essais et consommable une fois. Seul son
+  hachage bcrypt est stocké en base; le PIN en clair n'est pas affiché dans l'interface
+  administrateur. L'administrateur peut renvoyer un PIN pour un compte accepté encore inactif.
 - Si aucun administrateur n'existe en base, le service exige au premier démarrage les variables
   d'environnement `IHM_BOOTSTRAP_ADMIN_NAME`, `IHM_BOOTSTRAP_ADMIN_EMAIL` et
   `IHM_BOOTSTRAP_ADMIN_PASSWORD`. Le compte est créé actif et accepté; retirer ces variables après
@@ -67,9 +70,10 @@ poste, mais ne constitue jamais une identité ni une autorisation.
 ## Routes et autorisations
 
 - La sonde de santé peut rester publique et ne révèle que l'état/version du service.
-- Inscription avec PIN valide, demande de code et validation du code sont publiques en HTTPS.
-  La création des PIN d'inscription est réservée à l'administrateur; déconnexion et toutes les
-  routes métier requièrent un jeton actif.
+- Inscription publique sans PIN, activation par PIN après acceptation, demande de code et
+  validation du code sont publiques en HTTPS. Le renvoi d'un PIN et les décisions manuelles ou
+  par lot sont réservés à l'administrateur; déconnexion et toutes les routes métier requièrent
+  un jeton actif. La liste des comptes est filtrée et paginée côté PostgreSQL.
 - Le rôle est dérivé de la session côté serveur. L'autorisation est vérifiée sur chaque route,
   indépendamment des contrôles d'interface.
 - Les rôles autorisés par route sont documentés et testés ; toute route non explicitement autorisée
@@ -82,3 +86,6 @@ poste, mais ne constitue jamais une identité ni une autorisation.
 3. Absence, falsification, expiration et révocation du jeton.
 4. Appels directs de routes par un rôle non autorisé.
 5. Seuil de limitation de tentatives et refus du transport HTTP en clair.
+
+Voir aussi [la scalabilité des inscriptions](scalabilite-inscriptions.md) pour les modes du bot,
+les filtres administrateur, la migration d'index et les limites de charge restantes.

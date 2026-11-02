@@ -107,6 +107,49 @@ class PostgresCompteRepositoryIntegrationTest {
         }
     }
 
+    @Test
+    void fileAdminFiltreePagineeEtBotApprenantUniquement() throws Exception {
+        var configuration = PostgresConfiguration.depuis(System.getenv());
+        var depot = new PostgresCompteRepository(configuration);
+        String token = "file-" + UUID.randomUUID();
+        String emailA = token + "-a@example.org";
+        String emailB = token + "-b@example.org";
+        String emailProf = token + "-prof@example.org";
+        try {
+            depot.inscrireCompte("File A", emailA,
+                    "mot-de-passe-inscription-2026".toCharArray(), Session.Role.APPRENANT);
+            depot.inscrireCompte("File B", emailB,
+                    "mot-de-passe-inscription-2026".toCharArray(), Session.Role.APPRENANT);
+
+            var filtrePage1 = new PostgresCompteRepository.FiltreComptes(token,
+                    Session.Role.APPRENANT, "EN_ATTENTE", Boolean.FALSE, "example.org", 1, 1);
+            var page1 = depot.lister(filtrePage1);
+            assertEquals(2, page1.total());
+            assertEquals(1, page1.comptes().size());
+            assertEquals(2, page1.enAttente());
+
+            var page2 = depot.lister(new PostgresCompteRepository.FiltreComptes(token,
+                    Session.Role.APPRENANT, "EN_ATTENTE", Boolean.FALSE, "example.org", 2, 1));
+            assertEquals(1, page2.comptes().size());
+            assertTrue(!page1.comptes().get(0).email().equals(page2.comptes().get(0).email()));
+
+            var decisionBot = depot.accepterInscriptionParBot(emailA);
+            assertEquals("ACCEPTE", decisionBot.compte().statutInscription());
+            assertFalse(decisionBot.compte().actif());
+            assertTrue(decisionBot.activation().pin().matches("[0-9]{8}"));
+            depot.activerCompte(emailA, decisionBot.activation().pin(), Session.Role.APPRENANT);
+
+            depot.inscrireCompte("File Prof", emailProf,
+                    "mot-de-passe-inscription-2026".toCharArray(), Session.Role.ENSEIGNANT);
+            assertThrows(IllegalArgumentException.class,
+                    () -> depot.accepterInscriptionParBot(emailProf));
+        } finally {
+            nettoyerActivation(configuration, emailA);
+            nettoyerActivation(configuration, emailB);
+            nettoyerActivation(configuration, emailProf);
+        }
+    }
+
     private static void nettoyerActivation(PostgresConfiguration configuration, String email) throws SQLException {
         try (var c = DriverManager.getConnection(configuration.url(), configuration.utilisateur(), configuration.motDePasse())) {
             for (String sql : new String[]{"DELETE FROM invitations_inscription WHERE email_cible = ?",

@@ -818,6 +818,13 @@
     -fx-background-radius: 7;
     -fx-padding: 6 14 6 14;
 }
+.barre-filtres {
+    -fx-alignment: center-left;
+}
+.barre-filtres .label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-texte-2;
+}
 
 /* ------------------------------------------- postes en réseau local (v0.13.0) */
 /* Une seule chose à saisir sur un poste : l'adresse du serveur. Le champ est donc assez large

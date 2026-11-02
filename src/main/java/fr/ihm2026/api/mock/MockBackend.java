@@ -157,7 +157,9 @@ public final class MockBackend {
             }
         }
         UtilisateurVM actualise = new UtilisateurVM(compte.getNom(), compte.getEmail(),
-                compte.getRole(), actif, compte.getNote(), compte.getTentatives());
+                compte.getRole(), actif, compte.getNote(), compte.getTentatives(),
+                compte.getStatutInscription(), compte.getCreeLe(), compte.getRecommandationBot(),
+                compte.getMotifBot());
         COMPTES.set(index, actualise);
         return actualise;
     }

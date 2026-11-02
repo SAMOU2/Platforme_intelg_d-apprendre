@@ -35,6 +35,7 @@ services:
       - ./10-correction-enseignant.sql:/docker-entrypoint-initdb.d/10-correction-enseignant.sql:ro
       - ./11-contenus-niveaux.sql:/docker-entrypoint-initdb.d/11-contenus-niveaux.sql:ro
       - ./12-parcours-enseignants.sql:/docker-entrypoint-initdb.d/12-parcours-enseignants.sql:ro
+      - ./13-scalabilite-comptes.sql:/docker-entrypoint-initdb.d/13-scalabilite-comptes.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ihm2026 -d ihm2026"]
       interval: 5s

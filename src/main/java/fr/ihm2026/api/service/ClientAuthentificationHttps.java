@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.ihm2026.core.Session;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -12,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -27,6 +30,8 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     private static final Duration DELAI_REQUETE = Duration.ofSeconds(8);
     // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS.
     private static final Duration DELAI_ENVOI_EMAIL = Duration.ofSeconds(60);
+    private static final Duration DELAI_DECISIONS_LOT = Duration.ofMinutes(3);
+    private static final int LOT_DECISIONS_MAX = 20;
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(DELAI_CONNEXION)
@@ -54,19 +59,21 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
                     "motDePasse", new String(motDePasse),
                     "role", role == null ? "" : role.name()));
             JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/inscription"))
-                    .timeout(DELAI_REQUETE)
+                    .timeout(DELAI_ENVOI_EMAIL)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(corps))
                     .build());
+            String statut = texteObligatoire(reponse, "statutInscription");
             if (role == null || !role.name().equals(texteObligatoire(reponse, "role"))
                     || reponse.path("actif").asBoolean(true)
-                    || !"EN_ATTENTE".equals(texteObligatoire(reponse, "statutInscription"))) {
+                    || (!"EN_ATTENTE".equals(statut) && !"ACCEPTE".equals(statut))) {
                 throw new ErreurAuthentification(
-                        "Réponse invalide : l'inscription doit rester en attente de validation.");
+                        "Réponse invalide : l'inscription doit rester inactive avant validation ou activation par PIN.");
             }
             return new CompteInscrit(reponse.path("id").asLong(),
-                    texteObligatoire(reponse, "nom"), texteObligatoire(reponse, "email"));
+                    texteObligatoire(reponse, "nom"), texteObligatoire(reponse, "email"),
+                    statut, reponse.path("message").asText(""));
         } catch (ErreurAuthentification ex) {
             throw ex;
         } catch (InterruptedException ex) {
@@ -206,22 +213,48 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     }
 
     public List<CompteAdmin> comptesAdministrateur() {
+        return comptesAdministrateur(FiltreComptesAdmin.parDefaut()).comptes();
+    }
+
+    public PageComptesAdmin comptesAdministrateur(FiltreComptesAdmin filtre) {
         verifierAdministrateur();
+        var filtreEffectif = filtre == null ? FiltreComptesAdmin.parDefaut() : filtre;
         try {
-            JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/admin/comptes"))
+            JsonNode reponse = envoyer(HttpRequest.newBuilder(
+                            base.resolve("/api/admin/comptes" + requeteAdmin(filtreEffectif)))
                     .timeout(DELAI_REQUETE)
                     .header("Authorization", "Bearer " + jeton)
                     .header("Accept", "application/json")
                     .GET()
                     .build());
-            if (!reponse.isArray()) {
+            List<CompteAdmin> resultat = new ArrayList<>();
+            if (reponse.isArray()) {
+                // Compatibilité avec un serveur PC1 pas encore mis à jour.
+                for (JsonNode element : reponse) {
+                    resultat.add(lireCompteAdmin(element));
+                }
+                long enAttente = resultat.stream()
+                        .filter(compte -> "EN_ATTENTE".equals(compte.statutInscription())).count();
+                long acceptes = resultat.stream()
+                        .filter(compte -> "ACCEPTE".equals(compte.statutInscription())).count();
+                long refuses = resultat.stream()
+                        .filter(compte -> "REFUSE".equals(compte.statutInscription())).count();
+                return new PageComptesAdmin(List.copyOf(resultat), resultat.size(), 1,
+                        Math.max(1, resultat.size()), enAttente, acceptes, refuses);
+            }
+            if (reponse == null || !reponse.path("comptes").isArray()) {
                 throw new ErreurAuthentification("Réponse invalide pour la liste des comptes.");
             }
-            List<CompteAdmin> resultat = new ArrayList<>();
-            for (JsonNode element : reponse) {
+            for (JsonNode element : reponse.path("comptes")) {
                 resultat.add(lireCompteAdmin(element));
             }
-            return List.copyOf(resultat);
+            return new PageComptesAdmin(List.copyOf(resultat),
+                    reponse.path("total").asLong(resultat.size()),
+                    reponse.path("page").asInt(filtreEffectif.page()),
+                    reponse.path("taille").asInt(filtreEffectif.taille()),
+                    reponse.path("enAttente").asLong(),
+                    reponse.path("acceptes").asLong(),
+                    reponse.path("refuses").asLong());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Chargement des comptes interrompu.", ex);
@@ -340,6 +373,61 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         }
     }
 
+    public ResultatDecisionsAdmin deciderInscriptions(List<String> emails, boolean acceptee) {
+        verifierAdministrateur();
+        if (emails == null || emails.isEmpty()) {
+            throw new ErreurAuthentification("Sélectionnez au moins une demande à traiter.");
+        }
+        List<String> uniques = new ArrayList<>(new LinkedHashSet<>(emails));
+        List<CompteAdmin> traites = new ArrayList<>();
+        List<String> erreurs = new ArrayList<>();
+        int emailsNonEnvoyes = 0;
+        try {
+            for (int debut = 0; debut < uniques.size(); debut += LOT_DECISIONS_MAX) {
+                List<String> lot = uniques.subList(debut,
+                        Math.min(uniques.size(), debut + LOT_DECISIONS_MAX));
+                String corps = MAPPER.writeValueAsString(Map.of(
+                        "emails", lot,
+                        "acceptee", acceptee));
+                JsonNode reponse = envoyer(HttpRequest.newBuilder(
+                                base.resolve("/api/admin/comptes/decisions"))
+                        .timeout(DELAI_DECISIONS_LOT)
+                        .header("Authorization", "Bearer " + jeton)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Accept", "application/json")
+                        .method("PATCH", HttpRequest.BodyPublishers.ofString(corps))
+                        .build());
+                if (reponse == null || !reponse.path("resultats").isArray()) {
+                    throw new ErreurAuthentification("Réponse invalide pour le traitement par lot.");
+                }
+                for (JsonNode resultat : reponse.path("resultats")) {
+                    String adresse = resultat.path("email").asText("");
+                    String message = resultat.path("message").asText("");
+                    if (resultat.path("traite").asBoolean()) {
+                        JsonNode compte = resultat.get("compte");
+                        if (compte != null && !compte.isNull()) {
+                            traites.add(lireCompteAdmin(compte));
+                        }
+                        if (!resultat.path("emailEnvoye").asBoolean()) {
+                            emailsNonEnvoyes++;
+                        }
+                    } else {
+                        erreurs.add(adresse + (message.isBlank() ? "" : " : " + message));
+                    }
+                }
+            }
+            return new ResultatDecisionsAdmin(List.copyOf(traites), List.copyOf(erreurs),
+                    emailsNonEnvoyes);
+        } catch (ErreurAuthentification ex) {
+            throw ex;
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ErreurAuthentification("Décisions d'inscription par lot interrompues.", ex);
+        } catch (IOException ex) {
+            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+        }
+    }
+
     public boolean actif() {
         return jeton != null && Instant.now().isBefore(compte.expireLe());
     }
@@ -438,6 +526,30 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         }
     }
 
+    private static String requeteAdmin(FiltreComptesAdmin filtre) {
+        StringBuilder requete = new StringBuilder("?");
+        ajouterParametre(requete, "recherche", filtre.recherche());
+        ajouterParametre(requete, "role", filtre.role() == null ? null : filtre.role().name());
+        ajouterParametre(requete, "statut", filtre.statut());
+        ajouterParametre(requete, "actif", filtre.actif() == null ? null : filtre.actif().toString());
+        ajouterParametre(requete, "domaine", filtre.domaine());
+        ajouterParametre(requete, "page", Integer.toString(filtre.page()));
+        ajouterParametre(requete, "taille", Integer.toString(filtre.taille()));
+        return requete.toString();
+    }
+
+    private static void ajouterParametre(StringBuilder requete, String nom, String valeur) {
+        if (valeur == null || valeur.isBlank()) {
+            return;
+        }
+        if (requete.length() > 1) {
+            requete.append('&');
+        }
+        requete.append(URLEncoder.encode(nom, StandardCharsets.UTF_8))
+                .append('=')
+                .append(URLEncoder.encode(valeur.strip(), StandardCharsets.UTF_8));
+    }
+
     private static CompteAdmin lireCompteAdmin(JsonNode reponse) {
         if (reponse == null || !reponse.path("id").canConvertToLong()
                 || !reponse.path("nom").isTextual() || !reponse.path("email").isTextual()
@@ -446,13 +558,18 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             throw new ErreurAuthentification("Réponse incomplète du service de gestion des comptes.");
         }
         try {
+            Instant creeLe = reponse.path("creeLe").isTextual()
+                    ? Instant.parse(reponse.path("creeLe").asText())
+                    : null;
             return new CompteAdmin(reponse.path("id").asLong(),
                     reponse.path("nom").asText(), reponse.path("email").asText(),
                     Session.Role.valueOf(reponse.path("role").asText()),
                     reponse.path("actif").asBoolean(),
-                    reponse.path("statutInscription").asText());
-        } catch (IllegalArgumentException ex) {
-            throw new ErreurAuthentification("Rôle invalide dans la réponse du service.", ex);
+                    reponse.path("statutInscription").asText(), creeLe,
+                    reponse.path("recommandationBot").asText("NON_EVALUEE"),
+                    reponse.path("motifBot").asText(""));
+        } catch (IllegalArgumentException | java.time.format.DateTimeParseException ex) {
+            throw new ErreurAuthentification("Compte invalide dans la réponse du service.", ex);
         }
     }
 
@@ -462,15 +579,44 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     public record ChallengeConnexion(String identifiant, String message) {
     }
 
-    public record CompteInscrit(long id, String nom, String email) {
+    public record CompteInscrit(long id, String nom, String email, String statutInscription,
+            String message) {
     }
 
     public record InvitationInscription(String email, Session.Role role, Instant expireLe,
             String message) {
     }
 
+    public record FiltreComptesAdmin(String recherche, Session.Role role, String statut, Boolean actif,
+            String domaine, int page, int taille) {
+
+        public FiltreComptesAdmin {
+            recherche = texteOuNull(recherche);
+            statut = texteOuNull(statut);
+            domaine = texteOuNull(domaine);
+            page = Math.max(1, page);
+            taille = Math.max(1, Math.min(200, taille));
+        }
+
+        public static FiltreComptesAdmin parDefaut() {
+            return new FiltreComptesAdmin(null, null, null, null, null, 1, 200);
+        }
+
+        private static String texteOuNull(String valeur) {
+            return valeur == null || valeur.isBlank() ? null : valeur.strip();
+        }
+    }
+
+    public record PageComptesAdmin(List<CompteAdmin> comptes, long total, int page, int taille,
+            long enAttente, long acceptes, long refuses) {
+    }
+
+    public record ResultatDecisionsAdmin(List<CompteAdmin> traites, List<String> erreurs,
+            int emailsNonEnvoyes) {
+    }
+
     public record CompteAdmin(long id, String nom, String email, Session.Role role, boolean actif,
-            String statutInscription) {
+            String statutInscription, Instant creeLe, String recommandationBot, String motifBot) {
     }
 
     public static final class ErreurAuthentification extends RuntimeException {
