@@ -66,7 +66,7 @@ public final class Router {
     private StackPane contenu;
     private String current;
     private boolean retour = false;
-    private boolean lateraleVisible = true;
+    private boolean lateraleReduite = false;
 
     public void init(Stage stage, Scene scene, BorderPane root) {
         this.stage = stage;
@@ -79,7 +79,7 @@ public final class Router {
         fr.ihm2026.ui.commun.Accessibilite.installer(scene, () -> {
             java.util.List<javafx.scene.Node> regions = new java.util.ArrayList<>();
             regions.add(barreTitre);
-            if (barreLaterale != null && root.getLeft() == barreLaterale && lateraleVisible)
+            if (barreLaterale != null && root.getLeft() == barreLaterale)
                 regions.add(barreLaterale);
             if (!contenu.getChildren().isEmpty())
                 regions.add(contenu.getChildren().get(contenu.getChildren().size() - 1));
@@ -196,7 +196,12 @@ public final class Router {
             if (nouvelle) {
                 barreLaterale = new BarreLaterale(this);
                 fr.ihm2026.ui.commun.Accessibilite.region(barreLaterale, "Navigation du rôle " + Session.role().label());
-                barreLaterale.prefWidthProperty().set(lateraleVisible ? Animations.LATERALE_LARGEUR : 0);
+                barreLaterale.setReduite(lateraleReduite);
+                double largeur = lateraleReduite
+                        ? Animations.LATERALE_LARGEUR_REDUITE : Animations.LATERALE_LARGEUR;
+                barreLaterale.setMinWidth(largeur);
+                barreLaterale.setPrefWidth(largeur);
+                barreLaterale.setMaxWidth(largeur);
                 barreLaterale.setVisible(true);
                 barreLaterale.setManaged(true);
             }
@@ -233,18 +238,23 @@ public final class Router {
     }
 
     /**
-     * Replie ou déploie la barre latérale, comme le bouton de barre d'outils de macOS (⌃⌘S).
-     * L'état est conservé d'un écran à l'autre : c'est un réglage, pas un effet.
+     * Réduit la barre latérale en rail d'icônes ou l'agrandit avec ses libellés.
+     * L'état est conservé d'un écran à l'autre : c'est un réglage d'espace de travail,
+     * pas un masquage de la navigation.
      */
     public void basculerLaterale() {
-        lateraleVisible = !lateraleVisible;
+        lateraleReduite = !lateraleReduite;
         if (barreLaterale != null) {
-            Animations.basculerLaterale(barreLaterale, lateraleVisible);
+            barreLaterale.setReduite(lateraleReduite);
+            Animations.basculerLaterale(barreLaterale, lateraleReduite);
+        }
+        if (barreTitre != null) {
+            barreTitre.rafraichirLaterale(lateraleReduite);
         }
     }
 
-    public boolean lateraleVisible() {
-        return lateraleVisible;
+    public boolean lateraleReduite() {
+        return lateraleReduite;
     }
 
     /** Retour à l'écran d'accueil du rôle courant. */

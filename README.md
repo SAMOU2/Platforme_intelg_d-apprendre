@@ -521,7 +521,7 @@ reprend la **structure** d'une application macOS.
 |---|---|---|
 | Fenêtre sans cadre système | `StageStyle.TRANSPARENT`, coins arrondis 12 px, ombre portée 34 px, liseré 0,5 px | `App.java`, `FenetreOutils`, `.fenetre` |
 | Barre de titre unifiée | translucide, 46 px, **pastilles actives** (fermer / réduire / agrandir), chevrons **retour / avance**, titre de l'écran, réglage d'apparence | `ui/commun/BarreTitre.java` |
-| Navigation | **barre latérale** translucide 244 px : sections « Apprendre » / « Parcours », icônes SVG, ligne active en accent, choix du parcours (Java / Python / C++) avec coche | `ui/commun/BarreLaterale.java` |
+| Navigation | **barre latérale** translucide 244 px, réductible en rail d'icônes de 76 px depuis le bouton hamburger placé en haut à gauche : sections « Apprendre » / « Parcours », icônes SVG aux couleurs sémantiques par fonction, ligne active en accent, choix du parcours (Java / Python / C++) avec coche et monogrammes en mode réduit | `ui/commun/BarreLaterale.java`, `ui/commun/BarreTitre.java` |
 | Compte | pied de barre latérale : avatar à initiales, nom, rôle, bouton de sortie | `.compte-lateral` |
 | Onglets Java / Python / C++ | contrôle segmenté : seule la surface du segment actif est peinte | `.tab-pane` |
 | Polices | **Inter** (repli libre de SF Pro) et **JetBrains Mono**, embarquées dans le jar : rendu identique sous Windows | `core/Fonts.java`, `resources/fr/ihm2026/fonts/` |
@@ -560,7 +560,7 @@ donc courtes, sans rebond, et le mouvement indique toujours la provenance.
 | Bascule d'apparence | 90 + 170 ms | bouton ☀/☾ | le thème change au point le plus sombre de la voile, donc sans clignotement |
 | Appui sur un bouton | 90 ms | tout bouton | la cible est bien enfoncée (échelle 0,955) |
 | Chevron retour / avance | 90 ms | navigation | le sens du déplacement |
-| Repli de la barre latérale | 220 ms | bouton ▤ de la barre de titre | le contenu reprend la place (largeur + opacité) |
+| Réduction / agrandissement de la barre latérale | 220 ms | bouton hamburger en haut à gauche de la barre de titre | la largeur glisse entre 244 px (icônes + libellés) et 76 px (icônes), sans retirer la navigation |
 
 **Deux garde-fous**, parce qu'une animation peut aussi être une nuisance :
 

@@ -2,11 +2,14 @@ package fr.ihm2026.ui.commun;
 
 import fr.ihm2026.core.Router;
 import fr.ihm2026.core.Session;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -24,7 +27,10 @@ import javafx.scene.shape.SVGPath;
  *
  * <p>Les entrées restent limitées au rôle courant (IHM-04) ; le parcours (Java / Python / C++) est
  * un choix explicite, pas un menu déroulant perdu dans un coin ; et le compte est en bas, avec
- * l'action « Quitter », comme un pied de barre latérale macOS.</p>
+ * l'action « Quitter », comme un pied de barre latérale macOS. Le bouton situé en haut à gauche
+ * de la fenêtre réduit cette barre en rail d'icônes ou l'agrandit avec ses libellés, sans la
+ * faire disparaître. Chaque fonction garde une icône et une couleur sémantique stables ; l'état
+ * actif ne repose jamais sur la couleur seule.</p>
  */
 public class BarreLaterale extends VBox {
 
@@ -52,6 +58,14 @@ public class BarreLaterale extends VBox {
     private final Session.Role role;
     private final Map<String, Button> lignes = new LinkedHashMap<>();
     private final VBox sectionParcours = new VBox(1);
+    private final List<Label> entetesSections = new ArrayList<>();
+    private final List<Label> libelles = new ArrayList<>();
+    private final List<Region> espacesParcours = new ArrayList<>();
+    private final Map<Session.Langage, Label> cochesParcours = new LinkedHashMap<>();
+    private HBox piedCompte;
+    private VBox textesCompte;
+    private Region espaceCompte;
+    private boolean reduite;
 
     public BarreLaterale(Router router) {
         this.router = router;
@@ -73,11 +87,12 @@ public class BarreLaterale extends VBox {
         switch (role) {
             case APPRENANT -> {
                 getChildren().add(entete("Apprendre"));
-                getChildren().add(entree("Parcours", Router.PARCOURS, ICONE_PARCOURS));
-                getChildren().add(entree("Cours", Router.COURS, ICONE_COURS));
-                getChildren().add(entree("Exercice", Router.EXERCICE, ICONE_EXERCICE));
-                getChildren().add(entree("Mes copies et décisions", Router.RESULTAT, ICONE_RESULTATS));
-                getChildren().add(entree("Tableau de bord", Router.TABLEAU_BORD, ICONE_BORD));
+                getChildren().add(entree("Parcours", Router.PARCOURS, ICONE_PARCOURS, "nav-parcours"));
+                getChildren().add(entree("Cours", Router.COURS, ICONE_COURS, "nav-cours"));
+                getChildren().add(entree("Exercice", Router.EXERCICE, ICONE_EXERCICE, "nav-exercice"));
+                getChildren().add(entree("Mes copies et décisions", Router.RESULTAT, ICONE_RESULTATS,
+                        "nav-resultats"));
+                getChildren().add(entree("Tableau de bord", Router.TABLEAU_BORD, ICONE_BORD, "nav-bord"));
                 getChildren().addAll(entete("Parcours"), sectionParcours);
                 for (Session.Langage langage : Session.Langage.values()) {
                     sectionParcours.getChildren().add(ligneParcours(langage));
@@ -85,8 +100,11 @@ public class BarreLaterale extends VBox {
             }
             case ENSEIGNANT -> {
                 getChildren().add(entete("Enseigner"));
-                getChildren().add(entree(fr.ihm2026.reseau.Reseau.sessionCompteInstallee() ? "Mes niveaux et contenus" : "Créer un niveau", Router.CONDITIONS, ICONE_ENSEIGNER));
-                getChildren().add(entree("Mes apprenants et copies", Router.RESULTATS, ICONE_RESULTATS));
+                getChildren().add(entree(fr.ihm2026.reseau.Reseau.sessionCompteInstallee()
+                        ? "Mes niveaux et contenus" : "Créer un niveau", Router.CONDITIONS,
+                        ICONE_ENSEIGNER, "nav-enseigner"));
+                getChildren().add(entree("Mes apprenants et copies", Router.RESULTATS, ICONE_RESULTATS,
+                        "nav-resultats"));
                 getChildren().addAll(entete("Parcours"), sectionParcours);
                 for (Session.Langage langage : Session.Langage.values()) {
                     sectionParcours.getChildren().add(ligneParcours(langage));
@@ -94,7 +112,8 @@ public class BarreLaterale extends VBox {
             }
             case ADMINISTRATEUR -> {
                 getChildren().add(entete("Administration"));
-                getChildren().add(entree("Comptes et rôles", Router.COMPTES, ICONE_COMPTES));
+                getChildren().add(entree("Comptes et rôles", Router.COMPTES, ICONE_COMPTES,
+                        "nav-comptes"));
             }
         }
     }
@@ -102,19 +121,23 @@ public class BarreLaterale extends VBox {
     private Label entete(String texte) {
         Label label = new Label(texte);
         label.getStyleClass().add("entete-section");
+        entetesSections.add(label);
         return label;
     }
 
-    private Button entree(String libelle, String route, String icone) {
-        HBox ligne = new HBox(8);
-        ligne.getStyleClass().add("ligne-laterale");
+    private Button entree(String libelle, String route, String icone, String classeCouleur) {
+        HBox ligne = new HBox(9);
+        ligne.getStyleClass().addAll("ligne-laterale", classeCouleur);
         ligne.setAlignment(Pos.CENTER_LEFT);
         SVGPath svg = new SVGPath();
         svg.setContent(icone);
         svg.getStyleClass().add("icone-laterale");
+        StackPane tuile = new StackPane(svg);
+        tuile.getStyleClass().add("tuile-icone-laterale");
         Label texte = new Label(libelle);
         texte.getStyleClass().add("libelle-lateral");
-        ligne.getChildren().addAll(svg, texte);
+        libelles.add(texte);
+        ligne.getChildren().addAll(tuile, texte);
         Button bouton = boutonNavigation(libelle, ligne);
         bouton.setOnAction(e -> router.go(route));
         lignes.put(route, bouton);
@@ -123,20 +146,25 @@ public class BarreLaterale extends VBox {
 
     /** Une ligne par parcours : le parcours courant porte une coche, comme un favori du Finder. */
     private Button ligneParcours(Session.Langage langage) {
-        HBox ligne = new HBox(8);
+        HBox ligne = new HBox(9);
         ligne.getStyleClass().addAll("ligne-laterale", "ligne-parcours");
         ligne.setAlignment(Pos.CENTER_LEFT);
 
-        Region pastille = new Region();
+        Label monogramme = new Label(abreviationLangage(langage));
+        monogramme.getStyleClass().add("monogramme-parcours");
+        StackPane pastille = new StackPane(monogramme);
         pastille.getStyleClass().addAll("pastille-parcours",
                 "parcours-" + langage.code());
         Label texte = new Label(langage.label());
         texte.getStyleClass().add("libelle-lateral");
+        libelles.add(texte);
         Region espace = new Region();
         HBox.setHgrow(espace, Priority.ALWAYS);
+        espacesParcours.add(espace);
         Label coche = new Label("✓");
         coche.getStyleClass().add("coche-parcours");
         coche.setVisible(langage == Session.langage());
+        cochesParcours.put(langage, coche);
 
         ligne.getChildren().addAll(pastille, texte, espace, coche);
         Button bouton = boutonNavigation("Parcours " + langage.label(), ligne);
@@ -151,11 +179,20 @@ public class BarreLaterale extends VBox {
         return bouton;
     }
 
+    private static String abreviationLangage(Session.Langage langage) {
+        return switch (langage) {
+            case JAVA -> "Ja";
+            case PYTHON -> "Py";
+            case CPP -> "C++";
+        };
+    }
+
     /** Vrai bouton : Tab, Entrée/Espace et activation du lecteur d'écran sont natifs. */
     private Button boutonNavigation(String nom, HBox contenu) {
         Button bouton = new Button(nom, contenu);
         bouton.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
         bouton.setAccessibleText(nom);
+        bouton.setTooltip(new Tooltip(nom));
         bouton.setMaxWidth(Double.MAX_VALUE);
         bouton.setAlignment(Pos.CENTER_LEFT);
         bouton.getStyleClass().addAll(contenu.getStyleClass());
@@ -175,10 +212,11 @@ public class BarreLaterale extends VBox {
         nom.getStyleClass().add("compte-nom");
         Label roleTexte = new Label(libelleRole(role));
         roleTexte.getStyleClass().add("compte-role");
+        Tooltip.install(avatar, new Tooltip(Session.utilisateur() + " — " + libelleRole(role)));
 
-        VBox textes = new VBox(1, nom, roleTexte);
-        Region espace = new Region();
-        HBox.setHgrow(espace, Priority.ALWAYS);
+        textesCompte = new VBox(1, nom, roleTexte);
+        espaceCompte = new Region();
+        HBox.setHgrow(espaceCompte, Priority.ALWAYS);
 
         Button sortie = new Button("⏻");
         sortie.getStyleClass().add("bouton-quitter");
@@ -189,10 +227,10 @@ public class BarreLaterale extends VBox {
             router.go(Router.RESEAU);
         });
 
-        HBox pied = new HBox(9, avatar, textes, espace, sortie);
-        pied.getStyleClass().add("compte-lateral");
-        pied.setAlignment(Pos.CENTER_LEFT);
-        return pied;
+        piedCompte = new HBox(9, avatar, textesCompte, espaceCompte, sortie);
+        piedCompte.getStyleClass().add("compte-lateral");
+        piedCompte.setAlignment(Pos.CENTER_LEFT);
+        return piedCompte;
     }
 
     private static String initiales(String nom) {
@@ -214,6 +252,58 @@ public class BarreLaterale extends VBox {
     }
 
     // ------------------------------------------------------------------ état
+    /**
+     * Applique le mode compact ou complet. En mode compact, les libellés et en-têtes sortent
+     * de la mise en page, les icônes se centrent et chaque vrai bouton conserve son nom
+     * accessible ainsi qu'une infobulle : la couleur ne devient jamais le seul repère.
+     */
+    public void setReduite(boolean reduite) {
+        this.reduite = reduite;
+        getStyleClass().remove("barre-laterale-reduite");
+        if (reduite) {
+            getStyleClass().add("barre-laterale-reduite");
+        }
+        for (Label entete : entetesSections) {
+            entete.setVisible(!reduite);
+            entete.setManaged(!reduite);
+        }
+        for (Label libelle : libelles) {
+            libelle.setVisible(!reduite);
+            libelle.setManaged(!reduite);
+        }
+        for (Region espace : espacesParcours) {
+            espace.setVisible(!reduite);
+            espace.setManaged(!reduite);
+        }
+        cochesParcours.forEach((langage, coche) -> {
+            coche.setManaged(!reduite);
+            coche.setVisible(!reduite && langage == Session.langage());
+        });
+        for (Button bouton : lignes.values()) {
+            bouton.setAlignment(reduite ? Pos.CENTER : Pos.CENTER_LEFT);
+            if (bouton.getGraphic() instanceof HBox ligne) {
+                ligne.setAlignment(reduite ? Pos.CENTER : Pos.CENTER_LEFT);
+            }
+        }
+        if (textesCompte != null) {
+            textesCompte.setVisible(!reduite);
+            textesCompte.setManaged(!reduite);
+        }
+        if (espaceCompte != null) {
+            espaceCompte.setVisible(!reduite);
+            espaceCompte.setManaged(!reduite);
+        }
+        if (piedCompte != null) {
+            piedCompte.setAlignment(reduite ? Pos.CENTER : Pos.CENTER_LEFT);
+            piedCompte.setSpacing(reduite ? 5 : 9);
+        }
+        requestLayout();
+    }
+
+    public boolean reduite() {
+        return reduite;
+    }
+
     public Session.Role role() {
         return role;
     }
@@ -235,7 +325,7 @@ public class BarreLaterale extends VBox {
                 continue;
             }
             boolean courant = langage == Session.langage();
-            ((Label) ((HBox) ligne.getGraphic()).getChildren().get(3)).setVisible(courant);
+            ((Label) ((HBox) ligne.getGraphic()).getChildren().get(3)).setVisible(courant && !reduite);
             if (courant) {
                 ligne.setAccessibleText(ligne.getText() + ", parcours sélectionné");
                 if (!ligne.getStyleClass().contains("courant")) {

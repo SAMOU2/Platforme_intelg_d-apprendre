@@ -8,7 +8,11 @@ pas une certification WCAG/RGAA ni une garantie que toute la plateforme est acce
 
 - Navigation latérale et choix Python/Java/C++ : vrais boutons JavaFX au lieu de lignes
   utilisables uniquement à la souris. Activation native par clavier ou lecteur d'écran.
-  L'écran actif et le parcours sélectionné figurent dans le nom accessible.
+  L'écran actif et le parcours sélectionné figurent dans le nom accessible. Le bouton
+  hamburger, placé en haut à gauche dans l'axe de cette navigation, la réduit en icônes
+  ou l'agrandit avec ses libellés sans la faire disparaître ; en mode réduit, chaque
+  bouton conserve une infobulle et un nom accessible complet. Les couleurs par fonction
+  doublent les icônes et les textes, sans être le seul repère.
 - Cartes de niveaux communes : nom contenant rang, titre, état, explication, seuil et
   tentatives. Si elles ont une action, elles acceptent Entrée/Espace et l'action
   d'accessibilité FIRE. Leur action métier et les contrôles d'autorisation ne changent pas.
@@ -32,7 +36,7 @@ pas une certification WCAG/RGAA ni une garantie que toute la plateforme est acce
 | Touche | Action |
 |---|---|
 | Tab / Maj + Tab | Commande suivante / précédente (comportement JavaFX natif) |
-| F6 / Maj + F6 | Région suivante / précédente : commandes de fenêtre, navigation visible, contenu |
+| F6 / Maj + F6 | Région suivante / précédente : commandes de fenêtre, navigation latérale complète ou réduite, contenu |
 | F1 | Aide locale ; aussi disponible via le bouton « Aide clavier » |
 | F8 | Relecture explicite de la dernière notification dans une boîte de dialogue |
 | Entrée / Espace | Activer un bouton ; saisir normalement dans les champs de texte |
@@ -61,7 +65,9 @@ NVDA. Les API accessibles JavaFX ne suffisent pas à prouver que NVDA annonce le
 4. Tester demande de compte, activation PIN et connexion OTP ; les champs invisibles ou
    désactivés ne doivent pas être visités. Vérifier les messages d'erreur sans souris.
 5. Pour les trois rôles : parcourir la navigation, changer de langage, revenir au contenu
-   avec F6. Vérifier l'annonce de l'écran et du parcours sélectionnés ; barre masquée ignorée.
+   avec F6. Vérifier l'annonce de l'écran et du parcours sélectionnés dans les modes
+   complet et réduit ; le bouton en haut à gauche doit annoncer l'action réellement
+   disponible (« Réduire… » ou « Agrandir… »).
 6. Tester une carte de niveau avec Entrée, Espace et la commande d'activation NVDA ; comparer
    l'action à la souris. Une carte non actionnable ne doit pas être annoncée comme un bouton.
 7. Déclencher une notification puis attendre sa disparition ; F8 doit permettre de la lire
@@ -82,7 +88,8 @@ participer à la recette ; une capture PNG seule ne prouve pas l'accessibilité.
 
 ## Contrôles techniques
 
-`python -m unittest discover -s outils/tests -p 'test_*.py'` comprend six contrôles structurels
-dédiés à cette base. Ils ne simulent ni les événements JavaFX ni NVDA. Vérifier également la
+`python -m unittest discover -s outils/tests -p 'test_*.py'` comprend les contrôles structurels
+dédiés à cette base et à la barre latérale réductible. Ils ne simulent ni les événements
+JavaFX ni NVDA. Vérifier également la
 compilation et les tests avec ` .\mvnw.cmd clean test` sur Windows, puis la recette ci-dessus.
 Aucune modification de base de données, de certificat ou de secret n'est nécessaire.
