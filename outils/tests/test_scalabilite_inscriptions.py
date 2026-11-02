@@ -33,6 +33,9 @@ class ScalabiliteInscriptionsTest(unittest.TestCase):
                         "split_part(email, '@', 2)", 'GROUP BY statut_inscription',
                         'cree_le ASC, id ASC']:
             self.assertIn(attendu, source)
+        # Regression Windows/javac : dans une regex Java, le point littéral doit être `\\.` dans la source.
+        self.assertIn(r'(?:\\.[a-z0-9]', source)
+        self.assertNotIn(r'(?:\.[a-z0-9]', source)
         handler = (JAVA / 'api/service/AuthentificationApiHttps.java').read_text()
         self.assertIn('comptes.lister(lireFiltreComptes(exchange))', handler)
         self.assertNotIn('comptes.lister().stream()', handler)

@@ -673,7 +673,7 @@ public final class PostgresCompteRepository {
         while (normalise.endsWith(".")) {
             normalise = normalise.substring(0, normalise.length() - 1);
         }
-        if (!normalise.matches("^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$")) {
+        if (!normalise.matches("^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$")) {
             throw new IllegalArgumentException("Domaine e-mail invalide.");
         }
         return normalise;
