@@ -941,18 +941,13 @@
 .login-view {
     -fx-background-color: linear-gradient(to bottom right, #3a5fcd 0%, #5e5ce6 42%, #a06ad4 72%, #e26f8c 100%);
 }
-/* Enseignant / apprenant : le fond bleu nuit prolonge le ciel de l’illustration
-   sans concurrencer la carte du formulaire. L’administrateur conserve le fond ci-dessus. */
+/* Tous les rôles : le fond bleu nuit est le repli quand l’illustration est absente ;
+   l’image animée passe en plein écran derrière la carte du formulaire. */
 .login-view--visuel {
     -fx-background-color: linear-gradient(to bottom right, -color-login-fond-1 0%, -color-login-fond-2 52%, -color-login-fond-3 100%);
 }
-.login-disposition {
-    -fx-background-color: transparent;
-}
 .login-visuel {
     -fx-background-color: -color-login-panneau;
-    -fx-border-color: rgba(255, 255, 255, 0.18);
-    -fx-border-width: 0 1 0 0;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 24, 0.12, 8, 0);
 }
 .login-visuel--sans-image {

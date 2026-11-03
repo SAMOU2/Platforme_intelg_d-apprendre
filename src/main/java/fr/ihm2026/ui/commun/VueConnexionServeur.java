@@ -361,25 +361,11 @@ public class VueConnexionServeur extends StackPane {
         defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
         if (visuelConnexion) {
+            // Fond plein écran animé derrière le formulaire, dans tous les rôles.
+            // Le panneau occupe toute la vue (maxSize illimité) et son image est non
+            // gérée : le visuel ne participe jamais au calcul de la taille de la fenêtre.
             PanneauVisuelConnexion visuel = new PanneauVisuelConnexion(role);
-            visuel.setMinWidth(340);
-            visuel.setMaxWidth(620);
-            visuel.prefWidthProperty().bind(widthProperty().multiply(0.44));
-
-            HBox disposition = new HBox(0, visuel, defilement);
-            disposition.getStyleClass().add("login-disposition");
-            disposition.setFillHeight(true);
-            disposition.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            HBox.setHgrow(defilement, Priority.ALWAYS);
-
-            Runnable adapterVisuel = () -> {
-                boolean afficher = getWidth() >= 1060;
-                visuel.setVisible(afficher);
-                visuel.setManaged(afficher);
-            };
-            widthProperty().addListener((o, ancienne, nouvelle) -> adapterVisuel.run());
-            adapterVisuel.run();
-            getChildren().add(disposition);
+            getChildren().addAll(visuel, defilement);
         } else {
             getChildren().add(defilement);
         }
