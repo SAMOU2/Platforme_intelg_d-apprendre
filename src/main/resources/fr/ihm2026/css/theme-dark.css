@@ -43,6 +43,13 @@
     -color-verrouille: #8e8e93;
     -color-alerte: #ff9f0a;
     -color-danger: #ff453a;
+    /* Visuel décoratif de connexion : palette fixe, lisible sur l’illustration. */
+    -color-login-visuel-nuit: #081c2b;
+    -color-login-visuel-mer: #0d3049;
+    -color-login-visuel-ciel: #14506e;
+    -color-login-visuel-texte: #ffffff;
+    -color-login-visuel-accent-apprenant: #9ed8ff;
+    -color-login-visuel-accent-enseignant: #c9c2ff;
     -fx-faint-focus-color: rgba(10, 132, 255, 0.25);
 }
 

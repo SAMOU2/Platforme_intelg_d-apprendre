@@ -59,13 +59,18 @@ class VisuelConnexionTest(unittest.TestCase):
 
     def test_integration_responsive_et_styles(self):
         vue = VUE.read_text(encoding="utf-8")
+        composant = COMPOSANT.read_text(encoding="utf-8")
         css = CSS.read_text(encoding="utf-8")
         self.assertIn("PanneauVisuelConnexion.roleEligible(role)", vue)
-        self.assertIn("getWidth() >= 1060", vue)
-        self.assertIn("new HBox(0, visuel, defilement)", vue)
+        self.assertIn("visuel.setManaged(false)", vue)
+        self.assertIn("getChildren().addAll(visuel, defilement)", vue)
+        self.assertIn("visuel.resizeRelocate", vue)
+        self.assertNotIn("new HBox(0, visuel, defilement)", vue)
+        self.assertNotIn("prefWidthProperty().bind(widthProperty()", vue)
+        self.assertIn("setPrefSize(0, 0)", composant)
+        self.assertIn("protected double computePrefWidth", composant)
+        self.assertIn("protected double computePrefHeight", composant)
         for classe in (
-            ".login-view--visuel",
-            ".login-disposition",
             ".login-visuel",
             ".login-visuel-voile",
             ".login-visuel-titre",
@@ -73,6 +78,26 @@ class VisuelConnexionTest(unittest.TestCase):
         ):
             with self.subTest(classe=classe):
                 self.assertIn(classe, css)
+
+    def test_couleurs_du_visuel_declarees_en_jetons_dans_les_deux_themes(self):
+        css = CSS.read_text(encoding="utf-8")
+        section = css[css.index(".login-visuel {"):css.index(".login-card {")]
+        self.assertNotRegex(section, r"#[0-9a-fA-F]{6}\b")
+        for nom, chemin in (
+            ("clair", RACINE / "src/main/resources/fr/ihm2026/css/theme-light.css"),
+            ("sombre", RACINE / "src/main/resources/fr/ihm2026/css/theme-dark.css"),
+        ):
+            theme = chemin.read_text(encoding="utf-8")
+            for jeton in (
+                "-color-login-visuel-nuit",
+                "-color-login-visuel-mer",
+                "-color-login-visuel-ciel",
+                "-color-login-visuel-texte",
+                "-color-login-visuel-accent-apprenant",
+                "-color-login-visuel-accent-enseignant",
+            ):
+                with self.subTest(theme=nom, jeton=jeton):
+                    self.assertIn(jeton, theme)
 
 
 if __name__ == "__main__":

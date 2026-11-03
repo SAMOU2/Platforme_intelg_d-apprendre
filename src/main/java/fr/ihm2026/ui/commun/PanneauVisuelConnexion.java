@@ -32,6 +32,11 @@ import javafx.util.Duration;
  * Le déplacement reste décoratif, ne prend jamais le focus et s’arrête lorsque
  * l’écran quitte la scène ou lorsque les animations sont désactivées avec
  * {@code -Dihm.animations=off}.</p>
+ *
+ * <p>Ce panneau est volontairement <b>hors flux de mise en page</b> :
+ * {@code managed=false}, tailles minimale et préférée nulles. Son parent le
+ * positionne manuellement dans une marge déjà libre ; il ne peut donc ni
+ * agrandir la fenêtre, ni déplacer ou redimensionner le formulaire.</p>
  */
 final class PanneauVisuelConnexion extends StackPane {
 
@@ -51,10 +56,14 @@ final class PanneauVisuelConnexion extends StackPane {
         setId("connexion-visuel");
         setFocusTraversable(false);
         setMouseTransparent(true);
-        setMinWidth(0);
-        setMaxHeight(Double.MAX_VALUE);
+        setManaged(false);
+        setMinSize(0, 0);
+        setPrefSize(0, 0);
+        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         Rectangle cadre = new Rectangle();
+        cadre.setArcWidth(28);
+        cadre.setArcHeight(28);
         cadre.widthProperty().bind(widthProperty());
         cadre.heightProperty().bind(heightProperty());
         setClip(cadre);
@@ -142,6 +151,49 @@ final class PanneauVisuelConnexion extends StackPane {
     }
 
     /**
+     * Zone que le visuel peut occuper dans la marge gauche déjà présente
+     * autour de la carte centrée. Un rectangle vide signifie qu’il faut le
+     * masquer plutôt que de réduire ou déplacer le formulaire.
+     */
+    static Rectangle2D emplacement(double largeurVue, double hauteurVue, double largeurCarte) {
+        if (largeurVue < 1000 || hauteurVue < 500 || largeurCarte <= 0) {
+            return Rectangle2D.EMPTY;
+        }
+        double margeGauche = Math.max(0, (largeurVue - largeurCarte) / 2);
+        double largeurVisuel = Math.min(340, margeGauche - 32);
+        if (largeurVisuel < 210) {
+            return Rectangle2D.EMPTY;
+        }
+        double hauteurVisuel = Math.min(hauteurVue - 96, largeurVisuel * 1.24);
+        if (hauteurVisuel < 240) {
+            return Rectangle2D.EMPTY;
+        }
+        double x = Math.max(16, (margeGauche - largeurVisuel) / 2);
+        double y = Math.max(24, (hauteurVue - hauteurVisuel) / 2);
+        return new Rectangle2D(x, y, largeurVisuel, hauteurVisuel);
+    }
+
+    @Override
+    protected double computeMinWidth(double hauteur) {
+        return 0;
+    }
+
+    @Override
+    protected double computeMinHeight(double largeur) {
+        return 0;
+    }
+
+    @Override
+    protected double computePrefWidth(double hauteur) {
+        return 0;
+    }
+
+    @Override
+    protected double computePrefHeight(double largeur) {
+        return 0;
+    }
+
+    /**
      * Cadre de lecture de l’image pour un panneau donné. Le cadre conserve
      * le ratio du panneau (aucune déformation), zoome légèrement et se déplace
      * du personnage vers les écrans lorsque la progression augmente.
@@ -202,7 +254,7 @@ final class PanneauVisuelConnexion extends StackPane {
         VBox legende = new VBox(10, marque, titre, texte, langages);
         legende.getStyleClass().add("login-visuel-legende");
         legende.setAlignment(Pos.BOTTOM_LEFT);
-        legende.setPadding(new Insets(30));
+        legende.setPadding(new Insets(24));
         legende.setMaxWidth(450);
         legende.setMaxHeight(Region.USE_PREF_SIZE);
         legende.setMouseTransparent(true);

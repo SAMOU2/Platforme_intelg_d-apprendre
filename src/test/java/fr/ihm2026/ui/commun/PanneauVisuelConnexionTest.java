@@ -49,6 +49,23 @@ class PanneauVisuelConnexionTest {
     }
 
     @Test
+    @DisplayName("Le visuel reste dans la marge libre et ne déplace jamais la carte")
+    void emplacementSansImpactSurLeFormulaire() {
+        Rectangle2D zone = PanneauVisuelConnexion.emplacement(1280, 700, 560);
+        double gaucheCarte = (1280 - 560) / 2.0;
+
+        assertTrue(zone.getWidth() <= 340);
+        assertTrue(zone.getMaxX() < gaucheCarte);
+        assertTrue(zone.getMinY() >= 24);
+        assertTrue(zone.getMaxY() <= 700 - 24);
+        assertEquals(340, PanneauVisuelConnexion.emplacement(1600, 800, 560).getWidth(), 0.001);
+        assertEquals(Rectangle2D.EMPTY,
+                PanneauVisuelConnexion.emplacement(900, 700, 560));
+        assertEquals(Rectangle2D.EMPTY,
+                PanneauVisuelConnexion.emplacement(1280, 420, 560));
+    }
+
+    @Test
     @DisplayName("L’illustration nettoyée est présente dans les ressources")
     void ressourcePresente() throws Exception {
         try (InputStream flux = PanneauVisuelConnexion.class.getResourceAsStream(
