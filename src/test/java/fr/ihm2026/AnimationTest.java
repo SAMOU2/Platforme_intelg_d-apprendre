@@ -57,6 +57,8 @@ class AnimationTest {
         // n'est créé, donc aucun accès hors du fil d'interface.
         Animations.changerEcran(null, null, true);
         Animations.apparaitreBulle(null);
+        Animations.apparaitrePanneau(null);
+        Animations.apparaitreEnCascade(null);
         Animations.ouvrirFenetre(null);
         Animations.basculerApparence(null, () -> { });
         assertEquals(0, Animations.animationsEnCours());

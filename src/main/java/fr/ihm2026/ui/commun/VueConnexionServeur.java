@@ -1,6 +1,7 @@
 package fr.ihm2026.ui.commun;
 
 import fr.ihm2026.api.service.ClientAuthentificationHttps;
+import fr.ihm2026.core.Animations;
 import fr.ihm2026.core.Router;
 import fr.ihm2026.core.Session;
 import fr.ihm2026.core.TaskRunner;
@@ -403,6 +404,8 @@ public class VueConnexionServeur extends StackPane {
             }
             email.requestFocus();
             placer.run();
+            // Entrée du login : la carte monte et se découvre (fondu + légère croissance).
+            Animations.apparaitrePanneau(carte);
         });
     }
 

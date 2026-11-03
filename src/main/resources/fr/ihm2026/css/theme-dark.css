@@ -95,3 +95,9 @@
     -fx-background-color: #176bb7;
     -fx-text-fill: #ffffff;
 }
+
+/* Carte de connexion en verre, ajustée au thème sombre (un peu plus opaque
+   pour garder le contraste du texte clair sur l'image de fond). */
+.login-card {
+    -fx-background-color: rgba(10, 20, 33, 0.66);
+}

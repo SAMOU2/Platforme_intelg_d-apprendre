@@ -133,7 +133,8 @@ final class PanneauVisuelConnexion extends StackPane {
             actualiserCadre();
             if (!entreeAffichee) {
                 entreeAffichee = true;
-                Animations.apparaitreBulle(legende);
+                // La légende du fond arrive en cascade : marque, titre, texte, puis les puces.
+                Animations.apparaitreEnCascade(legende.getChildren());
             }
             if (panoramique != null && isVisible()) {
                 panoramique.play();

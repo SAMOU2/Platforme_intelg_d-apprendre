@@ -8,6 +8,7 @@ import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.ParallelTransition;
+import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
@@ -267,6 +268,46 @@ public final class Animations {
         grossit.setToX(1);
         grossit.setToY(1);
         lancer(new ParallelTransition(fondu, monte, grossit));
+    }
+
+    /** Apparition d'un panneau (carte de connexion) : fondu + montée de 16 px + grossissement de 3 %. */
+    public static void apparaitrePanneau(Node panneau) {
+        if (!actives || panneau == null) {
+            return;
+        }
+        panneau.setOpacity(0);
+        panneau.setTranslateY(16);
+        panneau.setScaleX(0.97);
+        panneau.setScaleY(0.97);
+        FadeTransition fondu = new FadeTransition(AMPLE, panneau);
+        fondu.setFromValue(0);
+        fondu.setToValue(1);
+        TranslateTransition monte = new TranslateTransition(AMPLE, panneau);
+        monte.setFromY(16);
+        monte.setToY(0);
+        monte.setInterpolator(Interpolator.EASE_OUT);
+        ScaleTransition grossit = new ScaleTransition(AMPLE, panneau);
+        grossit.setFromX(0.97);
+        grossit.setFromY(0.97);
+        grossit.setToX(1);
+        grossit.setToY(1);
+        lancer(new ParallelTransition(fondu, monte, grossit));
+    }
+
+    /** Apparition en cascade : chaque élément de la liste arrive avec un léger décalage. */
+    public static void apparaitreEnCascade(List<? extends Node> elements) {
+        if (!actives || elements == null) {
+            return;
+        }
+        for (int i = 0; i < elements.size(); i++) {
+            Node element = elements.get(i);
+            if (element == null) {
+                continue;
+            }
+            PauseTransition delai = new PauseTransition(Duration.millis(80 * i));
+            delai.setOnFinished(e -> apparaitreBulle(element));
+            lancer(delai);
+        }
     }
 
     /**
