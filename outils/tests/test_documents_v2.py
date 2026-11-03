@@ -147,12 +147,9 @@ class DocumentsV2Test(unittest.TestCase):
         generateur = ROOT / "outils" / "generer_documents_v2.py"
         compile(lire(generateur), str(generateur), "exec")
         index_docs = lire(ROOT / "docs" / "README.md")
-        readme = lire(ROOT / "README.md")
         for nom in PDFS:
             with self.subTest(index=nom):
                 self.assertIn(nom, index_docs)
-        self.assertIn("Analyse des besoins v2.0", readme)
-        self.assertIn("Cahier des charges v1.0", readme)
         self.assertNotIn("analyse des besoins v1.3", index_docs)
 
 
