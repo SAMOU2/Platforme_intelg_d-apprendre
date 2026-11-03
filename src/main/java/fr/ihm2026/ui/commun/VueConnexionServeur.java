@@ -346,8 +346,8 @@ public class VueConnexionServeur extends StackPane {
         carte.setMinHeight(Region.USE_PREF_SIZE);
         StackPane contenu = new StackPane(carte);
         contenu.setPadding(new javafx.geometry.Insets(24));
-        // Carte de connexion ancrée à gauche, sur le fond plein écran, dans tous les rôles.
-        contenu.setAlignment(Pos.CENTER_LEFT);
+        // Carte de connexion ancrée à droite, sur le fond plein écran, dans tous les rôles.
+        contenu.setAlignment(Pos.CENTER_RIGHT);
         ScrollPane defilement = new ScrollPane(contenu);
         defilementConnexion = defilement;
         defilement.setId("connexion-defilement");
@@ -365,7 +365,7 @@ public class VueConnexionServeur extends StackPane {
             getChildren().add(defilement);
         }
         rechercher.run();
-        setAlignment(Pos.CENTER_LEFT);
+        setAlignment(Pos.CENTER_RIGHT);
 
         // Entrée depuis la carte vaut « Se connecter ».
         carte.setOnKeyPressed(e -> {
@@ -384,7 +384,7 @@ public class VueConnexionServeur extends StackPane {
             javafx.geometry.Rectangle2D ecran = javafx.stage.Screen.getPrimary().getVisualBounds();
             boolean deborde = scene.getWidth() > ecran.getWidth() + 2
                     || scene.getHeight() > ecran.getHeight() + 2;
-            setAlignment(deborde ? Pos.TOP_LEFT : Pos.CENTER_LEFT);
+            setAlignment(deborde ? Pos.TOP_RIGHT : Pos.CENTER_RIGHT);
             setPadding(deborde ? new javafx.geometry.Insets(16) : javafx.geometry.Insets.EMPTY);
         };
         sceneProperty().addListener((o, ancienne, nouvelle) -> {
