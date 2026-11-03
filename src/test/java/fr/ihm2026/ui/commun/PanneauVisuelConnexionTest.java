@@ -51,6 +51,21 @@ class PanneauVisuelConnexionTest {
     }
 
     @Test
+    @DisplayName("Le fond suit exactement la vue sans demander sa propre taille")
+    void emplacementPleinEcranSansImpactSurLeFormulaire() {
+        Rectangle2D zone = PanneauVisuelConnexion.emplacementPleinEcran(1280, 700);
+
+        assertEquals(0, zone.getMinX(), 0.001);
+        assertEquals(0, zone.getMinY(), 0.001);
+        assertEquals(1280, zone.getWidth(), 0.001);
+        assertEquals(700, zone.getHeight(), 0.001);
+        assertEquals(Rectangle2D.EMPTY,
+                PanneauVisuelConnexion.emplacementPleinEcran(0, 700));
+        assertEquals(Rectangle2D.EMPTY,
+                PanneauVisuelConnexion.emplacementPleinEcran(1280, 0));
+    }
+
+    @Test
     @DisplayName("L’illustration nettoyée est présente dans les ressources")
     void ressourcePresente() throws Exception {
         try (InputStream flux = PanneauVisuelConnexion.class.getResourceAsStream(

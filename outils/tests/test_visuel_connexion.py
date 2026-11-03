@@ -60,11 +60,22 @@ class VisuelConnexionTest(unittest.TestCase):
         css = CSS.read_text(encoding="utf-8")
         # Fond plein écran derrière le formulaire, dans tous les rôles.
         self.assertIn("PanneauVisuelConnexion.roleEligible(role)", vue)
+        self.assertIn("visuel.setManaged(false)", vue)
         self.assertIn("getChildren().addAll(visuel, defilement)", vue)
+        self.assertIn("emplacementPleinEcran(", vue)
+        self.assertIn("visuel.resizeRelocate", vue)
         self.assertNotIn("getWidth() >= 1060", vue)
         self.assertNotIn("new HBox(0, visuel, defilement)", vue)
-        # L'image reste purement décorative : elle ne doit pas piloter la taille.
+        self.assertNotIn("prefWidthProperty().bind(widthProperty()", vue)
+        # Le panneau complet et son image restent décoratifs : aucun des deux
+        # ne doit piloter la taille de la fenêtre ou du formulaire.
+        self.assertIn("setManaged(false);", composant)
         self.assertIn("vueImage.setManaged(false);", composant)
+        self.assertIn("setPrefSize(0, 0)", composant)
+        self.assertIn("protected double computeMinWidth", composant)
+        self.assertIn("protected double computeMinHeight", composant)
+        self.assertIn("protected double computePrefWidth", composant)
+        self.assertIn("protected double computePrefHeight", composant)
         self.assertIn("setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);", composant)
         for classe in (
             ".login-view--visuel",
@@ -75,6 +86,27 @@ class VisuelConnexionTest(unittest.TestCase):
         ):
             with self.subTest(classe=classe):
                 self.assertIn(classe, css)
+
+    def test_couleurs_du_visuel_declarees_en_jetons_dans_les_deux_themes(self):
+        css = CSS.read_text(encoding="utf-8")
+        section = css[css.index(".login-visuel {"):css.index(".login-card {")]
+        self.assertNotRegex(section, r"#[0-9a-fA-F]{6}\b")
+        for nom, chemin in (
+            ("clair", RACINE / "src/main/resources/fr/ihm2026/css/theme-light.css"),
+            ("sombre", RACINE / "src/main/resources/fr/ihm2026/css/theme-dark.css"),
+        ):
+            theme = chemin.read_text(encoding="utf-8")
+            for jeton in (
+                "-color-login-panneau",
+                "-color-login-visuel-1",
+                "-color-login-visuel-2",
+                "-color-login-visuel-3",
+                "-color-login-marque",
+                "-color-login-marque-enseignant",
+                "-color-login-texte-blanc",
+            ):
+                with self.subTest(theme=nom, jeton=jeton):
+                    self.assertIn(jeton, theme)
 
 
 if __name__ == "__main__":

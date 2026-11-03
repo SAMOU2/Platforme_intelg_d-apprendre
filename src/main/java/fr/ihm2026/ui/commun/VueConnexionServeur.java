@@ -357,11 +357,26 @@ public class VueConnexionServeur extends StackPane {
         defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
         if (visuelConnexion) {
-            // Fond plein écran animé derrière le formulaire, dans tous les rôles.
-            // Le panneau occupe toute la vue (maxSize illimité) et son image est non
-            // gérée : le visuel ne participe jamais au calcul de la taille de la fenêtre.
+            // Fond plein écran animé derrière le formulaire, dans tous les rôles,
+            // mais hors layout : le ScrollPane reste le seul enfant géré et conserve
+            // donc exactement la taille, la position et le défilement du formulaire.
+            // Le visuel reçoit manuellement la taille déjà fixée de cette vue.
             PanneauVisuelConnexion visuel = new PanneauVisuelConnexion(role);
+            visuel.setManaged(false);
             getChildren().addAll(visuel, defilement);
+
+            Runnable placerVisuel = () -> {
+                var zone = PanneauVisuelConnexion.emplacementPleinEcran(
+                        getWidth(), getHeight());
+                if (!zone.isEmpty()) {
+                    visuel.resizeRelocate(zone.getMinX(), zone.getMinY(),
+                            zone.getWidth(), zone.getHeight());
+                }
+            };
+            widthProperty().addListener((o, ancienne, nouvelle) -> placerVisuel.run());
+            heightProperty().addListener((o, ancienne, nouvelle) -> placerVisuel.run());
+            placerVisuel.run();
+            javafx.application.Platform.runLater(placerVisuel);
         } else {
             getChildren().add(defilement);
         }

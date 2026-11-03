@@ -34,6 +34,11 @@ import javafx.util.Duration;
  * taille de l’interface. Le déplacement ne prend jamais le focus et s’arrête
  * lorsque l’écran quitte la scène ou lorsque les animations sont désactivées avec
  * {@code -Dihm.animations=off}.</p>
+ *
+ * <p>Ce panneau est volontairement <b>hors flux de mise en page</b> :
+ * {@code managed=false}, tailles minimale et préférée nulles. Son parent le
+ * dimensionne manuellement à la taille déjà déterminée de la vue ; il ne peut
+ * donc ni agrandir la fenêtre, ni déplacer ou redimensionner le formulaire.</p>
  */
 final class PanneauVisuelConnexion extends StackPane {
 
@@ -53,8 +58,11 @@ final class PanneauVisuelConnexion extends StackPane {
         setId("connexion-visuel");
         setFocusTraversable(false);
         setMouseTransparent(true);
-        setMinWidth(0);
-        // Fond plein écran : le panneau occupe toute la vue, derrière le formulaire.
+        setManaged(false);
+        setMinSize(0, 0);
+        setPrefSize(0, 0);
+        // Fond plein écran : le panneau occupe toute la vue, derrière le formulaire,
+        // mais son parent le dimensionne manuellement (hors flux de mise en page).
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         Rectangle cadre = new Rectangle();
@@ -150,6 +158,38 @@ final class PanneauVisuelConnexion extends StackPane {
 
     static String ressourceImage() {
         return RESSOURCE_IMAGE;
+    }
+
+    /**
+     * Zone du fond plein écran : exactement la taille déjà déterminée de la
+     * vue de connexion, jamais une taille demandée par l’image ou sa légende.
+     * Un rectangle vide signifie que la vue n’a pas encore de taille utilisable.
+     */
+    static Rectangle2D emplacementPleinEcran(double largeurVue, double hauteurVue) {
+        if (!(largeurVue > 0) || !(hauteurVue > 0)) {
+            return Rectangle2D.EMPTY;
+        }
+        return new Rectangle2D(0, 0, largeurVue, hauteurVue);
+    }
+
+    @Override
+    protected double computeMinWidth(double hauteur) {
+        return 0;
+    }
+
+    @Override
+    protected double computeMinHeight(double largeur) {
+        return 0;
+    }
+
+    @Override
+    protected double computePrefWidth(double hauteur) {
+        return 0;
+    }
+
+    @Override
+    protected double computePrefHeight(double largeur) {
+        return 0;
     }
 
     /**
