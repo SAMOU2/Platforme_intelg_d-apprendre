@@ -869,14 +869,20 @@ et utilise JavaFX 25.0.5. Définir `JAVA_HOME` sur le JDK 25 avant de lancer un 
 
 ---
 
-## 8. Ce qui vient ensuite
+## 8. Suite et hors périmètre de la v0.14.4
 
-| Version | Contenu | Critère de démonstration |
+La v0.14.4 livre le service HTTPS PC1/PostgreSQL, les comptes et la confiance 48 h,
+l’administration filtrée à grande échelle, les niveaux créés par l’enseignant, la correction
+humaine publiée et l’aide NVIDIA limitée à l’entraînement. Les points suivants restent des
+extensions ou des preuves à compléter ; ils ne doivent pas être présentés comme livrés :
+
+| Sujet | État | Preuve ou lot attendu |
 |---|---|---|
-| **v0.2.1** | séparation des écrans en **FXML + contrôleurs** (Scene Builder), écran enseignant de rédaction de cours avec autosave | même application, vue éditée dans Scene Builder |
-| **v0.3** | **serveur REST** (Spring Boot ou Javalin) + accès PostgreSQL + authentification | `Config.USE_MOCK = false` : l'application lit la vraie base |
-| **v0.4** | journal d'audit, supervision de l'agent IA, tableaux de bord complets | écran admin + journal consultable |
-| **v0.5** | `jpackage` (installateur Windows / macOS / Linux), tests TestFX, captures de référence | installation sur un poste vierge |
+| Exécution du code du parcours connecté | Extension | Bac à sable isolé, politique de sécurité et tests d’évasion |
+| Charge réelle des inscriptions et des e-mails | À mesurer | Jeu de volume, file e-mail persistante si nécessaire, métriques PC1/SMTP |
+| Accessibilité complète | Recette à compléter | Parcours NVDA/clavier sous Windows avec utilisateurs concernés ; aucune certification WCAG/RGAA revendiquée |
+| Installateur natif signé | Extension | Empaquetage et installation sur poste vierge |
+| Authentification matérielle FIDO2/WebAuthn | Extension | À comparer au poste de confiance 48 h actuel, sans supprimer le mot de passe par défaut |
 
 ---
 
@@ -884,11 +890,14 @@ et utilise JavaFX 25.0.5. Définir `JAVA_HOME` sur le JDK 25 avant de lancer un 
 
 | Fichier | Contenu |
 |---|---|
-| `analyse-besoins-IHM.pdf` | analyse des besoins v1.3 (74 BF, 35 BNF, 39 IHM, 24 RG) |
-| `canvas-document-analyse-besoins.pdf` | même contenu, mise en page canvas |
-| `Diagrammes-du-projet.pdf` | 7 diagrammes UML |
-| `Modeles-de-taches-du-projet-IHM.pdf` | 8 modèles de tâches HTA |
-| `Architecture-des-fichiers.pdf` | arborescence cible et règles de rangement |
+| `analyse-besoins-IHM.pdf` | **Analyse des besoins v2.0** : 57 BF, 18 BNF, 20 IHM, 24 RG, 14 cas d’utilisation |
+| `canvas-document-analyse-besoins.pdf` | Copie de la même analyse v2.0 sous l’ancien nom de remise |
+| `Diagrammes-du-projet.pdf` | **Diagrammes v2.0** : 11 vues UML/architecture et checklist de soutenance |
+| `Modeles-de-taches-du-projet-IHM.pdf` | **Modèles de tâches v2.0** : 11 modèles HTA A0→UX1 |
+| `Cahier-des-charges.pdf` | **Cahier des charges v1.0** : périmètre, exigences, architecture, livrables et recette |
+| `sources-v2/` | Sources Markdown modifiables des quatre documents |
+| `preuves/diagrammes-v2/` | 12 PNG de conception générés par `outils/generer_documents_v2.py` (pas des captures JavaFX) |
+| `Architecture-des-fichiers.pdf` | Document v1.0 non régénéré dans ce lot ; les documents v2.0 priment en cas de contradiction |
 | `ia/Note-de-cadrage-agent-IA.pdf` | étape 1 : contrat d'usage de l'agent (15 cas, 8 libellés) |
 | `ia/Corpus-v1-rapport-de-couverture.pdf` | étape 2 : corpus v1, nettoyage, jeu de 60 questions gelé, mesures |
 
