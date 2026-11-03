@@ -66,6 +66,10 @@ final class PanneauVisuelConnexion extends StackPane {
             vueImage.setSmooth(true);
             vueImage.setCache(true);
             vueImage.setFocusTraversable(false);
+            // Couche purement décorative : non gérée, elle ne participe jamais au calcul
+            // de la taille préférée du panneau. Sinon la disposition suivrait la taille
+            // naturelle de l'image (le « gif ») au lieu de la taille de l'écran.
+            vueImage.setManaged(false);
             vueImage.fitWidthProperty().bind(widthProperty());
             vueImage.fitHeightProperty().bind(heightProperty());
             getChildren().add(vueImage);
@@ -77,6 +81,8 @@ final class PanneauVisuelConnexion extends StackPane {
         voile.getStyleClass().add("login-visuel-voile");
         voile.setFocusTraversable(false);
         voile.setMouseTransparent(true);
+        // Une Region a une taille préférée nulle : elle reste gérée (le StackPane
+        // l'étire pour peindre le voile) sans jamais influencer la taille du panneau.
 
         VBox legende = creerLegende(role);
         getChildren().addAll(voile, legende);
