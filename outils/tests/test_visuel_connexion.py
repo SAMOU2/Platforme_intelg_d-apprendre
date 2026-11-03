@@ -35,13 +35,10 @@ class VisuelConnexionTest(unittest.TestCase):
         self.assertEqual((998, 470), dimensions_jpeg(donnees))
         self.assertLessEqual(len(donnees), 150_000)
 
-    def test_seuls_enseignant_et_apprenant_sont_eligibles(self):
+    def test_tous_les_roles_sont_eligibles(self):
         source = COMPOSANT.read_text(encoding="utf-8")
-        self.assertIn(
-            "role == Session.Role.APPRENANT || role == Session.Role.ENSEIGNANT",
-            source,
-        )
-        self.assertNotIn("role == Session.Role.ADMINISTRATEUR", source)
+        self.assertIn("return role != null;", source)
+        self.assertNotIn("Session.Role.ADMINISTRATEUR", source)
 
     def test_animation_lente_suivie_et_arretee_hors_scene(self):
         source = COMPOSANT.read_text(encoding="utf-8")
@@ -57,15 +54,20 @@ class VisuelConnexionTest(unittest.TestCase):
             with self.subTest(attendu=attendu):
                 self.assertIn(attendu, source)
 
-    def test_integration_responsive_et_styles(self):
+    def test_integration_plein_ecran_et_styles(self):
         vue = VUE.read_text(encoding="utf-8")
+        composant = COMPOSANT.read_text(encoding="utf-8")
         css = CSS.read_text(encoding="utf-8")
+        # Fond plein écran derrière le formulaire, dans tous les rôles.
         self.assertIn("PanneauVisuelConnexion.roleEligible(role)", vue)
-        self.assertIn("getWidth() >= 1060", vue)
-        self.assertIn("new HBox(0, visuel, defilement)", vue)
+        self.assertIn("getChildren().addAll(visuel, defilement)", vue)
+        self.assertNotIn("getWidth() >= 1060", vue)
+        self.assertNotIn("new HBox(0, visuel, defilement)", vue)
+        # L'image reste purement décorative : elle ne doit pas piloter la taille.
+        self.assertIn("vueImage.setManaged(false);", composant)
+        self.assertIn("setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);", composant)
         for classe in (
             ".login-view--visuel",
-            ".login-disposition",
             ".login-visuel",
             ".login-visuel-voile",
             ".login-visuel-titre",

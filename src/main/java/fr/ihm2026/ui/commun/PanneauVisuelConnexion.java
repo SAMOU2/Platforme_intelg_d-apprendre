@@ -25,12 +25,14 @@ import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
 /**
- * Panneau visuel des postes enseignant et apprenant.
+ * Fond plein écran animé de l’écran de connexion, pour tous les rôles.
  *
  * <p>L’illustration fournie est une image fixe : le mouvement est donc produit
  * par un panoramique très lent dans son cadre, accompagné d’un zoom léger.
- * Le déplacement reste décoratif, ne prend jamais le focus et s’arrête lorsque
- * l’écran quitte la scène ou lorsque les animations sont désactivées avec
+ * Le panneau occupe toute la vue, derrière le formulaire ; l’image elle-même est
+ * non gérée, donc purement décorative : elle ne participe jamais au calcul de la
+ * taille de l’interface. Le déplacement ne prend jamais le focus et s’arrête
+ * lorsque l’écran quitte la scène ou lorsque les animations sont désactivées avec
  * {@code -Dihm.animations=off}.</p>
  */
 final class PanneauVisuelConnexion extends StackPane {
@@ -52,7 +54,8 @@ final class PanneauVisuelConnexion extends StackPane {
         setFocusTraversable(false);
         setMouseTransparent(true);
         setMinWidth(0);
-        setMaxHeight(Double.MAX_VALUE);
+        // Fond plein écran : le panneau occupe toute la vue, derrière le formulaire.
+        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         Rectangle cadre = new Rectangle();
         cadre.widthProperty().bind(widthProperty());
@@ -139,8 +142,9 @@ final class PanneauVisuelConnexion extends StackPane {
         actualiserCadre();
     }
 
+    /** Tous les rôles (administrateur, enseignant, apprenant) ont le fond plein écran animé. */
     static boolean roleEligible(Session.Role role) {
-        return role == Session.Role.APPRENANT || role == Session.Role.ENSEIGNANT;
+        return role != null;
     }
 
     static String ressourceImage() {

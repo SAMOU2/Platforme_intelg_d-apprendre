@@ -14,11 +14,13 @@ import org.junit.jupiter.api.Test;
 class PanneauVisuelConnexionTest {
 
     @Test
-    @DisplayName("Seuls l’enseignant et l’apprenant reçoivent le visuel animé")
-    void rolesEligibles() {
-        assertTrue(PanneauVisuelConnexion.roleEligible(Session.Role.ENSEIGNANT));
-        assertTrue(PanneauVisuelConnexion.roleEligible(Session.Role.APPRENANT));
-        assertFalse(PanneauVisuelConnexion.roleEligible(Session.Role.ADMINISTRATEUR));
+    @DisplayName("Tous les rôles reçoivent le fond plein écran animé")
+    void fondPleinEcranTousLesRoles() {
+        for (Session.Role role : Session.Role.values()) {
+            assertTrue(PanneauVisuelConnexion.roleEligible(role),
+                    "Rôle sans fond animé : " + role);
+        }
+        assertFalse(PanneauVisuelConnexion.roleEligible(null));
     }
 
     @Test
