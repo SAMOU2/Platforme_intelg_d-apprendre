@@ -1006,6 +1006,52 @@
 /* Fond plein écran sombre derrière : les libellés de la carte passent en clair. */
 .login-card .role-nom,
 .login-card .login-mode { -fx-text-fill: rgba(255, 255, 255, 0.88); }
+
+/* Contrôles de la carte de connexion : verre sombre translucide (moins opaques
+   que les contrôles clairs par défaut), texte clair pour rester lisibles. */
+.login-card .text-field, .login-card .password-field, .login-card .text-area,
+.login-card .combo-box {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+    -fx-control-inner-background: rgba(255, 255, 255, 0.10);
+    -fx-text-fill: rgba(255, 255, 255, 0.92);
+    -fx-prompt-text-fill: rgba(255, 255, 255, 0.45);
+    -fx-border-color: rgba(255, 255, 255, 0.20);
+    -fx-border-width: 0.5;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+.login-card .text-field:focused, .login-card .password-field:focused,
+.login-card .text-area:focused, .login-card .combo-box:focused {
+    -fx-border-color: -color-accent;
+    -fx-effect: dropshadow(gaussian, rgba(0, 122, 255, 0.28), 7, 0.1, 0, 0);
+}
+.login-card .titled-pane > .title {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+    -fx-text-fill: rgba(255, 255, 255, 0.92);
+    -fx-border-color: rgba(255, 255, 255, 0.20);
+    -fx-border-width: 0 0 0.5 0;
+}
+.login-card .titled-pane > .content { -fx-background-color: rgba(255, 255, 255, 0.06); }
+.login-card .button {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+    -fx-background-insets: 0;
+    -fx-text-fill: rgba(255, 255, 255, 0.92);
+    -fx-border-color: rgba(255, 255, 255, 0.20);
+    -fx-border-width: 0.5;
+}
+.login-card .button:hover { -fx-background-color: rgba(255, 255, 255, 0.18); }
+.login-card .button:focused { -fx-border-color: -color-accent; }
+.login-card .btn-primary {
+    -fx-background-color: linear-gradient(to bottom, -color-accent, -color-accent-fonce);
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+.login-card .check-box { -fx-text-fill: rgba(255, 255, 255, 0.88); }
+.login-card .etat-formulaire, .login-card .etat-reseau {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+.login-card .etat-formulaire .label, .login-card .etat-texte { -fx-text-fill: rgba(255, 255, 255, 0.88); }
+.login-card .etat-reseau { -fx-text-fill: rgba(255, 255, 255, 0.88); }
 .login-marque {
     -fx-font-size: 11px;
     -fx-text-fill: -color-accent;
