@@ -57,3 +57,9 @@
 .console {
     -fx-control-inner-background: #fbfbfd;
 }
+
+/* Carte de connexion en verre, ajustée au thème clair (la bascule d'apparence
+   est animée par un fondu : ce réglage ne s'applique qu'au point le plus sombre). */
+.login-card {
+    -fx-background-color: rgba(13, 27, 43, 0.48);
+}
