@@ -82,6 +82,10 @@ public class VueConnexionServeur extends StackPane {
             try { portChoisi=Integer.parseInt(b.strip()); } catch(NumberFormatException ex){portChoisi=-1;}
         });
         getStyleClass().add("login-view");
+        boolean visuelConnexion = PanneauVisuelConnexion.roleEligible(role);
+        if (visuelConnexion) {
+            getStyleClass().add("login-view--visuel");
+        }
         etat.textProperty().addListener((o, ancien, message) -> actualiserPresentationEtat(message));
 
         Label marque = new Label("IHM 2026");
@@ -356,7 +360,29 @@ public class VueConnexionServeur extends StackPane {
         defilement.setFitToWidth(true);
         defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
-        getChildren().add(defilement);
+        if (visuelConnexion) {
+            PanneauVisuelConnexion visuel = new PanneauVisuelConnexion(role);
+            visuel.setMinWidth(340);
+            visuel.setMaxWidth(620);
+            visuel.prefWidthProperty().bind(widthProperty().multiply(0.44));
+
+            HBox disposition = new HBox(0, visuel, defilement);
+            disposition.getStyleClass().add("login-disposition");
+            disposition.setFillHeight(true);
+            disposition.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            HBox.setHgrow(defilement, Priority.ALWAYS);
+
+            Runnable adapterVisuel = () -> {
+                boolean afficher = getWidth() >= 1060;
+                visuel.setVisible(afficher);
+                visuel.setManaged(afficher);
+            };
+            widthProperty().addListener((o, ancienne, nouvelle) -> adapterVisuel.run());
+            adapterVisuel.run();
+            getChildren().add(disposition);
+        } else {
+            getChildren().add(defilement);
+        }
         rechercher.run();
         setAlignment(Pos.CENTER);
 

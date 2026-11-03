@@ -941,6 +941,64 @@
 .login-view {
     -fx-background-color: linear-gradient(to bottom right, #3a5fcd 0%, #5e5ce6 42%, #a06ad4 72%, #e26f8c 100%);
 }
+/* Enseignant / apprenant : le fond bleu nuit prolonge le ciel de l’illustration
+   sans concurrencer la carte du formulaire. L’administrateur conserve le fond ci-dessus. */
+.login-view--visuel {
+    -fx-background-color: linear-gradient(to bottom right, #081c2b 0%, #0d3049 52%, #14506e 100%);
+}
+.login-disposition {
+    -fx-background-color: transparent;
+}
+.login-visuel {
+    -fx-background-color: #0a2438;
+    -fx-border-color: rgba(255, 255, 255, 0.18);
+    -fx-border-width: 0 1 0 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 24, 0.12, 8, 0);
+}
+.login-visuel--sans-image {
+    -fx-background-color: linear-gradient(to bottom right, #123f5c 0%, #147a9e 58%, #6e5bd0 100%);
+}
+.login-visuel-voile {
+    -fx-background-color: linear-gradient(to top,
+        rgba(3, 17, 28, 0.84) 0%,
+        rgba(3, 17, 28, 0.42) 42%,
+        rgba(16, 74, 110, 0.10) 72%,
+        rgba(255, 255, 255, 0.03) 100%);
+}
+.login-visuel-legende {
+    -fx-background-color: transparent;
+}
+.login-visuel .login-visuel-marque {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #9ed8ff;
+}
+.login-visuel--enseignant .login-visuel-marque {
+    -fx-text-fill: #c9c2ff;
+}
+.login-visuel .login-visuel-titre {
+    -fx-font-family: "Inter", "SF Pro Display", "Segoe UI Semibold", "Segoe UI", sans-serif;
+    -fx-font-size: 31px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.34), 10, 0.08, 0, 2);
+}
+.login-visuel .login-visuel-texte {
+    -fx-font-size: 13px;
+    -fx-text-fill: rgba(235, 246, 255, 0.90);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 6, 0.05, 0, 1);
+}
+.login-visuel .login-visuel-puce {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-background-color: rgba(5, 27, 43, 0.38);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(255, 255, 255, 0.34);
+    -fx-border-radius: 999;
+    -fx-border-width: 0.7;
+    -fx-padding: 5 9 5 9;
+}
 .login-card {
     -fx-padding: 34 40 30 40;
     -fx-background-radius: 20;
