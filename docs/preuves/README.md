@@ -96,3 +96,13 @@ Le présent rapport et les PNG ci-dessus décrivent les contrôles de déploieme
 Le parcours d'inscription a depuis été modifié : demande sans PIN, acceptation puis activation.
 Voir [activation-sans-pin.md](activation-sans-pin.md) pour le périmètre et la validation de ce changement.
 Les données pédagogiques restent simulées comme indiqué dans le README principal.
+
+## Diagrammes v2 — 3 novembre 2026
+
+Le sous-dossier `diagrammes-v2/` contient 12 PNG générés par
+`outils/generer_documents_v2.py` pour l’analyse des besoins v2.0, les diagrammes
+v2.0, les modèles de tâches v2.0 et le cahier des charges v1.0. Ce sont des
+**schémas de conception** alignés sur le code et les migrations 01 à 14 : ils ne
+constituent ni des captures JavaFX, ni une preuve d’exécution Windows, Docker,
+PostgreSQL, SMTP, NVIDIA ou NVDA. Les scénarios à exécuter réellement sont
+REC-01 à REC-16 dans `docs/Cahier-des-charges.pdf`.
