@@ -995,11 +995,17 @@
     -fx-padding: 5 9 5 9;
 }
 .login-card {
-    -fx-padding: 34 40 30 40;
+    -fx-padding: 30 36 26 36;
     -fx-background-radius: 20;
-    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-background-color: rgba(13, 27, 43, 0.55);
+    -fx-border-color: rgba(255, 255, 255, 0.22);
+    -fx-border-width: 1;
+    -fx-border-radius: 20;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 40, 0.2, 0, 14);
 }
+/* Fond plein écran sombre derrière : les libellés de la carte passent en clair. */
+.login-card .role-nom,
+.login-card .login-mode { -fx-text-fill: rgba(255, 255, 255, 0.88); }
 .login-marque {
     -fx-font-size: 11px;
     -fx-text-fill: -color-accent;
@@ -1027,9 +1033,7 @@
 .etat-formulaire, .etat-reseau {
     -fx-background-color: -color-surface-2;
     -fx-background-radius: 8;
-    -fx-border-color: -color-encours;
-    -fx-border-radius: 8;
-    -fx-border-width: 1 1 1 5;
+    -fx-border-width: 0;
 }
 .etat-formulaire {
     -fx-padding: 9 11 9 11;
@@ -1040,10 +1044,6 @@
     -fx-text-fill: -color-texte;
 }
 .etat-formulaire .label { -fx-text-fill: -color-texte; }
-.etat-information, .etat-chargement { -fx-border-color: -color-encours; }
-.etat-succes { -fx-border-color: -color-valide; }
-.etat-avertissement { -fx-border-color: -color-alerte; }
-.etat-erreur { -fx-border-color: -color-danger; }
 .etat-symbole {
     -fx-font-size: 15px;
     -fx-font-weight: bold;
@@ -1062,6 +1062,8 @@
 .indicateur-chargement { -fx-progress-color: -color-encours; }
 .etat-formulaire:focused, .etat-reseau:focused, .etat-texte:focused {
     -fx-border-color: -color-texte;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
     -fx-border-style: segments(4, 3);
 }
 .etat-texte:focused { -fx-underline: true; }
