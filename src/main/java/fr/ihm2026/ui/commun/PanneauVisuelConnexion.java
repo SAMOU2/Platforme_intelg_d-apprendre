@@ -25,18 +25,20 @@ import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
 /**
- * Panneau visuel des postes enseignant et apprenant.
+ * Fond plein écran animé de l’écran de connexion, pour tous les rôles.
  *
  * <p>L’illustration fournie est une image fixe : le mouvement est donc produit
  * par un panoramique très lent dans son cadre, accompagné d’un zoom léger.
- * Le déplacement reste décoratif, ne prend jamais le focus et s’arrête lorsque
- * l’écran quitte la scène ou lorsque les animations sont désactivées avec
+ * Le panneau occupe toute la vue, derrière le formulaire ; l’image elle-même est
+ * non gérée, donc purement décorative : elle ne participe jamais au calcul de la
+ * taille de l’interface. Le déplacement ne prend jamais le focus et s’arrête
+ * lorsque l’écran quitte la scène ou lorsque les animations sont désactivées avec
  * {@code -Dihm.animations=off}.</p>
  *
  * <p>Ce panneau est volontairement <b>hors flux de mise en page</b> :
  * {@code managed=false}, tailles minimale et préférée nulles. Son parent le
- * positionne manuellement dans une marge déjà libre ; il ne peut donc ni
- * agrandir la fenêtre, ni déplacer ou redimensionner le formulaire.</p>
+ * dimensionne manuellement à la taille déjà déterminée de la vue ; il ne peut
+ * donc ni agrandir la fenêtre, ni déplacer ou redimensionner le formulaire.</p>
  */
 final class PanneauVisuelConnexion extends StackPane {
 
@@ -59,11 +61,11 @@ final class PanneauVisuelConnexion extends StackPane {
         setManaged(false);
         setMinSize(0, 0);
         setPrefSize(0, 0);
+        // Fond plein écran : le panneau occupe toute la vue, derrière le formulaire,
+        // mais son parent le dimensionne manuellement (hors flux de mise en page).
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         Rectangle cadre = new Rectangle();
-        cadre.setArcWidth(28);
-        cadre.setArcHeight(28);
         cadre.widthProperty().bind(widthProperty());
         cadre.heightProperty().bind(heightProperty());
         setClip(cadre);
@@ -75,6 +77,10 @@ final class PanneauVisuelConnexion extends StackPane {
             vueImage.setSmooth(true);
             vueImage.setCache(true);
             vueImage.setFocusTraversable(false);
+            // Couche purement décorative : non gérée, elle ne participe jamais au calcul
+            // de la taille préférée du panneau. Sinon la disposition suivrait la taille
+            // naturelle de l'image (le « gif ») au lieu de la taille de l'écran.
+            vueImage.setManaged(false);
             vueImage.fitWidthProperty().bind(widthProperty());
             vueImage.fitHeightProperty().bind(heightProperty());
             getChildren().add(vueImage);
@@ -86,6 +92,8 @@ final class PanneauVisuelConnexion extends StackPane {
         voile.getStyleClass().add("login-visuel-voile");
         voile.setFocusTraversable(false);
         voile.setMouseTransparent(true);
+        // Une Region a une taille préférée nulle : elle reste gérée (le StackPane
+        // l'étire pour peindre le voile) sans jamais influencer la taille du panneau.
 
         VBox legende = creerLegende(role);
         getChildren().addAll(voile, legende);
@@ -133,7 +141,8 @@ final class PanneauVisuelConnexion extends StackPane {
             actualiserCadre();
             if (!entreeAffichee) {
                 entreeAffichee = true;
-                Animations.apparaitreBulle(legende);
+                // La légende du fond arrive en cascade : marque, titre, texte, puis les puces.
+                Animations.apparaitreEnCascade(legende.getChildren());
             }
             if (panoramique != null && isVisible()) {
                 panoramique.play();
@@ -142,8 +151,9 @@ final class PanneauVisuelConnexion extends StackPane {
         actualiserCadre();
     }
 
+    /** Tous les rôles (administrateur, enseignant, apprenant) ont le fond plein écran animé. */
     static boolean roleEligible(Session.Role role) {
-        return role == Session.Role.APPRENANT || role == Session.Role.ENSEIGNANT;
+        return role != null;
     }
 
     static String ressourceImage() {
@@ -151,26 +161,15 @@ final class PanneauVisuelConnexion extends StackPane {
     }
 
     /**
-     * Zone que le visuel peut occuper dans la marge gauche déjà présente
-     * autour de la carte centrée. Un rectangle vide signifie qu’il faut le
-     * masquer plutôt que de réduire ou déplacer le formulaire.
+     * Zone du fond plein écran : exactement la taille déjà déterminée de la
+     * vue de connexion, jamais une taille demandée par l’image ou sa légende.
+     * Un rectangle vide signifie que la vue n’a pas encore de taille utilisable.
      */
-    static Rectangle2D emplacement(double largeurVue, double hauteurVue, double largeurCarte) {
-        if (largeurVue < 1000 || hauteurVue < 500 || largeurCarte <= 0) {
+    static Rectangle2D emplacementPleinEcran(double largeurVue, double hauteurVue) {
+        if (!(largeurVue > 0) || !(hauteurVue > 0)) {
             return Rectangle2D.EMPTY;
         }
-        double margeGauche = Math.max(0, (largeurVue - largeurCarte) / 2);
-        double largeurVisuel = Math.min(340, margeGauche - 32);
-        if (largeurVisuel < 210) {
-            return Rectangle2D.EMPTY;
-        }
-        double hauteurVisuel = Math.min(hauteurVue - 96, largeurVisuel * 1.24);
-        if (hauteurVisuel < 240) {
-            return Rectangle2D.EMPTY;
-        }
-        double x = Math.max(16, (margeGauche - largeurVisuel) / 2);
-        double y = Math.max(24, (hauteurVue - hauteurVisuel) / 2);
-        return new Rectangle2D(x, y, largeurVisuel, hauteurVisuel);
+        return new Rectangle2D(0, 0, largeurVue, hauteurVue);
     }
 
     @Override
@@ -254,7 +253,7 @@ final class PanneauVisuelConnexion extends StackPane {
         VBox legende = new VBox(10, marque, titre, texte, langages);
         legende.getStyleClass().add("login-visuel-legende");
         legende.setAlignment(Pos.BOTTOM_LEFT);
-        legende.setPadding(new Insets(24));
+        legende.setPadding(new Insets(30));
         legende.setMaxWidth(450);
         legende.setMaxHeight(Region.USE_PREF_SIZE);
         legende.setMouseTransparent(true);

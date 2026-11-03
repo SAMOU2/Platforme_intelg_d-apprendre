@@ -1,6 +1,7 @@
 package fr.ihm2026.ui.commun;
 
 import fr.ihm2026.api.service.ClientAuthentificationHttps;
+import fr.ihm2026.core.Animations;
 import fr.ihm2026.core.Router;
 import fr.ihm2026.core.Session;
 import fr.ihm2026.core.TaskRunner;
@@ -83,14 +84,10 @@ public class VueConnexionServeur extends StackPane {
         });
         getStyleClass().add("login-view");
         boolean visuelConnexion = PanneauVisuelConnexion.roleEligible(role);
+        if (visuelConnexion) {
+            getStyleClass().add("login-view--visuel");
+        }
         etat.textProperty().addListener((o, ancien, message) -> actualiserPresentationEtat(message));
-
-        Label marque = new Label("IHM 2026");
-        marque.getStyleClass().add("login-marque");
-        Label titre = new Label(IdentitePoste.nom() + " — " + this.role.label());
-        titre.getStyleClass().add("login-titre");
-        Label sousTitre = new Label("Se connecter avec un compte autorisé pour ce rôle.");
-        sousTitre.getStyleClass().add("login-soustitre");
 
         Label decouverteServeur = new Label("Connexion à la plateforme du réseau");
         javafx.scene.control.ComboBox<fr.ihm2026.reseau.DecouverteServeurs.Serveur> serveurs =
@@ -320,9 +317,9 @@ public class VueConnexionServeur extends StackPane {
         });
 
         HBox ligne = new HBox(10, connecter);
-        ligne.setAlignment(Pos.CENTER);
+        ligne.setAlignment(Pos.CENTER_LEFT);
         VBox actionsCompte = new VBox(8, inscription, activation, oublierAppareil);
-        actionsCompte.setAlignment(Pos.CENTER);
+        actionsCompte.setAlignment(Pos.CENTER_LEFT);
 
         etat.getStyleClass().add("etat-texte");
         etat.setWrapText(true);
@@ -335,13 +332,13 @@ public class VueConnexionServeur extends StackPane {
         aide.getStyleClass().add("login-mode");
         aide.setWrapText(true);
 
-        VBox carte = new VBox(10, marque, titre, sousTitre, decouverteServeur, etatDecouverte, serveurs, actualiserServeurs, parametresWifi, avance,
+        VBox carte = new VBox(10, decouverteServeur, etatDecouverte, serveurs, actualiserServeurs, parametresWifi, avance,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
                 etiquetteMotDePasse, ChampSecret.envelopper(motDePasse),
                 etiquetteConfirmation, ChampSecret.envelopper(confirmationMotDePasse), etiquetteCodeConnexion, codeConnexion,
                 memoriserAppareil, ligne, bandeauEtat, actionsCompte, aide);
         carte.getStyleClass().addAll("card", "login-card", "carte-reseau");
-        carte.setAlignment(Pos.CENTER);
+        carte.setAlignment(Pos.CENTER_LEFT);
         carte.setMaxWidth(560);
         carte.setMaxHeight(Region.USE_PREF_SIZE);
         actualiserModeInscription();
@@ -350,6 +347,8 @@ public class VueConnexionServeur extends StackPane {
         carte.setMinHeight(Region.USE_PREF_SIZE);
         StackPane contenu = new StackPane(carte);
         contenu.setPadding(new javafx.geometry.Insets(24));
+        // Carte de connexion ancrée à droite, sur le fond plein écran, dans tous les rôles.
+        contenu.setAlignment(Pos.CENTER_RIGHT);
         ScrollPane defilement = new ScrollPane(contenu);
         defilementConnexion = defilement;
         defilement.setId("connexion-defilement");
@@ -358,34 +357,31 @@ public class VueConnexionServeur extends StackPane {
         defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
         if (visuelConnexion) {
-            // Le visuel est ajouté derrière le formulaire, mais hors layout :
-            // le ScrollPane reste le seul enfant géré et conserve donc exactement
-            // la taille, la position et le défilement qu’il avait sans image.
+            // Fond plein écran animé derrière le formulaire, dans tous les rôles,
+            // mais hors layout : le ScrollPane reste le seul enfant géré et conserve
+            // donc exactement la taille, la position et le défilement du formulaire.
+            // Le visuel reçoit manuellement la taille déjà fixée de cette vue.
             PanneauVisuelConnexion visuel = new PanneauVisuelConnexion(role);
             visuel.setManaged(false);
             getChildren().addAll(visuel, defilement);
 
             Runnable placerVisuel = () -> {
-                double largeurCarte = carte.getWidth() > 0 ? carte.getWidth() : 560;
-                var zone = PanneauVisuelConnexion.emplacement(
-                        getWidth(), getHeight(), largeurCarte);
-                boolean afficher = !zone.isEmpty();
-                visuel.setVisible(afficher);
-                if (afficher) {
+                var zone = PanneauVisuelConnexion.emplacementPleinEcran(
+                        getWidth(), getHeight());
+                if (!zone.isEmpty()) {
                     visuel.resizeRelocate(zone.getMinX(), zone.getMinY(),
                             zone.getWidth(), zone.getHeight());
                 }
             };
             widthProperty().addListener((o, ancienne, nouvelle) -> placerVisuel.run());
             heightProperty().addListener((o, ancienne, nouvelle) -> placerVisuel.run());
-            carte.widthProperty().addListener((o, ancienne, nouvelle) -> placerVisuel.run());
             placerVisuel.run();
             javafx.application.Platform.runLater(placerVisuel);
         } else {
             getChildren().add(defilement);
         }
         rechercher.run();
-        setAlignment(Pos.CENTER);
+        setAlignment(Pos.CENTER_RIGHT);
 
         // Entrée depuis la carte vaut « Se connecter ».
         carte.setOnKeyPressed(e -> {
@@ -404,7 +400,7 @@ public class VueConnexionServeur extends StackPane {
             javafx.geometry.Rectangle2D ecran = javafx.stage.Screen.getPrimary().getVisualBounds();
             boolean deborde = scene.getWidth() > ecran.getWidth() + 2
                     || scene.getHeight() > ecran.getHeight() + 2;
-            setAlignment(deborde ? Pos.TOP_LEFT : Pos.CENTER);
+            setAlignment(deborde ? Pos.TOP_RIGHT : Pos.CENTER_RIGHT);
             setPadding(deborde ? new javafx.geometry.Insets(16) : javafx.geometry.Insets.EMPTY);
         };
         sceneProperty().addListener((o, ancienne, nouvelle) -> {
@@ -423,6 +419,8 @@ public class VueConnexionServeur extends StackPane {
             }
             email.requestFocus();
             placer.run();
+            // Entrée du login : la carte monte et se découvre (fondu + légère croissance).
+            Animations.apparaitrePanneau(carte);
         });
     }
 

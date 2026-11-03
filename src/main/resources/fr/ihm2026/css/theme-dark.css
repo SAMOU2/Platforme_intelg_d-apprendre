@@ -68,7 +68,6 @@
 .scroll-bar .thumb:hover { -fx-background-color: rgba(255, 255, 255, 0.42); }
 .ligne-difficulte { -fx-background-color: rgba(255, 159, 10, 0.16); }
 .console { -fx-control-inner-background: #232325; }
-.login-card { -fx-background-color: rgba(44, 44, 46, 0.94); }
 .tooltip { -fx-background-color: rgba(70, 70, 74, 0.96); }
 .code-kw { -fx-fill: #ff8ac4; }
 .code-str { -fx-fill: #fea97a; }
@@ -95,4 +94,10 @@
 .combo-box-popup .list-cell:hover, .combo-box-popup .list-cell:selected {
     -fx-background-color: #176bb7;
     -fx-text-fill: #ffffff;
+}
+
+/* Carte de connexion en verre, ajustée au thème sombre (un peu plus opaque
+   pour garder le contraste du texte clair sur l'image de fond). */
+.login-card {
+    -fx-background-color: rgba(10, 20, 33, 0.66);
 }
