@@ -368,7 +368,7 @@ public class VueConnexionServeur extends StackPane {
             Runnable placerVisuel = () -> {
                 var zone = PanneauVisuelConnexion.emplacementPleinEcran(
                         getWidth(), getHeight());
-                if (!zone.isEmpty()) {
+                if (zone.getWidth() > 0 && zone.getHeight() > 0) {
                     visuel.resizeRelocate(zone.getMinX(), zone.getMinY(),
                             zone.getWidth(), zone.getHeight());
                 }
