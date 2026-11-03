@@ -89,12 +89,13 @@ class VisuelConnexionTest(unittest.TestCase):
         ):
             theme = chemin.read_text(encoding="utf-8")
             for jeton in (
-                "-color-login-visuel-nuit",
-                "-color-login-visuel-mer",
-                "-color-login-visuel-ciel",
-                "-color-login-visuel-texte",
-                "-color-login-visuel-accent-apprenant",
-                "-color-login-visuel-accent-enseignant",
+                "-color-login-panneau",
+                "-color-login-visuel-1",
+                "-color-login-visuel-2",
+                "-color-login-visuel-3",
+                "-color-login-marque",
+                "-color-login-marque-enseignant",
+                "-color-login-texte-blanc",
             ):
                 with self.subTest(theme=nom, jeton=jeton):
                     self.assertIn(jeton, theme)

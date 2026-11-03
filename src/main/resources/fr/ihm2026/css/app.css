@@ -945,7 +945,7 @@
    en page. Elle utilise uniquement la marge déjà libre à gauche de la carte ;
    le fond, la carte et tous les contrôles conservent leur taille d’origine. */
 .login-visuel {
-    -fx-background-color: -color-login-visuel-nuit;
+    -fx-background-color: -color-login-panneau;
     -fx-background-radius: 22;
     -fx-border-color: rgba(255, 255, 255, 0.22);
     -fx-border-radius: 22;
@@ -953,10 +953,7 @@
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 24, 0.12, 0, 10);
 }
 .login-visuel--sans-image {
-    -fx-background-color: linear-gradient(to bottom right,
-        -color-login-visuel-mer 0%,
-        -color-login-visuel-ciel 58%,
-        -color-ia 100%);
+    -fx-background-color: linear-gradient(to bottom right, -color-login-visuel-1 0%, -color-login-visuel-2 58%, -color-login-visuel-3 100%);
 }
 .login-visuel-voile {
     -fx-background-color: linear-gradient(to top,
@@ -972,16 +969,16 @@
 .login-visuel .login-visuel-marque {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-text-fill: -color-login-visuel-accent-apprenant;
+    -fx-text-fill: -color-login-marque;
 }
 .login-visuel--enseignant .login-visuel-marque {
-    -fx-text-fill: -color-login-visuel-accent-enseignant;
+    -fx-text-fill: -color-login-marque-enseignant;
 }
 .login-visuel .login-visuel-titre {
     -fx-font-family: "Inter", "SF Pro Display", "Segoe UI Semibold", "Segoe UI", sans-serif;
     -fx-font-size: 27px;
     -fx-font-weight: bold;
-    -fx-text-fill: -color-login-visuel-texte;
+    -fx-text-fill: -color-login-texte-blanc;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.34), 10, 0.08, 0, 2);
 }
 .login-visuel .login-visuel-texte {
@@ -992,7 +989,7 @@
 .login-visuel .login-visuel-puce {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-text-fill: -color-login-visuel-texte;
+    -fx-text-fill: -color-login-texte-blanc;
     -fx-background-color: rgba(5, 27, 43, 0.38);
     -fx-background-radius: 999;
     -fx-border-color: rgba(255, 255, 255, 0.34);

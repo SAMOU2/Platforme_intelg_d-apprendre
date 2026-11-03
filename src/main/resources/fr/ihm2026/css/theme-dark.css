@@ -43,13 +43,17 @@
     -color-verrouille: #8e8e93;
     -color-alerte: #ff9f0a;
     -color-danger: #ff453a;
-    /* Visuel décoratif de connexion : palette fixe, lisible sur l’illustration. */
-    -color-login-visuel-nuit: #081c2b;
-    -color-login-visuel-mer: #0d3049;
-    -color-login-visuel-ciel: #14506e;
-    -color-login-visuel-texte: #ffffff;
-    -color-login-visuel-accent-apprenant: #9ed8ff;
-    -color-login-visuel-accent-enseignant: #c9c2ff;
+    /* Fenêtre de connexion : panneau visuel « bleu nuit » (identique en thème clair). */
+    -color-login-fond-1: #081c2b;
+    -color-login-fond-2: #0d3049;
+    -color-login-fond-3: #14506e;
+    -color-login-panneau: #0a2438;
+    -color-login-visuel-1: #123f5c;
+    -color-login-visuel-2: #147a9e;
+    -color-login-visuel-3: #6e5bd0;
+    -color-login-marque: #9ed8ff;
+    -color-login-marque-enseignant: #c9c2ff;
+    -color-login-texte-blanc: #ffffff;
     -fx-faint-focus-color: rgba(10, 132, 255, 0.25);
 }
 
