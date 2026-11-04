@@ -36,6 +36,22 @@ class DecouverteServeursTest {
         assertNull(DecouverteServeurs.lireAnnonce("IHM2026:SERVER:2:" + "x".repeat(81), "127.0.0.1"));
     }
 
+    @Test void seulesLesCartesLanPhysiquesSontRetenues() {
+        // Cartes réelles de la salle (et carte réseau d'une VM invitée) : acceptées.
+        assertTrue(InterfacesReseau.nomAccepte("wlan0 Intel(R) Wi-Fi 6E AX211"));
+        assertTrue(InterfacesReseau.nomAccepte("ethernet Realtek Gaming GbE Family Controller"));
+        assertTrue(InterfacesReseau.nomAccepte("ethernet Microsoft Hyper-V Network Adapter"));
+        // Cartes virtuelles de l'hôte et tunnels vus sur le PC1 de test : exclues,
+        // sinon la découverte peut retenir 172.22.176.1 (WSL) ou 172.16.0.2 (WARP)
+        // au lieu de l'adresse Wi-Fi du serveur.
+        assertFalse(InterfacesReseau.nomAccepte("ethernet_12 Hyper-V Virtual Ethernet Adapter"));
+        assertFalse(InterfacesReseau.nomAccepte("vethernet vEthernet (WSL (Hyper-V firewall))"));
+        assertFalse(InterfacesReseau.nomAccepte("warp CloudflareWARP"));
+        assertFalse(InterfacesReseau.nomAccepte("wintun WireGuard Tunnel"));
+        assertFalse(InterfacesReseau.nomAccepte("tun0 OpenVPN TAP-Windows Adapter"));
+        assertFalse(InterfacesReseau.nomAccepte("docker0 Docker Desktop"));
+    }
+
     @Test void serveurRepondAuxDeuxVersions() throws Exception {
         try (ServeurLocal serveur = new ServeurLocal(0, "test"); DatagramSocket client = new DatagramSocket()) {
             client.setSoTimeout(2000);

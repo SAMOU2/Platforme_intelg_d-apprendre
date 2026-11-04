@@ -81,8 +81,9 @@ Mettre à jour un JDK peut nécessiter de réinstaller la confiance dans ce nouv
 Après BUILD SUCCESS, relancer HTTPS, le serveur de salle et les interfaces à jour, en une
 seule instance chacun. Le terminal HTTPS doit afficher `[tls-reseau] Certificat actualise`.
 Le serveur de salle continue à annoncer le port HTTPS actuel. Les interfaces ignorent la
-boucle locale et les adaptateurs virtuels courants (Hyper-V, Docker, VMware, VirtualBox)
-pour la découverte ; elles ne remplacent pas une IP LAN par 127.0.0.1.
+boucle locale, les cartes virtuelles de l'hôte et les tunnels (vEthernet WSL/Hyper-V,
+Docker, VMware, VirtualBox, Cloudflare WARP et VPN) pour la découverte comme pour les
+adresses du certificat ; elles ne remplacent pas une IP LAN par 127.0.0.1.
 
 L'écran de connexion relance périodiquement la découverte lorsqu'il est affiché en mode
 automatique. Les recherches se suspendent pendant la connexion/OTP et en mode adresse
