@@ -36,6 +36,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     private static final int LOT_DECISIONS_MAX = 20;
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(DELAI_CONNEXION)
             .build();
     private final URI base;
