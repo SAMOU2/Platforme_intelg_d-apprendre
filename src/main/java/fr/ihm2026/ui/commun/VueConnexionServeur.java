@@ -124,8 +124,13 @@ public class VueConnexionServeur extends StackPane {
             if (choix != null && !adresseServeur.isDisabled()) {
                 portHttpsManuel.setText(Integer.toString(choix.portHttps()));
                 adresseServeur.setText(choix.hote());
-                etatDecouverte.setText("Plateforme sélectionnée : " + choix.nom()
-                        + ". Connectez-vous à votre compte. L'identité sera vérifiée par HTTPS.");
+                if (choix.portHttps() == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
+                    etatDecouverte.setText("Plateforme sélectionnée, mais son port HTTPS n'est pas annoncé. "
+                            + "Gardez la fenêtre d'authentification ouverte, puis cliquez sur Réessayer.");
+                } else {
+                    etatDecouverte.setText("Plateforme sélectionnée : " + choix.nom()
+                            + ". Connectez-vous à votre compte. L'identité sera vérifiée par HTTPS.");
+                }
             }
         });
         Runnable rechercher = () -> {
@@ -150,6 +155,15 @@ public class VueConnexionServeur extends StackPane {
                             serveurs.getSelectionModel().selectFirst();
                             adresseServeur.setText(liste.get(0).hote());
                             portHttpsManuel.setText(Integer.toString(liste.get(0).portHttps()));
+                            if (liste.get(0).portHttps() == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
+                                etatDecouverte.setText("Plateforme trouvée, mais son port HTTPS n'est pas annoncé "
+                                        + "(valeur par défaut " + fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI
+                                        + "). Gardez la fenêtre d'authentification ouverte, attendez quelques "
+                                        + "secondes, puis cliquez sur Réessayer.");
+                            } else {
+                                etatDecouverte.setText("Plateforme trouvée. Connectez-vous à votre compte. "
+                                        + "L'identité est vérifiée par HTTPS.");
+                            }
                         } else if (liste.size() > 1) {
                             serveurs.setVisible(true);
                             serveurs.setManaged(true);

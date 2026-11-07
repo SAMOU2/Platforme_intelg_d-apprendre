@@ -58,6 +58,7 @@ public final class ServeurLocal implements AutoCloseable {
     private final List<EtatReseau.Resultat> resultats = new CopyOnWriteArrayList<>();
     private final String version;
     private final java.net.DatagramSocket socketDecouverte;
+    private volatile long prochainAvertissementHttps;
     private final Thread serviceDecouverte;
 
     /** Démarre le serveur sur le port demandé (0 = port éphémère choisi par le système). */
@@ -107,6 +108,18 @@ public final class ServeurLocal implements AutoCloseable {
         socketDecouverte.close();
     }
 
+    /**
+     * Sans port HTTPS publié, les postes viseraient une valeur par défaut et la connexion
+     * échouerait sans explication : le dire une fois toutes les trente secondes.
+     */
+    private void avertirPortHttpsManquant() {
+        long maintenant = System.nanoTime();
+        if (maintenant < prochainAvertissementHttps) return;
+        prochainAvertissementHttps = maintenant + java.util.concurrent.TimeUnit.SECONDS.toNanos(30);
+        journal("aucun port HTTPS publie (registre introuvable ou perime : " + InstanceHttpsLocale.emplacements()
+                + ") : garder la fenetre d'authentification ouverte, sinon les postes visent un port par defaut.");
+    }
+
     private void servirDecouverte() {
         byte[] tampon = new byte[64];
         while (!socketDecouverte.isClosed()) {
@@ -121,6 +134,8 @@ public final class ServeurLocal implements AutoCloseable {
                         byte[] annonce=("IHM2026:SERVER:3:"+https+":"+DecouverteServeurs.nomLocal())
                                 .getBytes(java.nio.charset.StandardCharsets.UTF_8);
                         socketDecouverte.send(new java.net.DatagramPacket(annonce,annonce.length,paquet.getSocketAddress()));
+                    } else {
+                        avertirPortHttpsManquant();
                     }
                 } else if ("IHM2026:DISCOVER:2".equals(demande)) {
                     byte[] annonce = ("IHM2026:SERVER:2:" + DecouverteServeurs.nomLocal())
