@@ -1533,3 +1533,89 @@
 .racine--login .bouton-aide-fenetre:hover,
 .racine--login .bouton-aide-fenetre:focused { -fx-background-color: #3b495d; }
 .racine--login .feux:hover .feu { -fx-text-fill: #d5dfed; }
+
+/* Connexion : mise en page de la maquette SVG, sans marque nominative. */
+.connexion-nuit .connexion-entete-page { -fx-padding: 0 4; }
+.connexion-nuit .connexion-logo-neutre {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+    -fx-background-color: #2861e8;
+    -fx-background-radius: 11;
+}
+.connexion-nuit .connexion-logo-neutre .connexion-icone {
+    -fx-stroke: white;
+    -fx-scale-x: 0.8;
+    -fx-scale-y: 0.8;
+}
+.connexion-nuit .connexion-entete-nom {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #d5dfed;
+}
+.connexion-nuit .connexion-securite { -fx-padding: 0; -fx-text-fill: #aabbd1; }
+.connexion-nuit .connexion-carte-nuit {
+    -fx-background-color: #101d30;
+    -fx-background-radius: 24;
+    -fx-padding: 40 44 36 44;
+}
+.connexion-nuit .connexion-bienvenue {
+    -fx-background-color: #1c3457;
+    -fx-background-radius: 20;
+    -fx-text-fill: #83bdff;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 7 15;
+}
+.connexion-nuit .connexion-titre { -fx-font-size: 32px; -fx-text-fill: #f4f7fd; }
+.connexion-nuit .connexion-sous-titre { -fx-font-size: 15px; -fx-text-fill: #aabbd1; }
+.connexion-nuit .connexion-reseau-bouton {
+    -fx-background-color: #1b2c45;
+    -fx-background-radius: 14;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-max-width: 48;
+    -fx-max-height: 48;
+}
+.connexion-nuit .connexion-reseau-bouton .connexion-icone { -fx-stroke: #83bdff; }
+.connexion-nuit .connexion-carte-nuit .text-field,
+.connexion-nuit .connexion-carte-nuit .password-field,
+.connexion-nuit .connexion-champ-icone .champ-secret {
+    -fx-background-color: #1c2c43;
+    -fx-control-inner-background: #1c2c43;
+    -fx-min-height: 56;
+}
+/* Les champs superposés au bouton œil restent transparents dans leur enveloppe. */
+.connexion-nuit .connexion-champ-icone .champ-secret .text-field,
+.connexion-nuit .connexion-champ-icone .champ-secret .password-field { -fx-background-color: transparent; }
+.connexion-nuit .connexion-carte-nuit .check-box { -fx-padding: 0; -fx-text-fill: #f4f7fd; }
+.connexion-nuit .connexion-carte-nuit .check-box > .box {
+    -fx-background-color: #1c2c43;
+    -fx-background-radius: 5;
+    -fx-border-color: #91a5bf;
+    -fx-border-radius: 5;
+}
+.connexion-nuit .connexion-carte-nuit .check-box:selected > .box { -fx-background-color: #2861e8; -fx-border-color: #2861e8; }
+.connexion-nuit .connexion-carte-nuit .check-box:focused > .box { -fx-border-color: #83bdff; -fx-border-width: 2; }
+.connexion-nuit .connexion-conseil-confiance {
+    -fx-padding: 0 0 0 30;
+    -fx-text-fill: #91a5bf;
+    -fx-font-size: 12px;
+}
+.connexion-nuit .connexion-carte-nuit .connexion-bouton-principal {
+    -fx-font-size: 17px;
+    -fx-min-height: 56;
+    -fx-effect: none;
+}
+.connexion-nuit .connexion-invite-compte { -fx-text-fill: #aabbd1; -fx-font-size: 14px; }
+.connexion-nuit .connexion-carte-nuit .connexion-action-compte {
+    -fx-text-fill: #83bdff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 2;
+}
+.connexion-nuit .connexion-aide > .title { -fx-padding: 14 16; }
+.connexion-nuit .connexion-aide-titre { -fx-text-fill: #f4f7fd; -fx-font-size: 14px; -fx-font-weight: bold; }
+.connexion-nuit .connexion-aide-sous-titre { -fx-text-fill: #aabbd1; -fx-font-size: 12px; }
+.connexion-nuit .connexion-version { -fx-font-family: "Inter", "Segoe UI", sans-serif; -fx-text-fill: #aabbd1; -fx-font-size: 12px; }

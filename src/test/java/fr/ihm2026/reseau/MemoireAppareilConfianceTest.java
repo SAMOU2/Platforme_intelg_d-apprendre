@@ -63,8 +63,10 @@ class MemoireAppareilConfianceTest {
                     emailCompte, Session.Role.ADMINISTRATEUR).orElseThrow().jeton(),
                     "Un jeton déjà expiré ne doit pas remplacer l'entrée valide.");
 
-            MemoireAppareilConfiance.oublier(
-                    emailCompte, Session.Role.ADMINISTRATEUR);
+            assertEquals(MemoireAppareilConfiance.ResultatOubli.SUPPRIME,
+                    MemoireAppareilConfiance.oublier(emailCompte, Session.Role.ADMINISTRATEUR));
+            assertEquals(MemoireAppareilConfiance.ResultatOubli.ABSENT,
+                    MemoireAppareilConfiance.oublier(emailCompte, Session.Role.ADMINISTRATEUR));
             assertTrue(MemoireAppareilConfiance.lire(
                     emailMinuscules, Session.Role.ADMINISTRATEUR).isEmpty());
         } finally {
@@ -73,6 +75,35 @@ class MemoireAppareilConfianceTest {
             } else {
                 System.setProperty("user.home", ancienProfil);
             }
+        }
+    }
+
+    @Test
+    @DisplayName("Un échec de suppression ne doit pas être annoncé comme un oubli réussi")
+    void signaleEchecSuppression(@TempDir Path profil) throws Exception {
+        String ancienProfil = System.getProperty("user.home");
+        System.setProperty("user.home", profil.toString());
+        try {
+            String email = "test@example.org";
+            MemoireAppareilConfiance.ecrire(email, Session.Role.APPRENANT, "a".repeat(43),
+                    Instant.now().plus(1, ChronoUnit.HOURS));
+            Path fichier;
+            try (var fichiers = Files.list(MemoireAppareilConfiance.dossier())) {
+                fichier = fichiers.findFirst().orElseThrow();
+            }
+            // Un répertoire non vide ne peut pas être effacé avec deleteIfExists,
+            // y compris dans un environnement de test qui dispose des droits administrateur.
+            Files.delete(fichier);
+            Files.createDirectory(fichier);
+            Files.writeString(fichier.resolve("contenu"), "test");
+            assertEquals(MemoireAppareilConfiance.ResultatOubli.ECHEC,
+                    MemoireAppareilConfiance.oublier(email, Session.Role.APPRENANT));
+            assertTrue(Files.exists(fichier));
+            assertEquals(MemoireAppareilConfiance.ResultatOubli.ECHEC,
+                    MemoireAppareilConfiance.oublier("", Session.Role.APPRENANT));
+        } finally {
+            if (ancienProfil == null) System.clearProperty("user.home");
+            else System.setProperty("user.home", ancienProfil);
         }
     }
 

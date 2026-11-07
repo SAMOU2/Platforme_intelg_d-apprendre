@@ -268,6 +268,34 @@ class PostgresAuthentificationServiceIntegrationTest {
     }
 
     @Test
+    @DisplayName("Oublier un poste ne révoque pas les autres postes et peut être répété")
+    void revoquerUnSeulAppareil() throws SQLException {
+        var defiPremier = authentification.demanderCodeConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source);
+        var premier = authentification.confirmerCodeConnexion(
+                defiPremier.identifiant(), defiPremier.code(), true, "Premier poste");
+        authentification.deconnecter(premier.jeton());
+        var defiSecond = authentification.demanderCodeConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source);
+        var second = authentification.confirmerCodeConnexion(
+                defiSecond.identifiant(), defiSecond.code(), true, "Second poste");
+        authentification.deconnecter(second.jeton());
+
+        String jetonPremier = premier.appareilConfiance().jeton();
+        String jetonSecond = second.appareilConfiance().jeton();
+        authentification.revoquerAppareilConfiance(jetonPremier);
+        authentification.revoquerAppareilConfiance(jetonPremier); // idempotent
+        var autre = authentification.commencerConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source, jetonSecond);
+        assertFalse(autre.codeRequis(), "Un autre poste ne doit pas perdre sa confiance");
+        authentification.deconnecter(autre.session().jeton());
+        var oublie = authentification.commencerConnexion(email,
+                "mot-de-passe-integration-2026".toCharArray(), source, jetonPremier);
+        assertTrue(oublie.codeRequis(), "Le jeton révoqué doit demander un code");
+        authentification.annulerCodeConnexion(oublie.challenge().identifiant());
+    }
+
+    @Test
     @DisplayName("Un échec d'insertion de session ne consomme pas le code")
     void echecSessionConserveLeCode() throws SQLException {
         var challenge = authentification.demanderCodeConnexion(email,

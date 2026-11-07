@@ -406,11 +406,8 @@ public final class PostgresAuthentificationService {
                      """)) {
             requete.setString(1, empreinte(jetonConfiance));
             requete.executeUpdate();
-        } catch (SQLException ex) {
-            if (!"42P01".equals(ex.getSQLState())) {
-                throw ex;
-            }
         }
+        // Une base non migrée ou inaccessible ne doit pas être annoncée comme révoquée.
     }
 
     private static String nouveauJetonOpaque() {

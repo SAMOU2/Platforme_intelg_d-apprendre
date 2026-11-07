@@ -460,18 +460,18 @@ public class VueConnexionServeur extends StackPane {
             statutReseau.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("pret"), trouve);
         });
 
-        Label titre = new Label("Connexion");
-        titre.getStyleClass().add("connexion-titre");
-        Label marque = new Label("Samou");
-        marque.getStyleClass().add("connexion-marque");
+        Label bienvenue = new Label("BIENVENUE");
+        bienvenue.getStyleClass().add("connexion-bienvenue");
         Region espaceTitre = new Region();
         HBox.setHgrow(espaceTitre, Priority.ALWAYS);
-        HBox ligneTitre = new HBox(10, titre, marque, espaceTitre, ouvrirReseau);
+        HBox ligneTitre = new HBox(10, bienvenue, espaceTitre, ouvrirReseau);
         ligneTitre.setAlignment(Pos.CENTER_LEFT);
-        Label securite = new Label("Sécurisé par HTTPS", icone("M12 2 L20 5 V11 C20 16 17 20 12 22 C7 20 4 16 4 11 V5 Z M9 12 L11 14 L15 10"));
-        securite.getStyleClass().add("connexion-securite");
-        javafx.scene.control.Separator separationHaut = new javafx.scene.control.Separator();
-        separationHaut.getStyleClass().add("connexion-separation");
+        ouvrirReseau.setTooltip(new javafx.scene.control.Tooltip("Paramètres réseau : adresse et port du serveur"));
+        Label titre = new Label("Connexion");
+        titre.getStyleClass().add("connexion-titre");
+        Label sousTitre = new Label("Retrouvez votre espace d'apprentissage.");
+        sousTitre.getStyleClass().add("connexion-sous-titre");
+        sousTitre.setWrapText(true);
 
         StackPane champEmail = champAvecIcone(email, "M3 5 H21 V19 H3 Z M3 6 L12 13 L21 6");
         StackPane champMotDePasse = champAvecIcone(ChampSecret.envelopper(motDePasse, true),
@@ -493,11 +493,34 @@ public class VueConnexionServeur extends StackPane {
         for (Button action : java.util.List.of(inscription, activation, oublierAppareil)) {
             action.getStyleClass().add("connexion-action-compte");
         }
-        javafx.scene.layout.FlowPane actionsCompte = new javafx.scene.layout.FlowPane(12, 6,
-                inscription, activation, oublierAppareil);
-        actionsCompte.setAlignment(Pos.CENTER);
-        javafx.scene.control.Separator separationActions = new javafx.scene.control.Separator();
-        separationActions.getStyleClass().add("connexion-separation");
+        Label inviteInscription = new Label("Pas encore de compte ?");
+        inviteInscription.getStyleClass().add("connexion-invite-compte");
+        inviteInscription.visibleProperty().bind(inscription.visibleProperty()
+                .and(inscription.textProperty().isEqualTo("Créer un compte")));
+        inviteInscription.managedProperty().bind(inviteInscription.visibleProperty());
+        javafx.scene.layout.FlowPane ligneInscription = new javafx.scene.layout.FlowPane(8, 4,
+                inviteInscription, inscription);
+        ligneInscription.setAlignment(Pos.CENTER_LEFT);
+        ligneInscription.visibleProperty().bind(inscription.visibleProperty());
+        ligneInscription.managedProperty().bind(ligneInscription.visibleProperty());
+        Label inviteActivation = new Label("Déjà accepté ?");
+        inviteActivation.getStyleClass().add("connexion-invite-compte");
+        inviteActivation.visibleProperty().bind(activation.visibleProperty());
+        inviteActivation.managedProperty().bind(inviteActivation.visibleProperty());
+        javafx.scene.layout.FlowPane ligneActivation = new javafx.scene.layout.FlowPane(8, 4,
+                inviteActivation, activation, oublierAppareil);
+        ligneActivation.setAlignment(Pos.CENTER_LEFT);
+        ligneActivation.visibleProperty().bind(activation.visibleProperty().or(oublierAppareil.visibleProperty()));
+        ligneActivation.managedProperty().bind(ligneActivation.visibleProperty());
+        VBox actionsCompte = new VBox(6, ligneInscription, ligneActivation);
+        actionsCompte.getStyleClass().add("connexion-actions-compte");
+
+        Label conseilConfiance = new Label("À éviter sur un ordinateur partagé.");
+        conseilConfiance.getStyleClass().add("connexion-conseil-confiance");
+        conseilConfiance.setWrapText(true);
+        VBox confiance = new VBox(4, memoriserAppareil, conseilConfiance);
+        confiance.visibleProperty().bind(memoriserAppareil.visibleProperty());
+        confiance.managedProperty().bind(memoriserAppareil.managedProperty());
 
         etat.getStyleClass().add("etat-texte");
         etat.setWrapText(true);
@@ -507,42 +530,80 @@ public class VueConnexionServeur extends StackPane {
                 + "n'est redemandé qu'après 2 jours ; le mot de passe reste demandé à chaque ouverture.");
         aide.getStyleClass().add("connexion-aide-texte");
         aide.setWrapText(true);
-        javafx.scene.control.TitledPane aideRepliable = new javafx.scene.control.TitledPane(
-                "Fonctionnement de l'activation et de la confiance", aide);
+        Label titreAide = new Label("Activation et poste de confiance");
+        titreAide.getStyleClass().add("connexion-aide-titre");
+        titreAide.setWrapText(true);
+        titreAide.setMinWidth(0);
+        Label sousTitreAide = new Label("Comment fonctionnent le PIN et le code de connexion ?");
+        sousTitreAide.getStyleClass().add("connexion-aide-sous-titre");
+        sousTitreAide.setWrapText(true);
+        sousTitreAide.setMinWidth(0);
+        VBox texteAide = new VBox(3, titreAide, sousTitreAide);
+        texteAide.setMinWidth(0);
+        HBox.setHgrow(texteAide, Priority.ALWAYS);
+        HBox enTeteAide = new HBox(10,
+                icone("M12 2 A10 10 0 1 0 12 22 A10 10 0 1 0 12 2 M12 10 V17 M12 7 V7.1"), texteAide);
+        enTeteAide.setAlignment(Pos.CENTER_LEFT);
+        enTeteAide.setMinWidth(0);
+        javafx.scene.control.TitledPane aideRepliable = new javafx.scene.control.TitledPane("", aide);
+        aideRepliable.setGraphic(enTeteAide);
+        aideRepliable.setAccessibleText("Activation et poste de confiance : développer l'aide");
         aideRepliable.getStyleClass().add("connexion-aide");
-        aideRepliable.setGraphic(icone("M12 2 A10 10 0 1 0 12 22 A10 10 0 1 0 12 2 M12 10 V17 M12 7 V7.1"));
         aideRepliable.setExpanded(false);
         aideRepliable.setMaxWidth(Double.MAX_VALUE);
 
-        VBox carte = new VBox(10, ligneTitre, securite, separationHaut,
+        VBox carte = new VBox(10, ligneTitre, titre, sousTitre,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, champEmail,
                 etiquetteMotDePasse, champMotDePasse,
                 etiquetteConfirmation, champConfirmation, etiquetteCodeConnexion, codeConnexion,
-                memoriserAppareil, ligne, bandeauEtat, separationActions, actionsCompte);
+                confiance, ligne, bandeauEtat, actionsCompte);
         carte.getStyleClass().addAll("card", "login-card", "carte-reseau", "connexion-carte-nuit");
         carte.setAlignment(Pos.CENTER_LEFT);
-        carte.setMaxWidth(560);
+        carte.setMaxWidth(556);
         carte.setMinHeight(Region.USE_PREF_SIZE);
         carte.setMaxHeight(Region.USE_PREF_SIZE);
+        VBox.setMargin(etiquetteEmail, new javafx.geometry.Insets(20, 0, 0, 0));
+        VBox.setMargin(confiance, new javafx.geometry.Insets(14, 0, 8, 0));
+        VBox.setMargin(actionsCompte, new javafx.geometry.Insets(20, 0, 0, 0));
         actualiserModeInscription();
 
-        Label version = new Label("●  v" + fr.ihm2026.core.Config.VERSION + "  •  poste " + IdentitePoste.nom());
+        Label piedPoste = new Label("Plateforme d'apprentissage  ·  Poste " + this.role.label());
+        piedPoste.getStyleClass().add("connexion-version");
+        Label version = new Label("v" + fr.ihm2026.core.Config.VERSION + "  ·  " + IdentitePoste.nom());
         version.getStyleClass().add("connexion-version");
-        Label rolePoste = new Label("rôle :  " + this.role.label());
-        rolePoste.getStyleClass().add("connexion-role");
-        Region espacePied = new Region();
-        HBox.setHgrow(espacePied, Priority.ALWAYS);
-        HBox pied = new HBox(8, version, espacePied, rolePoste);
+        javafx.scene.layout.FlowPane pied = new javafx.scene.layout.FlowPane(16, 8,
+                piedPoste, version, statutReseau);
         pied.setAlignment(Pos.CENTER_LEFT);
-        Label copyright = new Label("Plateforme Samou © " + java.time.Year.now().getValue() + " — Tous droits réservés");
-        copyright.getStyleClass().add("connexion-copyright");
-        VBox colonne = new VBox(18, statutReseau, carte, aideRepliable, pied, copyright);
-        colonne.setMaxWidth(560);
-        colonne.setAlignment(Pos.CENTER);
         statutReseau.setMaxWidth(Double.MAX_VALUE);
-        StackPane contenu = new StackPane(colonne);
+
+        // La marque de la maquette est remplacée par un pictogramme neutre.
+        StackPane pictogramme = new StackPane(icone("M3 5 C7 4 10 5 12 7 C14 5 17 4 21 5 V19 C17 18 14 19 12 21 C10 19 7 18 3 19 Z M12 7 V21"));
+        pictogramme.getStyleClass().add("connexion-logo-neutre");
+        Label nomPlateforme = new Label("Plateforme d'apprentissage");
+        nomPlateforme.getStyleClass().add("connexion-entete-nom");
+        nomPlateforme.setWrapText(true);
+        nomPlateforme.setMinWidth(0);
+        Region espaceEntete = new Region();
+        HBox.setHgrow(espaceEntete, Priority.ALWAYS);
+        Label securite = new Label("Sécurisé par HTTPS", icone("M12 2 L20 5 V11 C20 16 17 20 12 22 C7 20 4 16 4 11 V5 Z M9 12 L11 14 L15 10"));
+        securite.getStyleClass().add("connexion-securite");
+        securite.setWrapText(true);
+        securite.setMinWidth(0);
+        HBox entetePage = new HBox(12, pictogramme, nomPlateforme, espaceEntete, securite);
+        entetePage.getStyleClass().add("connexion-entete-page");
+        entetePage.setAlignment(Pos.CENTER_LEFT);
+        entetePage.setMaxWidth(1200);
+
+        VBox colonne = new VBox(18, carte, aideRepliable, pied);
+        colonne.setMaxWidth(556);
+        colonne.setMaxHeight(Region.USE_PREF_SIZE);
+        colonne.setAlignment(Pos.CENTER);
+        StackPane zoneCentrale = new StackPane(colonne);
+        zoneCentrale.setPadding(new javafx.geometry.Insets(28, 0, 24, 0));
+        VBox.setVgrow(zoneCentrale, Priority.ALWAYS);
+        VBox contenu = new VBox(entetePage, zoneCentrale);
         contenu.setPadding(new javafx.geometry.Insets(24));
-        contenu.setAlignment(Pos.CENTER);
+        contenu.setAlignment(Pos.TOP_CENTER);
         ScrollPane defilement = new ScrollPane(contenu);
         defilementConnexion = defilement;
         defilement.setId("connexion-defilement");
@@ -627,7 +688,9 @@ public class VueConnexionServeur extends StackPane {
                 || minuscules.startsWith("après acceptation")
                 || minuscules.startsWith("votre demande sera")
                 || minuscules.startsWith("vérification annulée")
-                || minuscules.startsWith("poste oublié sur cet ordinateur")) {
+                || minuscules.startsWith("poste oublié sur cet ordinateur")
+                || minuscules.startsWith("poste révoqué sur pc1, mais")
+                || minuscules.startsWith("fichier de confiance local supprimé")) {
             classe = "etat-avertissement";
             symbole = "⚠";
             nature = "À vérifier";
@@ -908,20 +971,32 @@ public class VueConnexionServeur extends StackPane {
             return;
         }
         var confiance = MemoireAppareilConfiance.lire(identifiant, role);
-        MemoireAppareilConfiance.oublier(identifiant, role);
+        var suppression = MemoireAppareilConfiance.oublier(identifiant, role);
+        boolean localSupprime = suppression != MemoireAppareilConfiance.ResultatOubli.ECHEC;
         memoriserAppareil.setSelected(false);
         if (confiance.isEmpty()) {
-            etat.setText("Aucun poste de confiance n'est enregistré localement pour ce compte.");
+            if (!localSupprime) {
+                etat.setText("Impossible de lire ou supprimer le poste de confiance local. "
+                        + "Vérifiez les permissions du profil et réessayez ; la révocation sur PC1 n'est pas confirmée.");
+            } else if (suppression == MemoireAppareilConfiance.ResultatOubli.SUPPRIME) {
+                etat.setText("Fichier de confiance local supprimé, mais son jeton était illisible ou expiré : "
+                        + "la révocation sur PC1 n'a pas pu être confirmée.");
+            } else {
+                etat.setText("Aucun poste de confiance n'est enregistré localement pour ce compte.");
+            }
             return;
         }
         String adresse = adresseServeur.getText();
         if (adresse == null || adresse.isBlank()) {
-            etat.setText("Poste oublié sur cet ordinateur : son jeton local a été supprimé. "
-                    + "L'enregistrement serveur éventuel expirera au plus tard après 48 heures.");
+            etat.setText(localSupprime
+                    ? "Poste oublié sur cet ordinateur, mais la révocation sur PC1 n'est pas confirmée. "
+                            + "Le jeton serveur expirera au plus tard après 48 heures."
+                    : "Impossible de supprimer le jeton local et aucune adresse de PC1 n'est disponible. "
+                            + "Vérifiez les permissions du profil et la connexion, puis réessayez.");
             return;
         }
         String jeton = confiance.get().jeton();
-        oublierAppareil.setDisable(true);
+        definirChampsActifs(false);
         etat.setText("Oubli du poste de confiance…");
         TaskRunner.run(() -> {
             String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
@@ -929,12 +1004,18 @@ public class VueConnexionServeur extends StackPane {
                     hote, portHttpsPour(hote), jeton);
             return true;
         }, ok -> {
-            oublierAppareil.setDisable(false);
-            etat.setText("Poste de confiance oublié. Un code e-mail sera demandé à la prochaine connexion.");
+            definirChampsActifs(true);
+            etat.setText(localSupprime
+                    ? "Poste de confiance oublié. Un code e-mail sera demandé à la prochaine connexion."
+                    : "Poste révoqué sur PC1, mais le fichier local n'a pas pu être supprimé. "
+                            + "Vérifiez les permissions du profil ; un code e-mail sera demandé à la prochaine connexion.");
         }, erreur -> {
-            oublierAppareil.setDisable(false);
-            etat.setText("Poste oublié sur cet ordinateur, mais la révocation n'a pas pu être "
-                    + "confirmée par le serveur. Le jeton expirera au plus tard après 48 heures.");
+            definirChampsActifs(true);
+            etat.setText(localSupprime
+                    ? "Poste oublié sur cet ordinateur, mais la révocation n'a pas pu être "
+                            + "confirmée par le serveur. Le jeton expirera au plus tard après 48 heures."
+                    : "Impossible de supprimer le jeton local et la révocation sur PC1 n'a pas été confirmée. "
+                            + "Vérifiez les permissions et la connexion, puis réessayez.");
         });
     }
 
@@ -1053,6 +1134,9 @@ public class VueConnexionServeur extends StackPane {
         etiquetteMotDePasse.setVisible(!modeActivation);
         etiquetteMotDePasse.setManaged(!modeActivation);
         activation.setText(modeActivation ? "Retour à la connexion" : "Activer avec le PIN");
+        // Le lien d'inscription devient déjà « Retour à la connexion » en mode activation.
+        activation.setVisible(!modeActivation);
+        activation.setManaged(activation.isVisible());
         nom.setVisible(modeInscription);
         nom.setManaged(modeInscription);
         etiquetteNom.setVisible(modeInscription);
