@@ -34,13 +34,18 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
      * être considérée comme le port du serveur, seulement comme le signe « port inconnu ».
      */
     public static final int PORT_PAR_DEFAUT = 8443;
-    private static final Duration DELAI_CONNEXION = Duration.ofSeconds(5);
+    // L'établissement TCP/TLS peut être lent sur un poste ou Wi-Fi chargé. Le délai
+    // reste borné ; une adresse ou un pare-feu incorrect ne sera pas réparé en attendant.
+    static final Duration DELAI_CONNEXION = Duration.ofSeconds(30);
+    // Les requêtes d'authentification courtes doivent laisser au moins ce temps pour
+    // établir une nouvelle connexion, puis recevoir la réponse du serveur.
+    static final Duration DELAI_REQUETE_AUTH = Duration.ofSeconds(45);
     private static final Duration DELAI_REQUETE = Duration.ofSeconds(8);
     // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS, et la
     // première requête d'une JVM doit charger le magasin de confiance : 60 s était trop
     // court sur les postes lents, ce qui produisait « service inaccessible » à tort.
     private static final Duration DELAI_ENVOI_EMAIL = Duration.ofSeconds(120);
-    private static final Duration DELAI_PRECHAUFFAGE = Duration.ofSeconds(30);
+    private static final Duration DELAI_PRECHAUFFAGE = Duration.ofSeconds(45);
     private static final Duration DELAI_DECISIONS_LOT = Duration.ofMinutes(3);
     private static final int LOT_DECISIONS_MAX = 20;
 
@@ -53,7 +58,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
      * reseau local sans DNS, est ecarte. Sans magasin lisible, le comportement strict est
      * conserve.
      */
-    private static HttpClient construireClient() {
+    static HttpClient construireClient() {
         HttpClient.Builder builder = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(DELAI_CONNEXION);
@@ -165,7 +170,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         try {
             String corps = MAPPER.writeValueAsString(Map.of("email", email, "pin", pin, "role", role.name()));
             envoyer(HttpRequest.newBuilder(base(hote, port).resolve("/api/auth/activation"))
-                    .timeout(DELAI_REQUETE).header("Content-Type", "application/json")
+                    .timeout(DELAI_REQUETE_AUTH).header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(corps)).build());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -250,7 +255,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             }
             String corps = MAPPER.writeValueAsString(demande);
             JsonNode reponse = envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/code"))
-                    .timeout(DELAI_REQUETE)
+                    .timeout(DELAI_REQUETE_AUTH)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(corps))
@@ -278,7 +283,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             URI base = base(hote, port);
             String corps = MAPPER.writeValueAsString(Map.of("jetonConfiance", jetonConfiance));
             envoyer(HttpRequest.newBuilder(base.resolve("/api/auth/appareil-confiance/oublier"))
-                    .timeout(DELAI_REQUETE)
+                    .timeout(DELAI_REQUETE_AUTH)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(corps))
