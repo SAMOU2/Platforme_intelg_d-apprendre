@@ -134,13 +134,9 @@ public class VueConnexionServeur extends StackPane {
             if (!miseAJourPortAutomatique) portSaisiManuellement = true;
         });
         getStyleClass().add("login-view");
-        boolean visuelConnexion = PanneauVisuelConnexion.roleEligible(role);
-        if (visuelConnexion) {
-            getStyleClass().add("login-view--visuel");
-        }
+        getStyleClass().add("connexion-nuit");
         etat.textProperty().addListener((o, ancien, message) -> actualiserPresentationEtat(message));
 
-        Label decouverteServeur = new Label("Connexion à la plateforme du réseau");
         javafx.scene.control.ComboBox<fr.ihm2026.reseau.DecouverteServeurs.Serveur> serveurs =
                 new javafx.scene.control.ComboBox<>();
         serveurs.setId("serveurs-locaux");
@@ -150,8 +146,8 @@ public class VueConnexionServeur extends StackPane {
         serveurs.setMaxWidth(Double.MAX_VALUE);
         serveurs.setVisible(false);
         serveurs.setManaged(false);
-        Button actualiserServeurs = new Button("Réessayer");
-        Button parametresWifi = new Button("Ouvrir les paramètres Wi-Fi Windows");
+        Button actualiserServeurs = new Button("Réessayer la connexion");
+        Button parametresWifi = new Button("Paramètres Wi-Fi Windows");
         parametresWifi.setVisible(fr.ihm2026.reseau.WifiWindows.disponible());
         parametresWifi.setManaged(parametresWifi.isVisible());
         Label etatDecouverte = new Label();
@@ -161,8 +157,8 @@ public class VueConnexionServeur extends StackPane {
         etatDecouverte.textProperty().addListener((o, ancien, message) ->
                 actualiserPresentationReseau(etatDecouverte, message));
         javafx.scene.control.TitledPane avance = new javafx.scene.control.TitledPane(
-                "Options avancées — adresse manuelle", new VBox(8,new Label("Adresse du serveur"),adresseServeur,
-                        new Label("Port HTTPS (annoncé automatiquement, saisie manuelle en secours)"),portHttpsManuel));
+                "Adresse manuelle", new VBox(8,new Label("Adresse du serveur"),adresseServeur,
+                        new Label("Port HTTPS"),portHttpsManuel));
         avance.setExpanded(false);
         serveurs.disableProperty().bind(adresseServeur.disableProperty());
         avance.disableProperty().bind(adresseServeur.disableProperty());
@@ -278,13 +274,11 @@ public class VueConnexionServeur extends StackPane {
                 erreur -> etatDecouverte.setText("Ouvrez les paramètres réseau dans Windows, puis cliquez sur Réessayer.")));
         adresseServeur.setText(System.getProperty("ihm.serveur", ""));
         avance.setExpanded(!adresseServeur.getText().isBlank());
-        adresseServeur.setPromptText("Exemple : 192.168.1.10 (Docker uniquement sur PC1)");
+        adresseServeur.setPromptText("ex : 192.168.1.50");
         adresseServeur.setMaxWidth(Double.MAX_VALUE);
         adresseServeur.getStyleClass().add("champ-adresse");
         adresseServeur.setId("serveur-ip");
-        decouverteServeur.setLabelFor(serveurs);
         adresseServeur.setAccessibleText("Adresse IP ou nom du PC serveur, uniquement pour la connexion manuelle de secours.");
-        decouverteServeur.getStyleClass().add("login-mode");
         etiquetteInvitation.getStyleClass().add("role-nom");
         codeInvitation.setPromptText("PIN à 8 chiffres reçu après acceptation");
         codeInvitation.getStyleClass().add("champ-adresse");
@@ -342,7 +336,7 @@ public class VueConnexionServeur extends StackPane {
         etiquetteConfirmation.setLabelFor(confirmationMotDePasse);
         etiquetteCodeConnexion.setLabelFor(codeConnexion);
         etiquetteMotDePasse.getStyleClass().add("role-nom");
-        motDePasse.setPromptText("Mot de passe du compte");
+        motDePasse.setPromptText("••••••••••••");
         motDePasse.getStyleClass().add("champ-adresse");
         motDePasse.setMaxWidth(Double.MAX_VALUE);
         confirmationMotDePasse.setPromptText("Confirmer le mot de passe");
@@ -373,6 +367,7 @@ public class VueConnexionServeur extends StackPane {
         codeConnexion.setId("connexion-code");
         memoriserAppareil.setId("connexion-appareil-confiance");
         oublierAppareil.setId("connexion-oublier-appareil");
+        oublierAppareil.setText("Oublier ce poste");
         etat.setId("connexion-etat");
         connecter.getStyleClass().add("btn-primary");
         connecter.setDefaultButton(true);
@@ -411,39 +406,143 @@ public class VueConnexionServeur extends StackPane {
             actualiserModeInscription();
         });
 
-        HBox ligne = new HBox(10, connecter);
-        ligne.setAlignment(Pos.CENTER_LEFT);
-        VBox actionsCompte = new VBox(8, inscription, activation, oublierAppareil);
-        actionsCompte.setAlignment(Pos.CENTER_LEFT);
+        // Panneau réseau superposé : les contrôles et leur logique de découverte restent inchangés.
+        javafx.stage.Popup menuReseau = new javafx.stage.Popup();
+        menuReseau.setAutoHide(true);
+        menuReseau.setHideOnEscape(true);
+        Label titreReseau = new Label("PARAMÈTRES RÉSEAU");
+        titreReseau.getStyleClass().add("connexion-menu-titre");
+        actualiserServeurs.getStyleClass().add("connexion-menu-action");
+        actualiserServeurs.setGraphic(icone("M20 7 V3 M20 3 H16 M20 3 L17 6 C13 2 6 4 4 9 M4 17 V21 M4 21 H8 M4 21 L7 18 C11 22 18 20 20 15"));
+        parametresWifi.getStyleClass().add("connexion-menu-action");
+        parametresWifi.setGraphic(icone("M5 3 V21 M12 3 V21 M19 3 V21 M2 8 H8 M9 15 H15 M16 9 H22"));
+        actualiserServeurs.setMaxWidth(Double.MAX_VALUE);
+        parametresWifi.setMaxWidth(Double.MAX_VALUE);
+        avance.getStyleClass().add("connexion-menu-avance");
+        Button appliquerAdresse = new Button("Appliquer");
+        appliquerAdresse.getStyleClass().add("connexion-menu-appliquer");
+        appliquerAdresse.setMaxWidth(Double.MAX_VALUE);
+        appliquerAdresse.setOnAction(e -> { prechaufferSiPossible(); menuReseau.hide(); });
+        VBox contenuAvance = (VBox) avance.getContent();
+        contenuAvance.getChildren().add(appliquerAdresse);
+        VBox panneauReseau = new VBox(6, titreReseau, actualiserServeurs, parametresWifi,
+                avance, serveurs, etatDecouverte);
+        panneauReseau.setPrefWidth(360);
+        panneauReseau.getStyleClass().add("connexion-menu-reseau");
+        menuReseau.getContent().add(panneauReseau);
+        Button ouvrirReseau = new Button();
+        ouvrirReseau.setId("connexion-parametres-reseau");
+        ouvrirReseau.setAccessibleText("Ouvrir les paramètres réseau");
+        ouvrirReseau.setGraphic(icone("M2 9 C8 3 16 3 22 9 M5 12 C9 8 15 8 19 12 M8 15 C10 13 14 13 16 15 M12 19 L12 19.1"));
+        ouvrirReseau.getStyleClass().add("connexion-reseau-bouton");
+        ouvrirReseau.disableProperty().bind(adresseServeur.disableProperty());
+        ouvrirReseau.setOnAction(e -> {
+            if (menuReseau.isShowing()) { menuReseau.hide(); return; }
+            var bounds = ouvrirReseau.localToScreen(ouvrirReseau.getBoundsInLocal());
+            if (bounds == null || getScene() == null) return;
+            menuReseau.getScene().getStylesheets().setAll(getScene().getStylesheets());
+            menuReseau.show(ouvrirReseau, Math.max(0, bounds.getMaxX() - 360), bounds.getMaxY() + 8);
+        });
+        sceneProperty().addListener((o, avant, apres) -> { if (apres == null) menuReseau.hide(); });
+
+        Label statutReseau = new Label("●  Recherche de la plateforme…");
+        statutReseau.getStyleClass().add("connexion-statut-reseau");
+        statutReseau.setWrapText(true);
+        etatDecouverte.textProperty().addListener((o, ancien, message) -> {
+            String texte = message == null ? "" : message;
+            boolean trouve = texte.startsWith("Plateforme trouvée :") || texte.startsWith("Plateforme sélectionnée :");
+            String resume = trouve ? "Plateforme détectée"
+                    : texte.startsWith("Adresse manuelle conservée") ? "Adresse manuelle configurée"
+                    : texte.startsWith("Plusieurs plateformes") ? "Plusieurs plateformes : choisissez dans les paramètres réseau"
+                    : texte.contains("Recherche") ? "Recherche de la plateforme…" : "Vérifier le réseau";
+            statutReseau.setText("●  " + resume);
+            statutReseau.setAccessibleText(texte);
+            statutReseau.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("pret"), trouve);
+        });
+
+        Label titre = new Label("Connexion");
+        titre.getStyleClass().add("connexion-titre");
+        Label marque = new Label("Samou");
+        marque.getStyleClass().add("connexion-marque");
+        Region espaceTitre = new Region();
+        HBox.setHgrow(espaceTitre, Priority.ALWAYS);
+        HBox ligneTitre = new HBox(10, titre, marque, espaceTitre, ouvrirReseau);
+        ligneTitre.setAlignment(Pos.CENTER_LEFT);
+        Label securite = new Label("Sécurisé par HTTPS", icone("M12 2 L20 5 V11 C20 16 17 20 12 22 C7 20 4 16 4 11 V5 Z M9 12 L11 14 L15 10"));
+        securite.getStyleClass().add("connexion-securite");
+        javafx.scene.control.Separator separationHaut = new javafx.scene.control.Separator();
+        separationHaut.getStyleClass().add("connexion-separation");
+
+        StackPane champEmail = champAvecIcone(email, "M3 5 H21 V19 H3 Z M3 6 L12 13 L21 6");
+        StackPane champMotDePasse = champAvecIcone(ChampSecret.envelopper(motDePasse, true),
+                "M5 10 H19 V21 H5 Z M8 10 V7 A4 4 0 0 1 16 7 V10");
+        champMotDePasse.visibleProperty().bind(motDePasse.visibleProperty());
+        champMotDePasse.managedProperty().bind(motDePasse.managedProperty());
+        StackPane champConfirmation = champAvecIcone(ChampSecret.envelopper(confirmationMotDePasse, true),
+                "M5 10 H19 V21 H5 Z M8 10 V7 A4 4 0 0 1 16 7 V10");
+        champConfirmation.visibleProperty().bind(confirmationMotDePasse.visibleProperty());
+        champConfirmation.managedProperty().bind(confirmationMotDePasse.managedProperty());
+
+        connecter.setMaxWidth(Double.MAX_VALUE);
+        connecter.getStyleClass().add("connexion-bouton-principal");
+        connecter.setGraphic(icone("M4 12 H20 M14 6 L20 12 L14 18"));
+        connecter.setContentDisplay(javafx.scene.control.ContentDisplay.RIGHT);
+        connecter.setGraphicTextGap(12);
+        HBox ligne = new HBox(connecter);
+        HBox.setHgrow(connecter, Priority.ALWAYS);
+        for (Button action : java.util.List.of(inscription, activation, oublierAppareil)) {
+            action.getStyleClass().add("connexion-action-compte");
+        }
+        javafx.scene.layout.FlowPane actionsCompte = new javafx.scene.layout.FlowPane(12, 6,
+                inscription, activation, oublierAppareil);
+        actionsCompte.setAlignment(Pos.CENTER);
+        javafx.scene.control.Separator separationActions = new javafx.scene.control.Separator();
+        separationActions.getStyleClass().add("connexion-separation");
 
         etat.getStyleClass().add("etat-texte");
         etat.setWrapText(true);
-        etat.setText("version " + fr.ihm2026.core.Config.VERSION + " · poste " + IdentitePoste.nom()
-                + " · rôle fixé : " + this.role.label());
 
         Label aide = new Label("Envoyez votre demande sans PIN. Après acceptation, un PIN d'activation "
                 + "vous sera envoyé par e-mail. Sur un poste de confiance, le code e-mail de connexion "
                 + "n'est redemandé qu'après 2 jours ; le mot de passe reste demandé à chaque ouverture.");
-        aide.getStyleClass().add("login-mode");
+        aide.getStyleClass().add("connexion-aide-texte");
         aide.setWrapText(true);
+        javafx.scene.control.TitledPane aideRepliable = new javafx.scene.control.TitledPane(
+                "Fonctionnement de l'activation et de la confiance", aide);
+        aideRepliable.getStyleClass().add("connexion-aide");
+        aideRepliable.setGraphic(icone("M12 2 A10 10 0 1 0 12 22 A10 10 0 1 0 12 2 M12 10 V17 M12 7 V7.1"));
+        aideRepliable.setExpanded(false);
+        aideRepliable.setMaxWidth(Double.MAX_VALUE);
 
-        VBox carte = new VBox(10, decouverteServeur, etatDecouverte, serveurs, actualiserServeurs, parametresWifi, avance,
-                etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, email,
-                etiquetteMotDePasse, ChampSecret.envelopper(motDePasse),
-                etiquetteConfirmation, ChampSecret.envelopper(confirmationMotDePasse), etiquetteCodeConnexion, codeConnexion,
-                memoriserAppareil, ligne, bandeauEtat, actionsCompte, aide);
-        carte.getStyleClass().addAll("card", "login-card", "carte-reseau");
+        VBox carte = new VBox(10, ligneTitre, securite, separationHaut,
+                etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, champEmail,
+                etiquetteMotDePasse, champMotDePasse,
+                etiquetteConfirmation, champConfirmation, etiquetteCodeConnexion, codeConnexion,
+                memoriserAppareil, ligne, bandeauEtat, separationActions, actionsCompte);
+        carte.getStyleClass().addAll("card", "login-card", "carte-reseau", "connexion-carte-nuit");
         carte.setAlignment(Pos.CENTER_LEFT);
         carte.setMaxWidth(560);
+        carte.setMinHeight(Region.USE_PREF_SIZE);
         carte.setMaxHeight(Region.USE_PREF_SIZE);
         actualiserModeInscription();
 
-        // Le formulaire d'inscription doit rester accessible sur un petit portable.
-        carte.setMinHeight(Region.USE_PREF_SIZE);
-        StackPane contenu = new StackPane(carte);
+        Label version = new Label("●  v" + fr.ihm2026.core.Config.VERSION + "  •  poste " + IdentitePoste.nom());
+        version.getStyleClass().add("connexion-version");
+        Label rolePoste = new Label("rôle :  " + this.role.label());
+        rolePoste.getStyleClass().add("connexion-role");
+        Region espacePied = new Region();
+        HBox.setHgrow(espacePied, Priority.ALWAYS);
+        HBox pied = new HBox(8, version, espacePied, rolePoste);
+        pied.setAlignment(Pos.CENTER_LEFT);
+        Label copyright = new Label("Plateforme Samou © " + java.time.Year.now().getValue() + " — Tous droits réservés");
+        copyright.getStyleClass().add("connexion-copyright");
+        VBox colonne = new VBox(18, statutReseau, carte, aideRepliable, pied, copyright);
+        colonne.setMaxWidth(560);
+        colonne.setAlignment(Pos.CENTER);
+        statutReseau.setMaxWidth(Double.MAX_VALUE);
+        StackPane contenu = new StackPane(colonne);
         contenu.setPadding(new javafx.geometry.Insets(24));
-        // Carte de connexion ancrée à droite, sur le fond plein écran, dans tous les rôles.
-        contenu.setAlignment(Pos.CENTER_RIGHT);
+        contenu.setAlignment(Pos.CENTER);
         ScrollPane defilement = new ScrollPane(contenu);
         defilementConnexion = defilement;
         defilement.setId("connexion-defilement");
@@ -451,60 +550,9 @@ public class VueConnexionServeur extends StackPane {
         defilement.setFitToWidth(true);
         defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
-        if (visuelConnexion) {
-            // Fond plein écran animé derrière le formulaire, dans tous les rôles,
-            // mais hors layout : le ScrollPane reste le seul enfant géré et conserve
-            // donc exactement la taille, la position et le défilement du formulaire.
-            // Le visuel reçoit manuellement la taille déjà fixée de cette vue.
-            PanneauVisuelConnexion visuel = new PanneauVisuelConnexion(role);
-            visuel.setManaged(false);
-            getChildren().addAll(visuel, defilement);
-
-            Runnable placerVisuel = () -> {
-                var zone = PanneauVisuelConnexion.emplacementPleinEcran(
-                        getWidth(), getHeight());
-                if (zone.getWidth() > 0 && zone.getHeight() > 0) {
-                    visuel.resizeRelocate(zone.getMinX(), zone.getMinY(),
-                            zone.getWidth(), zone.getHeight());
-                }
-            };
-            widthProperty().addListener((o, ancienne, nouvelle) -> placerVisuel.run());
-            heightProperty().addListener((o, ancienne, nouvelle) -> placerVisuel.run());
-            placerVisuel.run();
-            javafx.application.Platform.runLater(placerVisuel);
-        } else {
-            getChildren().add(defilement);
-        }
+        getChildren().add(defilement);
         rechercher.run();
-        setAlignment(Pos.CENTER_RIGHT);
-
-        // Entrée depuis la carte vaut « Se connecter ».
-        carte.setOnKeyPressed(e -> {
-            if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
-                seConnecter();
-                e.consume(); // ne pas déclencher aussi le bouton par défaut
-            }
-        });
-        // Filet d'affichage (v0.14.3) : si la fenêtre dépasse l'écran, une carte centrée sort à
-        // droite. On l'ancre alors en haut à gauche, où elle reste visible et utilisable.
-        Runnable placer = () -> {
-            javafx.scene.Scene scene = getScene();
-            if (scene == null) {
-                return;
-            }
-            javafx.geometry.Rectangle2D ecran = javafx.stage.Screen.getPrimary().getVisualBounds();
-            boolean deborde = scene.getWidth() > ecran.getWidth() + 2
-                    || scene.getHeight() > ecran.getHeight() + 2;
-            setAlignment(deborde ? Pos.TOP_RIGHT : Pos.CENTER_RIGHT);
-            setPadding(deborde ? new javafx.geometry.Insets(16) : javafx.geometry.Insets.EMPTY);
-        };
-        sceneProperty().addListener((o, ancienne, nouvelle) -> {
-            if (nouvelle != null) {
-                nouvelle.widthProperty().addListener((x, a, b) -> placer.run());
-                nouvelle.heightProperty().addListener((x, a, b) -> placer.run());
-                placer.run();
-            }
-        });
+        setAlignment(Pos.CENTER);
 
         javafx.application.Platform.runLater(() -> {
             javafx.stage.Window fenetre = email.getScene() == null
@@ -513,10 +561,27 @@ public class VueConnexionServeur extends StackPane {
                 fenetre.requestFocus();     // la fenêtre doit être active pour recevoir le clavier
             }
             email.requestFocus();
-            placer.run();
             // Entrée du login : la carte monte et se découvre (fondu + légère croissance).
             Animations.apparaitrePanneau(carte);
         });
+    }
+
+    private static javafx.scene.shape.SVGPath icone(String chemin) {
+        javafx.scene.shape.SVGPath icone = new javafx.scene.shape.SVGPath();
+        icone.setContent(chemin);
+        icone.getStyleClass().add("connexion-icone");
+        icone.setMouseTransparent(true);
+        return icone;
+    }
+
+    private static StackPane champAvecIcone(javafx.scene.Node champ, String chemin) {
+        javafx.scene.shape.SVGPath symbole = icone(chemin);
+        symbole.getStyleClass().add("connexion-icone-champ");
+        StackPane conteneur = new StackPane(champ, symbole);
+        conteneur.getStyleClass().add("connexion-champ-icone");
+        StackPane.setAlignment(symbole, Pos.CENTER_LEFT);
+        StackPane.setMargin(symbole, new javafx.geometry.Insets(0, 0, 0, 17));
+        return conteneur;
     }
 
     /**
@@ -526,6 +591,9 @@ public class VueConnexionServeur extends StackPane {
     private void actualiserPresentationEtat(String message) {
         String texte = message == null ? "" : message;
         String minuscules = texte.toLowerCase(java.util.Locale.ROOT);
+        boolean affichable = !texte.isBlank() && !texte.startsWith("version ");
+        bandeauEtat.setVisible(affichable);
+        bandeauEtat.setManaged(affichable);
         boolean chargement = texte.endsWith("…");
         String classe;
         String symbole;
@@ -984,7 +1052,7 @@ public class VueConnexionServeur extends StackPane {
         motDePasse.setManaged(!modeActivation);
         etiquetteMotDePasse.setVisible(!modeActivation);
         etiquetteMotDePasse.setManaged(!modeActivation);
-        activation.setText(modeActivation ? "Retour à la connexion" : "Activer mon compte avec le PIN reçu");
+        activation.setText(modeActivation ? "Retour à la connexion" : "Activer avec le PIN");
         nom.setVisible(modeInscription);
         nom.setManaged(modeInscription);
         etiquetteNom.setVisible(modeInscription);
