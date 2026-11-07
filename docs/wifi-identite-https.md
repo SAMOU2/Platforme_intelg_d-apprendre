@@ -76,6 +76,32 @@ Le certificat autosigné historique déjà approuvé n'est PAS cette nouvelle CA
 pas d'avoir importé l'ancien serveur.crt. Ne jamais approuver une CA reçue d'une annonce Wi-Fi.
 Mettre à jour un JDK peut nécessiter de réinstaller la confiance dans ce nouveau JDK.
 
+## Pourquoi cela marche sur n'importe quel Wi-Fi
+
+L'adresse du serveur change à chaque réseau (192.168.x.x chez l'un, 10.x.x.x ailleurs, partage
+de connexion d'un téléphone…). Un contrôle « l'adresse doit figurer dans le certificat », celui
+du Web public, casserait la connexion après chaque changement de réseau. La plateforme fait donc
+reposer la confiance sur **l'autorité privée approuvée à la main sur chaque JDK**, pas sur
+l'adresse : le client accepte un certificat signé par cette autorité, quelle que soit l'adresse
+du serveur. Concrètement :
+
+- le serveur renouvelle son certificat dès que ses adresses changent (vérification toutes les
+  10 s) ; les adresses inscrites restent utiles pour les navigateurs et les outils de diagnostic ;
+- le client ne fait confiance **qu'aux entrées `plateforme-ca-*`** du magasin du JDK, jamais aux
+  autorités publiques, et jamais à une autorité non approuvée ;
+- la vérification TLS n'est jamais désactivée : la chaîne est validée, seul le contrôle du nom,
+  inapplicable sans DNS sur un LAN, est écarté ;
+- à défaut d'entrée `plateforme-ca-*` (autorité importée sous un autre alias, ou certificat
+  approuvé avant la mise en place de l'autorité), la chaîne est validée avec le magasin
+  complet du JDK, toujours sans exiger le nom. Une autorité publique ne peut pas délivrer de
+  certificat pour une adresse privée (192.168.x.x, 10.x.x.x) : elle n'est donc pas une voie
+  d'usurpation sur le réseau local. Si aucun magasin n'est lisible, le contrôle strict est
+  conservé et rien n'est contourné silencieusement.
+
+Changer de Wi-Fi ne demande donc aucune manipulation de certificat : garder la fenêtre
+d'authentification ouverte une dizaine de secondes, laisser la découverte retrouver le serveur,
+puis se connecter.
+
 ## Vérifier l'accessibilité du certificat
 
 Avant toute autre hypothèse, lancer `postes\verifier-certificat-https.cmd` (double-clic ou
@@ -85,6 +111,10 @@ Il affiche l'empreinte de la CA présente dans `postes\secrets`, la présence d'
 par le serveur : sujet, émetteur, dates de validité et adresses couvertes (SAN). Il indique
 enfin si ce JDK approuve le certificat à l'adresse et au port saisis (le port courant est
 proposé automatiquement d'après `.ihm-runtime\https.port`).
+
+Attention : ce diagnostic utilise les contrôles stricts du JDK (chaîne **et** nom), alors que
+l'application, elle, se fie à l'autorité privée sans exiger le nom (voir ci-dessus). Un refus de
+nom dans le diagnostic n'annonce donc pas forcément un échec de l'application.
 
 Interprétation : échec de confiance avec un SAN qui ne contient pas l'adresse utilisée ⇒
 certificat non encore renouvelé pour le réseau courant (attendre la rotation) ou mauvaise

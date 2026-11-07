@@ -32,7 +32,7 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
         serveur = ouvrirPort(port);
         serveur.setHttpsConfigurator(new HttpsConfigurator(tls));
         serveur.createContext("/api/", new AuthentificationApiHttps(authentification, comptes));
-        executants = Executors.newFixedThreadPool(4);
+        executants = Executors.newFixedThreadPool(8);
         serveur.setExecutor(executants);
         serveur.start();
     }
