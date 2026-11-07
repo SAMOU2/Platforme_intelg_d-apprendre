@@ -25,10 +25,11 @@ public final class DecouverteServeurs {
     public static List<Serveur> chercher(int port) throws IOException {
         if (port < 1 || port > 65535) throw new IllegalArgumentException("Port invalide");
         Map<String, Serveur> trouves = new LinkedHashMap<>();
+        Set<String> clesModernes = new HashSet<>();
         Set<InetAddress> destinations = new LinkedHashSet<>();
         destinations.add(InetAddress.getByName("255.255.255.255"));
         for (NetworkInterface carte : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-            if (!interfaceReseau(carte)) continue;
+            if (!InterfacesReseau.estLanPhysique(carte)) continue;
             for (InterfaceAddress adresse : carte.getInterfaceAddresses()) {
                 if (adresse.getBroadcast() != null) destinations.add(adresse.getBroadcast());
             }
@@ -52,24 +53,23 @@ public final class DecouverteServeurs {
                 catch (SocketTimeoutException termine) { break; }
                 if (paquet.getPort() != port || paquet.getAddress().isLoopbackAddress()) continue;
                 NetworkInterface locale=NetworkInterface.getByInetAddress(paquet.getAddress());
-                if(locale!=null && !interfaceReseau(locale))continue;
+                if(locale!=null && !InterfacesReseau.estLanPhysique(locale))continue;
                 String texte = new String(paquet.getData(), paquet.getOffset(), paquet.getLength(), StandardCharsets.UTF_8);
                 Serveur serveur = lireAnnonce(texte, paquet.getAddress().getHostAddress());
                 if (serveur != null) {
-                    boolean local = paquet.getAddress().isLoopbackAddress()
-                            || NetworkInterface.getByInetAddress(paquet.getAddress()) != null;
-                    String cle=local ? "ce-pc" : serveur.hote();
-                    if(texte.startsWith("IHM2026:SERVER:3:") || !trouves.containsKey(cle))trouves.put(cle,serveur);
+                    String cle=locale!=null ? "ce-pc" : serveur.hote();
+                    // Une annonce v3 (port HTTPS réel) remplace un repli v2 pour la même
+                    // clé, mais une seconde réponse v3 du même PC (autre carte) ne doit
+                    // pas écraser la première au hasard de l'ordre d'arrivée.
+                    if (texte.startsWith("IHM2026:SERVER:3:")) {
+                        if (clesModernes.add(cle)) trouves.put(cle, serveur);
+                    } else if (!clesModernes.contains(cle)) {
+                        trouves.putIfAbsent(cle, serveur);
+                    }
                 }
             }
         }
         return List.copyOf(trouves.values());
-    }
-
-    private static boolean interfaceReseau(NetworkInterface carte) throws SocketException {
-        String nom=(carte.getName()+" "+carte.getDisplayName()).toLowerCase(Locale.ROOT);
-        return carte.isUp() && !carte.isLoopback() && !carte.isVirtual() && !nom.contains("vethernet")
-                && !nom.contains("docker") && !nom.contains("virtualbox") && !nom.contains("vmware");
     }
 
     static Serveur lireAnnonce(String texte, String hote) {

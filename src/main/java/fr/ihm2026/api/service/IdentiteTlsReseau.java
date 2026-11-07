@@ -1,5 +1,6 @@
 package fr.ihm2026.api.service;
 
+import fr.ihm2026.reseau.InterfacesReseau;
 import java.net.*;
 import java.nio.file.*;
 import java.security.*;
@@ -41,9 +42,9 @@ public final class IdentiteTlsReseau implements AutoCloseable {
     static Set<String> adressesReseau() throws SocketException {
         Set<String> resultat=new TreeSet<>();
         for(var carte:Collections.list(NetworkInterface.getNetworkInterfaces())) {
-            String nom=(carte.getName()+" "+carte.getDisplayName()).toLowerCase(Locale.ROOT);
-            if(!carte.isUp() || carte.isLoopback() || carte.isVirtual() || nom.contains("vethernet")
-                    || nom.contains("docker") || nom.contains("virtualbox") || nom.contains("vmware"))continue;
+            // Même sélection que la découverte : le certificat ne couvre que les
+            // adresses LAN physiques annoncées aux postes (pas WSL/WARP/VPN).
+            if(!InterfacesReseau.estLanPhysique(carte))continue;
             for(var ip:Collections.list(carte.getInetAddresses()))
                 if(ip instanceof Inet4Address && !ip.isLoopbackAddress() && !ip.isLinkLocalAddress() && !ip.isAnyLocalAddress())resultat.add(ip.getHostAddress());
         }
