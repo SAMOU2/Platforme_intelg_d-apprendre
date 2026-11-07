@@ -28,6 +28,8 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger LOGGER =
             Logger.getLogger(ClientAuthentificationHttps.class.getName());
+    /** Port préféré du service d'authentification : le même que celui des lanceurs PC1. */
+    public static final int PORT_PAR_DEFAUT = 28443;
     private static final Duration DELAI_CONNEXION = Duration.ofSeconds(5);
     private static final Duration DELAI_REQUETE = Duration.ofSeconds(8);
     // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS.
@@ -539,7 +541,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     }
 
     public static int portConfigure() {
-        String valeur = System.getProperty("ihm.auth.port", "8443").strip();
+        String valeur = System.getProperty("ihm.auth.port", Integer.toString(PORT_PAR_DEFAUT)).strip();
         try {
             int port = Integer.parseInt(valeur);
             if (port > 0 && port < 65536) {

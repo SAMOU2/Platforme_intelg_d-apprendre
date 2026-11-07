@@ -18,7 +18,7 @@ if defined PORTHTTPS (
     echo   Port HTTPS annonce en ce moment : %PORTHTTPS%
 ) else (
     echo   Port HTTPS : aucun annonce. La fenetre d'authentification doit rester
-    echo   ouverte ; 8443 n'est qu'une valeur de repli, jamais le port reel.
+    echo   ouverte. Port prefere : 28443. La valeur 8443 n'est qu'un repli obsolete.
 )
 echo   Ces adresses ne prouvent pas que les services sont deja demarres.
 echo =====================================================================
