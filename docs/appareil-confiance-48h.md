@@ -45,9 +45,18 @@ validation du certificat restent celles déjà utilisées par la plateforme.
 ## Oublier ou révoquer un poste
 
 Sur l'écran de connexion, saisir l'e-mail du compte puis cliquer sur
-**« Oublier ce poste de confiance »**. Le jeton local est supprimé et le client demande à PC1 de
-marquer l'appareil comme révoqué. Si PC1 est inaccessible, le fichier local reste supprimé ;
-l'enregistrement serveur éventuel expirera au maximum 48 heures après sa création.
+**« Oublier ce poste de confiance »**. Le client tente de supprimer le jeton local et demande à
+PC1 de révoquer ce jeton précis. Les autres postes, les autres comptes et les sessions ouvertes
+ne sont pas supprimés. Si PC1 est inaccessible, la suppression locale peut quand même réussir,
+mais la révocation serveur n'est pas confirmée : le jeton serveur expirera au maximum 48 heures
+après sa création. Le client ne conserve pas le jeton supprimé pour retenter la révocation.
+
+Si la suppression locale échoue (fichier verrouillé ou droits insuffisants), l'interface le
+signale et tente quand même de révoquer le jeton sur PC1 s'il a pu être lu. Si les deux opérations
+échouent, il faut corriger l'accès au fichier et la connexion, puis réessayer. Si le jeton local
+est illisible ou expiré, il peut être supprimé, mais la révocation serveur ne peut pas être
+confirmée sans ce jeton. En cas d'échec de base de données ou de migration manquante, le serveur
+ne prétend pas avoir révoqué le poste.
 
 Désactiver le compte empêche immédiatement toute nouvelle session et révoque définitivement ses
 postes de confiance : après une éventuelle réactivation, un nouveau code e-mail sera nécessaire.

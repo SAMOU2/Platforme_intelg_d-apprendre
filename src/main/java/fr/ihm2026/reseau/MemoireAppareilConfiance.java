@@ -150,14 +150,20 @@ public final class MemoireAppareilConfiance {
         }
     }
 
-    public static synchronized void oublier(String email, Session.Role role) {
+    /** Résultat de la suppression locale ; ne présume pas de la révocation sur PC1. */
+    public enum ResultatOubli { SUPPRIME, ABSENT, ECHEC }
+
+    public static synchronized ResultatOubli oublier(String email, Session.Role role) {
         if (email == null || email.isBlank() || role == null) {
-            return;
+            return ResultatOubli.ECHEC;
         }
         try {
-            Files.deleteIfExists(fichierPour(email, role));
-        } catch (IOException | RuntimeException ignore) {
-            // Le jeton peut aussi être révoqué côté serveur par l'appelant.
+            return Files.deleteIfExists(fichierPour(email, role))
+                    ? ResultatOubli.SUPPRIME : ResultatOubli.ABSENT;
+        } catch (IOException | RuntimeException ex) {
+            // Ne pas annoncer une suppression réussie : l'appelant peut néanmoins révoquer
+            // le jeton côté serveur lorsqu'il l'a lu avant cet échec.
+            return ResultatOubli.ECHEC;
         }
     }
 

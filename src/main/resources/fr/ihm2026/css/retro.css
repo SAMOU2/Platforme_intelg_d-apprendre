@@ -326,8 +326,8 @@
 /* La connexion conserve sa palette nuit uniforme, même si le style rétro est actif ailleurs. */
 .racine--retro .racine--login .login-view { -fx-background-color: #14263d; }
 .racine--retro .racine--login .connexion-carte-nuit {
-    -fx-background-color: #111c30;
-    -fx-background-radius: 20;
+    -fx-background-color: #101d30;
+    -fx-background-radius: 24;
     -fx-border-width: 0;
 }
 .racine--retro .racine--login .barre-titre {
