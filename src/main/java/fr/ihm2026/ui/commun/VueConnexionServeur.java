@@ -70,9 +70,25 @@ public class VueConnexionServeur extends StackPane {
     private final TextField portHttpsManuel = new TextField(Integer.toString(ClientAuthentificationHttps.portConfigure()));
     private int portChoisi = ClientAuthentificationHttps.portConfigure();
     private int portChallenge;
+    /**
+     * Le port HTTPS est choisi librement au démarrage du service : il change donc à chaque
+     * relance. Quand le serveur est sur ce même poste, on relit le port publié à l'instant
+     * de l'appel plutôt que de garder une valeur qui n'existe plus.
+     */
     private int portHttpsPour(String hote) {
-        if(portChoisi<1 || portChoisi>65535)throw new IllegalArgumentException("Le port HTTPS doit être compris entre 1 et 65535.");
-        return portChoisi;
+        int port = portChoisi;
+        if (fr.ihm2026.reseau.InterfacesReseau.adresseLocale(hote)) {
+            int publie = fr.ihm2026.reseau.InstanceHttpsLocale.portActif();
+            if (publie > 0) {
+                if (publie != port) {
+                    System.out.println("[connexion] port HTTPS relu sur ce poste : " + publie
+                            + " (valeur affichée obsolète : " + port + ")");
+                }
+                port = publie;
+            }
+        }
+        if(port<1 || port>65535)throw new IllegalArgumentException("Le port HTTPS doit être compris entre 1 et 65535.");
+        return port;
     }
 
     public VueConnexionServeur(Router router, Session.Role role) {

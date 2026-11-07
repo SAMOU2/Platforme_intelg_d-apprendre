@@ -52,6 +52,16 @@ class DecouverteServeursTest {
         assertFalse(InterfacesReseau.nomAccepte("docker0 Docker Desktop"));
     }
 
+    @Test void reconnaitUneAdresseDeCePoste() {
+        assertTrue(InterfacesReseau.adresseLocale("127.0.0.1"),
+                "la boucle locale appartient toujours a ce poste");
+        assertTrue(InterfacesReseau.adresseLocale("localhost"));
+        assertFalse(InterfacesReseau.adresseLocale("192.0.2.15"),
+                "192.0.2.0/24 est reserve aux tests : jamais une adresse locale");
+        assertFalse(InterfacesReseau.adresseLocale(""));
+        assertFalse(InterfacesReseau.adresseLocale(null));
+    }
+
     @Test void serveurRepondAuxDeuxVersions() throws Exception {
         try (ServeurLocal serveur = new ServeurLocal(0, "test"); DatagramSocket client = new DatagramSocket()) {
             client.setSoTimeout(2000);
