@@ -113,6 +113,22 @@ clients. Le script s'arrête au premier échec (branche autre que `main`, modifi
 compilation impossible, aucun port annoncé) en disant quoi faire, et ne supprime aucune donnée.
 Une session en cours est interrompue : c'est le but d'une relance complète.
 
+## Vérifier qu'un compte se connecte, sans l'interface
+
+`postes\verifier-connexion-compte.cmd` envoie exactement la même requête que l'écran de
+connexion (`POST /api/auth/connexion`) avec la même confiance, puis interprète la réponse :
+
+- `HTTP 200` avec `jeton` → session ouverte (poste de confiance encore valide) ;
+- `HTTP 200` avec `identifiant` → **e-mail et mot de passe acceptés**, code envoyé par e-mail ;
+- `HTTP 401` → identifiants refusés : le serveur répond donc, le problème n'est ni le
+  certificat, ni le port, ni le réseau ;
+- `HTTP 403` → compte non activé (PIN) ou non accepté par l'administrateur ;
+- erreur de connexion → port obsolète, service arrêté ou pare-feu.
+
+Le mot de passe est demandé sans affichage, transmis directement au programme Java : jamais en
+argument (visible dans le gestionnaire de tâches), jamais écrit sur le disque, jamais affiché.
+Ne jamais communiquer un mot de passe dans un ticket, un courriel ou une conversation.
+
 ## Vérifier l'accessibilité du certificat
 
 Avant toute autre hypothèse, lancer `postes\verifier-certificat-https.cmd` (double-clic ou
