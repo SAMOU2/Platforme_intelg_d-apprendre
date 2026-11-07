@@ -293,7 +293,13 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 "Bonjour " + challenge.nom() + ",\n\n"
                         + "Votre code de connexion est : " + challenge.code()
                         + "\nIl expire dans 10 minutes. Ne le communiquez à personne.",
-                () -> authentification.annulerCodeConnexion(challenge.identifiant()));
+                () -> {
+                    try {
+                        authentification.annulerCodeConnexion(challenge.identifiant());
+                    } catch (java.sql.SQLException ex) {
+                        System.err.println("[auth-https] code de connexion non annule : " + ex.getMessage());
+                    }
+                });
         if (echec.isPresent()) {
             envoyerJson(exchange, 503, erreur(echec.get().getMessage()));
             return;
