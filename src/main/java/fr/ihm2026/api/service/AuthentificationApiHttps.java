@@ -23,6 +23,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.Optional;
 
 /** Routes d'authentification exposées uniquement par le serveur HTTPS dédié. */
@@ -38,6 +41,13 @@ public final class AuthentificationApiHttps implements HttpHandler {
     private final ServiceEmail email;
     private final BotInscription botInscription = BotInscription.depuisEnvironnement();
     private final java.util.concurrent.Semaphore placeIa = new java.util.concurrent.Semaphore(1);
+    /**
+     * Envoi du courriel de connexion : on attend sa fin au plus 10 s pour pouvoir annoncer
+     * un echec SMTP, puis on repond sans attendre. Le serveur SMTP met parfois plusieurs
+     * dizaines de secondes ; faire attendre la reponse HTTP declenchait des « service
+     * inaccessible » cote poste, alors que l'authentification avait reussi.
+     */
+    private static final int ATTENTE_COURRIEL_SECONDES = 10;
     private final java.util.Map<Long, Integer> quotasIa = new java.util.HashMap<>();
     private java.time.LocalDate jourIa = java.time.LocalDate.now();
 
@@ -190,6 +200,51 @@ public final class AuthentificationApiHttps implements HttpHandler {
         } finally { placeIa.release(); }
     }
 
+    /**
+     * Envoie un courriel sans faire attendre la réponse HTTP. Le SMTP met parfois plusieurs
+     * dizaines de secondes : répondre après l'envoi déclenchait des « service inaccessible »
+     * côté poste alors que l'authentification avait réussi. On attend au plus
+     * {@link #ATTENTE_COURRIEL_SECONDES} pour pouvoir signaler un échec franc, puis on répond.
+     *
+     * @return l'échec s'il est connu à temps, sinon vide (envoi terminé ou encore en cours).
+     */
+    private java.util.Optional<RuntimeException> courriel(String destinataire, String sujet,
+            String contenu, Runnable siEchec) {
+        long debut = System.nanoTime();
+        CountDownLatch fin = new CountDownLatch(1);
+        AtomicReference<RuntimeException> echec = new AtomicReference<>();
+        Thread.ofVirtual().name("envoi-courriel").start(() -> {
+            try {
+                email.envoyer(destinataire, sujet, contenu);
+            } catch (RuntimeException ex) {
+                echec.set(ex);
+                if (siEchec != null) siEchec.run();
+            } finally {
+                fin.countDown();
+            }
+        });
+        boolean termine;
+        try {
+            termine = fin.await(ATTENTE_COURRIEL_SECONDES, TimeUnit.SECONDS);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            termine = false;
+        }
+        long duree = java.time.Duration.ofNanos(System.nanoTime() - debut).toMillis();
+        if (!termine) {
+            System.out.println("[auth-https] courriel encore en envoi apres "
+                    + ATTENTE_COURRIEL_SECONDES + " s : reponse renvoyee sans attendre (destinataire non journalise).");
+            return java.util.Optional.empty();
+        }
+        if (echec.get() != null) {
+            System.err.println("[auth-https] courriel non envoye (" + duree + " ms) : "
+                    + echec.get().getMessage());
+            return java.util.Optional.of(echec.get());
+        }
+        System.out.println("[auth-https] courriel envoye en " + duree + " ms.");
+        return java.util.Optional.empty();
+    }
+
     private void connexion(HttpExchange exchange) throws IOException, SQLException {
         if (!"POST".equals(exchange.getRequestMethod())) {
             envoyerJson(exchange, 405, erreur("Méthode non autorisée."));
@@ -234,14 +289,13 @@ public final class AuthentificationApiHttps implements HttpHandler {
             return;
         }
         var challenge = debut.challenge();
-        try {
-            this.email.envoyer(challenge.email(), "Votre code de connexion IHM 2026",
-                    "Bonjour " + challenge.nom() + ",\n\n"
-                            + "Votre code de connexion est : " + challenge.code()
-                            + "\nIl expire dans 10 minutes. Ne le communiquez à personne.");
-        } catch (RuntimeException ex) {
-            authentification.annulerCodeConnexion(challenge.identifiant());
-            envoyerJson(exchange, 503, erreur(ex.getMessage()));
+        var echec = courriel(challenge.email(), "Votre code de connexion IHM 2026",
+                "Bonjour " + challenge.nom() + ",\n\n"
+                        + "Votre code de connexion est : " + challenge.code()
+                        + "\nIl expire dans 10 minutes. Ne le communiquez à personne.",
+                () -> authentification.annulerCodeConnexion(challenge.identifiant()));
+        if (echec.isPresent()) {
+            envoyerJson(exchange, 503, erreur(echec.get().getMessage()));
             return;
         }
         envoyerJson(exchange, 202, new ReponseChallenge(challenge.identifiant(),
@@ -342,20 +396,20 @@ public final class AuthentificationApiHttps implements HttpHandler {
         Session.Role role = Session.Role.valueOf(corps.path("role").asText());
         var invitation = comptes.creerInvitation(corps.path("email").asText(),
                 role, acteur.utilisateurId());
-        try {
-            email.envoyer(invitation.email(), "Votre PIN d’activation IHM 2026",
-                    "Bonjour,\n\n"
-                            + "Votre demande a été acceptée. Activez votre compte IHM 2026.\n"
-                            + "Adresse e-mail : " + invitation.email() + "\n"
-                            + "Rôle autorisé : " + invitation.role().label() + "\n"
-                            + "PIN d'activation : " + invitation.pin() + "\n\n"
-                            + "Ce PIN est valable jusqu'au " + invitation.expireLe()
-                            + ", ne peut être utilisé qu'une fois et est limité à cinq essais.\n"
-                            + "Ne le communiquez à personne.");
-        } catch (IllegalStateException ex) {
+        var echec = courriel(invitation.email(), "Votre PIN d’activation IHM 2026",
+                "Bonjour,\n\n"
+                        + "Votre demande a été acceptée. Activez votre compte IHM 2026.\n"
+                        + "Adresse e-mail : " + invitation.email() + "\n"
+                        + "Rôle autorisé : " + invitation.role().label() + "\n"
+                        + "PIN d'activation : " + invitation.pin() + "\n\n"
+                        + "Ce PIN est valable jusqu'au " + invitation.expireLe()
+                        + ", ne peut être utilisé qu'une fois et est limité à cinq essais.\n"
+                        + "Ne le communiquez à personne.",
+                null);
+        if (echec.isPresent()) {
             envoyerJson(exchange, 503, erreur(
                     "Le PIN a été créé, mais l'e-mail n'a pas pu être envoyé : "
-                            + ex.getMessage()
+                            + echec.get().getMessage()
                             + " Corrigez la configuration SMTP puis générez une nouvelle invitation ; "
                             + "cette invitation sera alors invalidée."));
             return;
@@ -616,12 +670,15 @@ public final class AuthentificationApiHttps implements HttpHandler {
 
     private void envoyerEmailDecision(PostgresCompteRepository.Compte compte, boolean acceptee,
             PostgresCompteRepository.Invitation activation) {
-        email.envoyer(compte.email(), "Décision sur votre compte IHM 2026",
+        var echec = courriel(compte.email(), "Décision sur votre compte IHM 2026",
                 "Bonjour " + compte.nom() + ",\n\nVotre demande a été "
                         + (acceptee ? "acceptée." : "refusée.")
                         + (acceptee ? "\nVotre PIN d'activation : " + activation.pin()
                                 + "\nValable 48 heures et une seule fois. Cliquez sur Activer mon compte."
-                                : "\nContactez l'administration pour plus d'informations."));
+                                : "\nContactez l'administration pour plus d'informations."),
+                null);
+        // Meme comportement qu'avant pour les appelants : echec = IllegalStateException.
+        if (echec.isPresent()) throw echec.get();
     }
 
     private PostgresCompteRepository.FiltreComptes lireFiltreComptes(HttpExchange exchange) {
