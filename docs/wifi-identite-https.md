@@ -104,7 +104,9 @@ puis se connecter.
 
 ## Mettre à jour et relancer en un seul geste
 
-`postes\maj-et-relancer-PC1.cmd` (double-clic) enchaîne : fermeture des fenêtres du projet,
+`postes\maj-et-relancer-PC1.cmd` (double-clic, ou `.\postes\maj-et-relancer-PC1.cmd` depuis
+PowerShell — le `./` est obligatoire, sinon PowerShell croit que `postes` est un module)
+enchaîne : fermeture des fenêtres du projet,
 `git fetch` + `git merge --ff-only origin/main`, compilation, puis relance de l'authentification,
 du serveur de salle et de PC4, en attendant que le port HTTPS soit annoncé avant d'ouvrir les
 clients. Le script s'arrête au premier échec (branche autre que `main`, modifications locales,
