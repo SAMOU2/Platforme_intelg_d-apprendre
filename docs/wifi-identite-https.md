@@ -141,10 +141,12 @@ la recherche ne l'écrase jamais, elle se contente d'actualiser le port HTTPS an
 cette même adresse. Les recherches se suspendent pendant la connexion/OTP. Aucun nom, mot de
 passe, OTP ou formulaire n'est effacé par une recherche en fond.
 
-Le port HTTPS est **préféré, pas subi** : les lanceurs PC1 demandent le port 28443 et, s'il est
-occupé, le service en choisit un libre qu'il annonce alors aux postes. Rien n'est à saisir sur
-les clients. La valeur 8443 n'est plus qu'un ancien repli : si elle apparaît, aucun port n'a
-été annoncé et l'écran le signale.
+Le port HTTPS est **entièrement automatique** : les lanceurs PC1 demandent le port 0, donc un
+port libre choisi au démarrage, publié dans le registre puis annoncé aux postes par la
+découverte (UDP 7777). Rien n'est à saisir sur les clients, même avec une adresse écrite à la
+main : la découverte actualise le port sans jamais écraser l'adresse. La valeur 8443 n'est
+qu'un marqueur : si elle apparaît à l'écran, c'est qu'aucun port n'a été annoncé, et le
+message le dit.
 Après un changement de Wi-Fi, attendre la nouvelle annonce et la rotation du certificat
 (environ 10 secondes plus le temps de signature). Une tentative trop précoce peut encore
 échouer : réessayer après le message de rotation. Ne pas changer de CA pour cette erreur.
