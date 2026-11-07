@@ -102,6 +102,15 @@ Changer de Wi-Fi ne demande donc aucune manipulation de certificat : garder la f
 d'authentification ouverte une dizaine de secondes, laisser la découverte retrouver le serveur,
 puis se connecter.
 
+## Mettre à jour et relancer en un seul geste
+
+`postes\maj-et-relancer-PC1.cmd` (double-clic) enchaîne : fermeture des fenêtres du projet,
+`git fetch` + `git merge --ff-only origin/main`, compilation, puis relance de l'authentification,
+du serveur de salle et de PC4, en attendant que le port HTTPS soit annoncé avant d'ouvrir les
+clients. Le script s'arrête au premier échec (branche autre que `main`, modifications locales,
+compilation impossible, aucun port annoncé) en disant quoi faire, et ne supprime aucune donnée.
+Une session en cours est interrompue : c'est le but d'une relance complète.
+
 ## Vérifier l'accessibilité du certificat
 
 Avant toute autre hypothèse, lancer `postes\verifier-certificat-https.cmd` (double-clic ou
