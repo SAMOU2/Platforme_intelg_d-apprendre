@@ -46,7 +46,7 @@ public final class ConfiancePlateforme {
     private ConfiancePlateforme() { }
 
     /** Contexte validant la chaîne sans exiger le nom ; vide si aucune confiance n'est lisible. */
-    static Optional<SSLContext> depuisJdk() {
+    public static Optional<SSLContext> depuisJdk() {
         List<X509TrustManager> gestionnaires = new ArrayList<>();
         try {
             Optional<KeyStore> magasin = magasinDuJdk();
