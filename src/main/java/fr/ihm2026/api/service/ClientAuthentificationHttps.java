@@ -40,6 +40,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     // première requête d'une JVM doit charger le magasin de confiance : 60 s était trop
     // court sur les postes lents, ce qui produisait « service inaccessible » à tort.
     private static final Duration DELAI_ENVOI_EMAIL = Duration.ofSeconds(120);
+    private static final Duration DELAI_PRECHAUFFAGE = Duration.ofSeconds(30);
     private static final Duration DELAI_DECISIONS_LOT = Duration.ofMinutes(3);
     private static final int LOT_DECISIONS_MAX = 20;
 
@@ -615,6 +616,34 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             throw new ErreurAuthentification(message);
         }
         return resultat;
+    }
+
+    /**
+     * Réveille la pile TLS/HTTP dans une tâche de fond, avant le premier clic de
+     * l'utilisateur. Sans cet échauffement, la toute première requête d'une JVM charge
+     * JSSE, parse le magasin de confiance et négocie le handshake en code interprété :
+     * elle peut dépasser le délai du client, d'où un échec au premier essai puis un succès
+     * au second. Aucune conséquence en cas d'échec : c'est une simple accélération.
+     */
+    public static void prechauffer(String hote, int port) {
+        if (hote == null || hote.isBlank() || port < 1 || port > 65535) {
+            return;
+        }
+        Thread.ofVirtual().name("prechauffage-auth").start(() -> {
+            long debut = System.nanoTime();
+            try {
+                envoyer(HttpRequest.newBuilder(base(hote, port).resolve("/api/auth/ping"))
+                        .timeout(DELAI_PRECHAUFFAGE)
+                        .header("Accept", "application/json")
+                        .GET()
+                        .build());
+                LOGGER.info("[auth-client] prechauffage " + hote + ":" + port + " reussi en "
+                        + dureeMs(debut) + " ms");
+            } catch (Exception ex) {
+                LOGGER.warning("[auth-client] prechauffage " + hote + ":" + port + " impossible : "
+                        + ex.getClass().getSimpleName());
+            }
+        });
     }
 
     private static long dureeMs(long debutNano) {

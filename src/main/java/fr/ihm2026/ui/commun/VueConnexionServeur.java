@@ -69,12 +69,38 @@ public class VueConnexionServeur extends StackPane {
     private long generationDecouverte;
     private final TextField portHttpsManuel = new TextField(Integer.toString(ClientAuthentificationHttps.portConfigure()));
     private int portChoisi = ClientAuthentificationHttps.portConfigure();
+    /** Dernier couple hote:port deja rechauffe ; evite de relancer l'echauffement a chaque tick. */
+    private String prechauffageCle = null;
     private int portChallenge;
     /**
      * Le port HTTPS est choisi librement au démarrage du service : il change donc à chaque
      * relance. Quand le serveur est sur ce même poste, on relit le port publié à l'instant
      * de l'appel plutôt que de garder une valeur qui n'existe plus.
      */
+    /**
+     * Rechauffe la pile TLS/HTTP des que l'adresse du serveur est connue, donc avant le
+     * premier clic : la premiere tentative n'a plus a payer le demarrage a froid de JSSE.
+     * Sans effet visible si le serveur n'est pas encore joignable.
+     */
+    private void prechaufferSiPossible() {
+        String hote = adresseServeur.getText() == null ? "" : adresseServeur.getText().strip();
+        int port;
+        try {
+            port = Integer.parseInt(portHttpsManuel.getText().strip());
+        } catch (Exception ex) {
+            return;
+        }
+        if (hote.isEmpty() || port == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
+            return;
+        }
+        String cle = hote + ":" + port;
+        if (cle.equals(prechauffageCle)) {
+            return;
+        }
+        prechauffageCle = cle;
+        ClientAuthentificationHttps.prechauffer(hote, port);
+    }
+
     private int portHttpsPour(String hote) {
         int port = portChoisi;
         if (fr.ihm2026.reseau.InterfacesReseau.adresseLocale(hote)) {
@@ -140,6 +166,7 @@ public class VueConnexionServeur extends StackPane {
             if (choix != null && !adresseServeur.isDisabled()) {
                 portHttpsManuel.setText(Integer.toString(choix.portHttps()));
                 adresseServeur.setText(choix.hote());
+                prechaufferSiPossible();
                 if (choix.portHttps() == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
                     etatDecouverte.setText("Plateforme sélectionnée, mais son port HTTPS n'est pas annoncé. "
                             + "Gardez la fenêtre d'authentification ouverte, puis cliquez sur Réessayer.");
@@ -167,6 +194,7 @@ public class VueConnexionServeur extends StackPane {
                                 if (candidat.hote().equals(hoteManuel)
                                         && candidat.portHttps() != fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
                                     portHttpsManuel.setText(Integer.toString(candidat.portHttps()));
+                                    prechaufferSiPossible();
                                     etatDecouverte.setText("Adresse manuelle conservée (" + hoteManuel
                                             + "), port HTTPS pris du réseau : " + candidat.portHttps() + ".");
                                     return;
@@ -189,6 +217,7 @@ public class VueConnexionServeur extends StackPane {
                             serveurs.getSelectionModel().selectFirst();
                             adresseServeur.setText(liste.get(0).hote());
                             portHttpsManuel.setText(Integer.toString(liste.get(0).portHttps()));
+                            prechaufferSiPossible();
                             if (liste.get(0).portHttps() == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
                                 etatDecouverte.setText("Plateforme trouvée, mais son port HTTPS n'est pas annoncé "
                                         + "(valeur par défaut " + fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI

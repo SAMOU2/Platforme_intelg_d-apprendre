@@ -14,6 +14,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.HttpsURLConnection;
+import java.net.URL;
+import java.util.Set;
 
 /** Point d'entrée explicite du service d'authentification TLS ; aucun repli vers HTTP. */
 public final class ServeurAuthentificationHttps implements AutoCloseable {
@@ -35,6 +39,62 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
         executants = Executors.newFixedThreadPool(8);
         serveur.setExecutor(executants);
         serveur.start();
+        prechaufferMoteur(tls);
+    }
+
+    /**
+     * Force l'initialisation de JSSE et le semis de l'aléa cryptographique au démarrage,
+     * pas au premier handshake d'un poste : sans cela, la toute première connexion paie
+     * seule ce coût et dépasse souvent le délai du client.
+     */
+    private static void prechaufferMoteur(SSLContext tls) {
+        long debut = System.nanoTime();
+        try {
+            SSLEngine moteur = tls.createSSLEngine();
+            moteur.setUseClientMode(false);
+            moteur.beginHandshake();
+            System.out.println("[auth-https] moteur TLS initialise en "
+                    + java.time.Duration.ofNanos(System.nanoTime() - debut).toMillis() + " ms.");
+        } catch (Exception ex) {
+            System.out.println("[auth-https] moteur TLS : initialisation au premier handshake ("
+                    + ex.getClass().getSimpleName() + ").");
+        }
+    }
+
+    /**
+     * Établit une première connexion TLS complète vers soi-même, sur les adresses du
+     * certificat. Le serveur négocie donc son premier handshake au démarrage : quand un
+     * poste se connecte, la pile est déjà chaude et la demande aboutit du premier coup.
+     * Aucun repli : l'échec du préchauffage est seulement journalisé.
+     */
+    public void prechauffer(java.util.Set<String> adresses) {
+        if (adresses == null || adresses.isEmpty()) {
+            return;
+        }
+        int port = port();
+        Thread.ofVirtual().name("prechauffage-tls").start(() -> {
+            for (String adresse : adresses) {
+                long debut = System.nanoTime();
+                try {
+                    HttpsURLConnection connexion = (HttpsURLConnection)
+                            new URL("https://" + adresse + ":" + port + "/api/auth/ping").openConnection();
+                    var confiance = ConfiancePlateforme.depuisJdk();
+                    if (confiance.isPresent()) {
+                        connexion.setSSLSocketFactory(confiance.get().getSocketFactory());
+                    }
+                    connexion.setConnectTimeout(10000);
+                    connexion.setReadTimeout(30000);
+                    int statut = connexion.getResponseCode();
+                    System.out.println("[auth-https] prechauffage TLS vers " + adresse + ":" + port
+                            + " -> HTTP " + statut + " en "
+                            + java.time.Duration.ofNanos(System.nanoTime() - debut).toMillis() + " ms.");
+                    return;
+                } catch (Exception ex) {
+                    System.out.println("[auth-https] prechauffage TLS impossible vers " + adresse
+                            + " : " + ex.getClass().getSimpleName());
+                }
+            }
+        });
     }
 
     static HttpsServer ouvrirPort(int prefere) throws IOException {
@@ -58,7 +118,9 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
             var identite=new IdentiteTlsReseau();
             try {
                 var resultat=new ServeurAuthentificationHttps(prefere,identite.contexte(),service,comptes);
-                resultat.identiteReseau=identite;return resultat;
+                resultat.identiteReseau=identite;
+                resultat.prechauffer(identite.adressesCertifiees());
+                return resultat;
             } catch(Exception ex){identite.close();throw ex;}
         }
         String fichierMagasin = variableObligatoire("IHM_TLS_KEYSTORE");

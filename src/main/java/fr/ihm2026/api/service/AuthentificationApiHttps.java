@@ -90,6 +90,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 case "/api/auth/activation" -> activerCompte(exchange);
                 case "/api/auth/inscription" -> inscrireApprenant(exchange);
                 case "/api/auth/session" -> session(exchange);
+                case "/api/auth/ping" -> ping(exchange);
                 case "/api/auth/deconnexion" -> deconnexion(exchange);
                 case "/api/admin/comptes" -> administrerComptes(exchange);
                 case "/api/admin/comptes/etat" -> definirCompteActif(exchange);
@@ -423,6 +424,17 @@ public final class AuthentificationApiHttps implements HttpHandler {
         envoyerJson(exchange, 201, new ReponseInvitation(invitation.email(),
                 invitation.role().name(), invitation.expireLe().toString(),
                 "PIN envoyé par e-mail."));
+    }
+
+    /**
+     * Route sans secret, sans base de données : sert à « réveiller » la pile TLS des deux
+     * côtés avant la première vraie demande. Le premier handshake d'une JVM qui démarre
+     * charge JSSE, sème l'aléa cryptographique et compile le code du handshake ; sans cet
+     * échauffement, la première connexion d'un poste peut dépasser le délai du client et
+     * être déclarée « inaccessible » alors qu'elle aurait réussi au deuxième essai.
+     */
+    private void ping(HttpExchange exchange) throws IOException {
+        envoyerJson(exchange, 200, java.util.Map.of("statut", "pret"));
     }
 
     private void confirmerCodeConnexion(HttpExchange exchange) throws IOException, SQLException {
