@@ -28,8 +28,12 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger LOGGER =
             Logger.getLogger(ClientAuthentificationHttps.class.getName());
-    /** Port préféré du service d'authentification : le même que celui des lanceurs PC1. */
-    public static final int PORT_PAR_DEFAUT = 28443;
+    /**
+     * Valeur de repli quand aucune annonce réseau n'est disponible. Le port réel est choisi
+     * librement au démarrage et diffusé par la découverte : cette valeur ne doit donc jamais
+     * être considérée comme le port du serveur, seulement comme le signe « port inconnu ».
+     */
+    public static final int PORT_PAR_DEFAUT = 8443;
     private static final Duration DELAI_CONNEXION = Duration.ofSeconds(5);
     private static final Duration DELAI_REQUETE = Duration.ofSeconds(8);
     // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS.

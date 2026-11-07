@@ -18,7 +18,7 @@ REM Ranger le magasin dans postes\secrets ou hors du depot, jamais dans Git.
 REM set "IHM_TLS_KEYSTORE=%~dp0secrets\serveur.p12"
 REM set "IHM_TLS_PASSWORD=REMPLACER_PAR_VOTRE_SECRET"
 REM 0 laisse Windows choisir un port HTTPS libre, annonce aux clients via la decouverte.
-set "IHM_AUTH_PORT=28443"
+set "IHM_AUTH_PORT=0"
 
 REM Serveur SMTP reel : STARTTLS obligatoire, port 587 par defaut.
 REM set "IHM_SMTP_HOST=smtp.votre-fournisseur.example"

@@ -39,7 +39,7 @@ REM Demarrage de la base locale avant compilation et lancement HTTPS.
 call "%~dp0demarrer-docker-PC1.bat" /auth
 if errorlevel 1 goto :echec
 
-if not defined IHM_AUTH_PORT set "IHM_AUTH_PORT=28443"
+if not defined IHM_AUTH_PORT set "IHM_AUTH_PORT=0"
 
 echo.
 echo PC1 uniquement : Docker et PostgreSQL doivent etre disponibles ici.
@@ -67,9 +67,10 @@ if not defined DEPENDENCIES (
 )
 
 echo.
-echo Demarrage du service HTTPS : port prefere %IHM_AUTH_PORT%.
-echo   S il est occupe, un port libre est choisi automatiquement et annonce aux postes.
-echo   0 = port libre choisi a chaque demarrage (a eviter : les postes doivent le retrouver).
+echo Demarrage du service HTTPS : port demande %IHM_AUTH_PORT%.
+echo   0 = port libre choisi automatiquement a chaque demarrage, puis annonce
+echo   aux postes par la decouverte reseau. Rien a saisir sur les clients.
+echo   Le port reel est toujours celui affiche ci-dessous, jamais une valeur fixe.
 echo Garder cette fenetre ouverte. Arret : Ctrl+C.
 echo.
 "%JAVA_HOME%\bin\java.exe" -cp "%CD%\target\classes;%DEPENDENCIES%" fr.ihm2026.api.service.ServeurAuthentificationHttps
