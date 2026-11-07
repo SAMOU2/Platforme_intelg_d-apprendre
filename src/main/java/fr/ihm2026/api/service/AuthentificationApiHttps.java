@@ -59,12 +59,18 @@ public final class AuthentificationApiHttps implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         exchange.getResponseHeaders().set("Cache-Control", "no-store");
         exchange.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
+        long debut = System.nanoTime();
+        String chemin = exchange.getRequestURI() == null ? "?" : exchange.getRequestURI().getPath();
+        String methode = exchange.getRequestMethod();
+        String distant = exchange.getRemoteAddress() == null
+                ? "?"
+                : exchange.getRemoteAddress().getAddress().getHostAddress();
         try {
             if (!(exchange instanceof HttpsExchange)) {
                 envoyerJson(exchange, 426, erreur("HTTPS est obligatoire."));
                 return;
             }
-            String chemin = exchange.getRequestURI().getPath();
+            chemin = exchange.getRequestURI().getPath();
             switch (chemin) {
                 case "/api/pedagogie" -> pedagogie(exchange);
                 case "/api/ia/aide" -> aideIa(exchange);
@@ -100,6 +106,11 @@ public final class AuthentificationApiHttps implements HttpHandler {
         } catch (IllegalArgumentException ex) {
             envoyerJson(exchange, 400, erreur("Requête invalide."));
         } finally {
+            long duree = java.time.Duration.ofNanos(System.nanoTime() - debut).toMillis();
+            int statut = exchange.getResponseCode();
+            System.out.println("[auth-https] " + methode + " " + chemin + " <- " + distant
+                    + " -> " + (statut < 0 ? "sans reponse" : String.valueOf(statut))
+                    + " (" + duree + " ms)");
             exchange.close();
         }
     }

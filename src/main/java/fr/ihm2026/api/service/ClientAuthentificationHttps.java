@@ -28,17 +28,46 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger LOGGER =
             Logger.getLogger(ClientAuthentificationHttps.class.getName());
-    private static final Duration DELAI_CONNEXION = Duration.ofSeconds(3);
+    private static final Duration DELAI_CONNEXION = Duration.ofSeconds(5);
     private static final Duration DELAI_REQUETE = Duration.ofSeconds(8);
     // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS.
     private static final Duration DELAI_ENVOI_EMAIL = Duration.ofSeconds(60);
     private static final Duration DELAI_DECISIONS_LOT = Duration.ofMinutes(3);
     private static final int LOT_DECISIONS_MAX = 20;
 
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .connectTimeout(DELAI_CONNEXION)
-            .build();
+    private static final HttpClient HTTP = construireClient();
+
+    /**
+     * La confiance vient de l'autorite privee approuvee sur ce JDK, pas de l'adresse :
+     * l'adresse du serveur change a chaque Wi-Fi, l'autorite jamais. La chaine du
+     * certificat reste validee ; seul le controle du nom, impossible a satisfaire sur un
+     * reseau local sans DNS, est ecarte. Sans magasin lisible, le comportement strict est
+     * conserve.
+     */
+    private static HttpClient construireClient() {
+        HttpClient.Builder builder = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(DELAI_CONNEXION);
+        Optional<javax.net.ssl.SSLContext> confiance = ConfiancePlateforme.depuisJdk();
+        if (confiance.isPresent()) {
+            builder.sslContext(confiance.get());
+        } else {
+            LOGGER.warning("Aucun magasin de confiance lisible dans ce JDK : le controle strict est conserve.");
+        }
+        return builder.build();
+    }
+
+    private static ErreurAuthentification inaccessible(String hote, int port, Exception ex) {
+        return new ErreurAuthentification("Service HTTPS d'authentification inaccessible (" + hote + ":"
+                + port + "). Verifier que la fenetre d'authentification est ouverte, que ce port est bien "
+                + "celui affiche dans cette fenetre, et que le poste est sur le meme reseau Wi-Fi.", ex);
+    }
+
+    private static ErreurAuthentification certificatInconnu(Exception ex) {
+        return new ErreurAuthentification("Certificat HTTPS non reconnu : l'autorite privee de la plateforme "
+                + "n'est pas approuvee dans ce JDK (lancer postes\\approuver-autorite-client.bat), ou le serveur "
+                + "n'est pas celui de la plateforme.", ex);
+    }
     private final URI base;
     private final Compte compte;
     private final AppareilConfiance appareilConfiance;
@@ -90,10 +119,9 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Inscription interrompue.", ex);
         } catch (javax.net.ssl.SSLHandshakeException ex) {
-            throw new ErreurAuthentification(
-                    "Certificat HTTPS du serveur non reconnu ou nom du serveur non concordant.", ex);
+            throw certificatInconnu(ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(hote, port, ex);
         } catch (IllegalArgumentException ex) {
             throw new ErreurAuthentification("Réponse invalide du service d'authentification.", ex);
         } finally {
@@ -162,10 +190,9 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Connexion au service d'authentification annulée.", ex);
         } catch (javax.net.ssl.SSLHandshakeException ex) {
-            throw new ErreurAuthentification(
-                    "Certificat HTTPS du serveur non reconnu ou nom du serveur non concordant.", ex);
+            throw certificatInconnu(ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(hote, port, ex);
         } catch (IllegalArgumentException ex) {
             throw new ErreurAuthentification("Réponse invalide du service d'authentification.", ex);
         } finally {
@@ -203,10 +230,9 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Connexion au service d'authentification annulée.", ex);
         } catch (javax.net.ssl.SSLHandshakeException ex) {
-            throw new ErreurAuthentification(
-                    "Certificat HTTPS du serveur non reconnu ou nom du serveur non concordant.", ex);
+            throw certificatInconnu(ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(hote, port, ex);
         } catch (IllegalArgumentException ex) {
             throw new ErreurAuthentification("Réponse invalide du service d'authentification.", ex);
         }
@@ -229,10 +255,9 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Oubli du poste de confiance interrompu.", ex);
         } catch (javax.net.ssl.SSLHandshakeException ex) {
-            throw new ErreurAuthentification(
-                    "Certificat HTTPS du serveur non reconnu ou nom du serveur non concordant.", ex);
+            throw certificatInconnu(ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(hote, port, ex);
         }
     }
 
@@ -340,7 +365,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Chargement des comptes interrompu.", ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(base.getHost(), base.getPort(), ex);
         }
     }
 
@@ -399,7 +424,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Création du compte interrompue.", ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(base.getHost(), base.getPort(), ex);
         } finally {
             Arrays.fill(motDePasse, '\0');
         }
@@ -425,7 +450,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Modification du compte interrompue.", ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(base.getHost(), base.getPort(), ex);
         }
     }
 
@@ -450,7 +475,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Décision d'inscription interrompue.", ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(base.getHost(), base.getPort(), ex);
         }
     }
 
@@ -505,7 +530,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Décisions d'inscription par lot interrompues.", ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Service HTTPS d'authentification inaccessible.", ex);
+            throw inaccessible(base.getHost(), base.getPort(), ex);
         }
     }
 
