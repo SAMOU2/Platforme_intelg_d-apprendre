@@ -76,6 +76,21 @@ Le certificat autosigné historique déjà approuvé n'est PAS cette nouvelle CA
 pas d'avoir importé l'ancien serveur.crt. Ne jamais approuver une CA reçue d'une annonce Wi-Fi.
 Mettre à jour un JDK peut nécessiter de réinstaller la confiance dans ce nouveau JDK.
 
+## Vérifier l'accessibilité du certificat
+
+Avant toute autre hypothèse, lancer `postes\verifier-certificat-https.cmd` (double-clic ou
+depuis la racine du projet). Il n'ouvre aucune session et ne modifie aucun magasin : il lit.
+Il affiche l'empreinte de la CA présente dans `postes\secrets`, la présence d'une entrée
+`plateforme-ca-*` dans le JDK qui lance l'application, puis le certificat réellement présenté
+par le serveur : sujet, émetteur, dates de validité et adresses couvertes (SAN). Il indique
+enfin si ce JDK approuve le certificat à l'adresse et au port saisis (le port courant est
+proposé automatiquement d'après `.ihm-runtime\https.port`).
+
+Interprétation : échec de confiance avec un SAN qui ne contient pas l'adresse utilisée ⇒
+certificat non encore renouvelé pour le réseau courant (attendre la rotation) ou mauvaise
+adresse ; échec sans certificat ⇒ port/adresse erronés, service arrêté ou pare-feu. Un code
+HTTP 404 en GET sur `/api/auth/connexion` est normal et prouve que TLS est négocié.
+
 ## Démarrage et changements de réseau
 
 Après BUILD SUCCESS, relancer HTTPS, le serveur de salle et les interfaces à jour, en une
