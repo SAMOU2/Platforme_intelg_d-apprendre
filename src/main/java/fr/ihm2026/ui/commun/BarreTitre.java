@@ -91,6 +91,7 @@ public class BarreTitre extends HBox {
         HBox.setHgrow(espace, Priority.ALWAYS);
 
         Button aide = new Button("Aide clavier");
+        aide.getStyleClass().add("bouton-aide-fenetre");
         aide.setAccessibleText("Aide accessibilité et raccourcis clavier, F1");
         aide.setOnAction(e -> Accessibilite.aide(stage));
         // Le bouton de la barre latérale reste en haut à gauche, dans le même axe visuel que
@@ -106,6 +107,12 @@ public class BarreTitre extends HBox {
         laterale.setOnAction(e -> router.basculerLaterale());
         rafraichirLaterale(router.lateraleReduite());
         return laterale;
+    }
+
+    /** Aucun panneau latéral n'est disponible sur les écrans publics de connexion. */
+    public void afficherBoutonLaterale(boolean afficher) {
+        laterale.setVisible(afficher);
+        laterale.setManaged(afficher);
     }
 
     /** Nomme l'action réellement disponible, au lieu d'un libellé générique afficher/masquer. */

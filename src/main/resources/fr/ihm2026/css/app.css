@@ -939,12 +939,12 @@
 
 /* ---------------------------------------------------------------- login */
 .login-view {
-    -fx-background-color: linear-gradient(to bottom right, #3a5fcd 0%, #5e5ce6 42%, #a06ad4 72%, #e26f8c 100%);
+    -fx-background-color: #14263d;
 }
 /* Tous les rôles : le fond bleu nuit est le repli quand l’illustration est absente ;
    l’image animée passe en plein écran derrière la carte du formulaire. */
 .login-view--visuel {
-    -fx-background-color: linear-gradient(to bottom right, -color-login-fond-1 0%, -color-login-fond-2 52%, -color-login-fond-3 100%);
+    -fx-background-color: #14263d;
 }
 .login-visuel {
     -fx-background-color: -color-login-panneau;
@@ -1245,7 +1245,7 @@
 
 /* Écran de connexion : palette nuit, indépendante du thème du reste de l'application. */
 .connexion-nuit {
-    -fx-background-color: linear-gradient(to bottom right, #192436, #14263d);
+    -fx-background-color: #14263d;
 }
 .connexion-nuit .connexion-carte-nuit {
     -fx-background-color: #111c30;
@@ -1285,7 +1285,7 @@
     -fx-stroke-line-join: round;
 }
 .connexion-nuit .connexion-securite .connexion-icone {
-    -fx-stroke: #19d6a5;
+    -fx-stroke: #69b2ff;
     -fx-scale-x: 0.68;
     -fx-scale-y: 0.68;
 }
@@ -1401,7 +1401,7 @@
     -fx-underline: true;
 }
 .connexion-nuit .connexion-statut-reseau { -fx-text-fill: #9fb0c7; -fx-font-size: 13px; }
-.connexion-nuit .connexion-statut-reseau:pret { -fx-text-fill: #6bd7b4; }
+.connexion-nuit .connexion-statut-reseau:pret { -fx-text-fill: #9fb0c7; }
 .connexion-nuit .connexion-aide {
     -fx-background-color: #101d31;
     -fx-background-radius: 14;
@@ -1463,3 +1463,73 @@
 
 .connexion-nuit .connexion-bouton-principal .connexion-icone { -fx-stroke: white; }
 .connexion-nuit .connexion-carte-nuit .connexion-bouton-principal:focused { -fx-border-color: #a9d1ff; -fx-border-radius: 14; -fx-border-width: 2; }
+
+/* Connexion : fond bleu nuit uniforme et surfaces sans contours décoratifs. */
+.racine--login.fenetre {
+    -fx-background-color: #14263d;
+    -fx-border-color: transparent;
+}
+.racine--login .barre-titre {
+    -fx-background-color: #14263d;
+    -fx-border-color: transparent;
+}
+.racine--login .titre-fenetre,
+.racine--login .bouton-apparence { -fx-text-fill: #c6d0df; }
+.racine--login .bouton-nav-icone { -fx-fill: #aab9cd; }
+.racine--login .bouton-apparence:hover,
+.racine--login .bouton-nav:hover { -fx-background-color: #1b293e; }
+/* Les commandes de fenêtre restent visibles et identifiables, sans trois couleurs différentes. */
+.racine--login .feux .feu {
+    -fx-background-color: #28384e;
+    -fx-border-color: transparent;
+    -fx-text-fill: #d5dfed;
+}
+.racine--login .feux .feu:hover,
+.racine--login .feux .feu:focused { -fx-background-color: #3b495d; }
+.connexion-nuit .connexion-carte-nuit,
+.connexion-nuit .connexion-marque,
+.connexion-nuit .connexion-aide,
+.connexion-nuit .connexion-role,
+.connexion-menu-reseau {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+.connexion-nuit .connexion-carte-nuit .text-field,
+.connexion-nuit .connexion-carte-nuit .password-field,
+.connexion-nuit .connexion-champ-icone .champ-secret,
+.connexion-menu-reseau .text-field {
+    -fx-border-color: transparent;
+}
+/* Le focus reste visible au clavier sans ajouter un contour permanent. */
+.connexion-nuit .connexion-carte-nuit .text-field:focused,
+.connexion-nuit .connexion-carte-nuit .password-field:focused,
+.connexion-menu-reseau .text-field:focused {
+    -fx-border-color: #5ba8ff;
+    -fx-border-width: 1;
+}
+.connexion-menu-reseau .connexion-menu-avance,
+.connexion-menu-reseau .connexion-menu-avance:focused,
+.connexion-menu-reseau .connexion-menu-avance > .title,
+.connexion-menu-reseau .connexion-menu-avance:focused > .title {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+}
+.connexion-menu-reseau .connexion-menu-avance:focused > .title,
+.connexion-menu-reseau .connexion-menu-avance > .title:hover {
+    -fx-background-color: #28384e;
+}
+.connexion-menu-reseau .connexion-menu-avance > .content {
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+}
+.racine--login .bouton-aide-fenetre {
+    -fx-background-color: #1b293e;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-text-fill: #d5dfed;
+    -fx-padding: 6 10;
+}
+.racine--login .bouton-aide-fenetre:hover,
+.racine--login .bouton-aide-fenetre:focused { -fx-background-color: #3b495d; }
+.racine--login .feux:hover .feu { -fx-text-fill: #d5dfed; }

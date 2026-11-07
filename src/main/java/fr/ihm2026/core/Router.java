@@ -188,7 +188,7 @@ public final class Router {
         root.getStyleClass().remove("racine--login");
         if (public_) {
             fr.ihm2026.ui.commun.Notifications.effacer(stage);
-            // Écran public : pas de barre latérale, la fenêtre est peinte par le dégradé.
+            // Écran public : pas de barre latérale ; le bouton correspondant est masqué.
             root.getStyleClass().add("racine--login");
             root.setLeft(null);
         } else {
@@ -208,6 +208,7 @@ public final class Router {
             barreLaterale.setActive(route);
             root.setLeft(barreLaterale);
         }
+        barreTitre.afficherBoutonLaterale(!public_);
         root.setTop(barreTitre);
 
         // Changement de contenu animé : l'ancien s'efface, le nouveau arrive du bon côté.
