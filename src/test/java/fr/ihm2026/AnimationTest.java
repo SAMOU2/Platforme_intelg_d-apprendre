@@ -75,6 +75,20 @@ class AnimationTest {
     }
 
     @Test
+    @DisplayName("Une animation infinie suivie peut être arrêtée sans rester enregistrée")
+    void terminerAnimationInfinie() {
+        Animations.activer();
+        javafx.animation.Timeline animation = new javafx.animation.Timeline(
+                new javafx.animation.KeyFrame(Duration.seconds(1)));
+        animation.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        Animations.suivre(animation);
+        assertEquals(1, Animations.animationsEnCours());
+        Animations.terminerTout();
+        assertEquals(javafx.animation.Animation.Status.STOPPED, animation.getStatus());
+        assertEquals(0, Animations.animationsEnCours());
+    }
+
+    @Test
     @DisplayName("Chaque endroit qui anime est branché sur Animations, et le smoketest les termine")
     void branchementsVerifies() throws Exception {
         List<String> fichiers = List.of(

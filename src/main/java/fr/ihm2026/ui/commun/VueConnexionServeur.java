@@ -626,7 +626,9 @@ public class VueConnexionServeur extends StackPane {
         defilement.setFitToWidth(true);
         defilement.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         contenu.minHeightProperty().bind(defilement.heightProperty().subtract(4));
-        getChildren().add(defilement);
+        // Les conseils restent derrière le formulaire, et ne capturent jamais la souris.
+        ConseilsFlottantsConnexion conseils = new ConseilsFlottantsConnexion();
+        getChildren().addAll(conseils, defilement);
         rechercher.run();
         setAlignment(Pos.CENTER);
 

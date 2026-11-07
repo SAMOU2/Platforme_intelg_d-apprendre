@@ -87,6 +87,7 @@ public final class Animations {
 
     public static void desactiver() {
         actives = false;
+        terminerTout();
     }
 
     public static void activer() {
@@ -168,10 +169,12 @@ public final class Animations {
         FINALISATIONS.clear();
         for (Animation animation : List.copyOf(EN_COURS)) {
             try {
-                animation.jumpTo(animation.getTotalDuration());
-                animation.stop();
+                Duration duree = animation.getTotalDuration();
+                if (!duree.isIndefinite() && !duree.isUnknown()) animation.jumpTo(duree);
             } catch (RuntimeException ignore) {
                 // Une animation déjà terminée n'a rien à finir : ce n'est pas une erreur.
+            } finally {
+                try { animation.stop(); } catch (RuntimeException ignore) { /* Déjà arrêtée. */ }
             }
         }
         EN_COURS.clear();
