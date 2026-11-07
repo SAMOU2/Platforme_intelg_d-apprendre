@@ -1,7 +1,9 @@
 package fr.ihm2026.reseau;
 
+import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -32,6 +34,26 @@ public final class InterfacesReseau {
         return carte.isUp() && !carte.isLoopback() && !carte.isVirtual()
                 && !carte.isPointToPoint()
                 && nomAccepte(carte.getName() + " " + carte.getDisplayName());
+    }
+
+    /**
+     * Vrai si l'adresse appartient à ce poste. Sert à relire le port HTTPS publié
+     * localement plutôt que de garder celui d'un service redémarré entre-temps.
+     */
+    public static boolean adresseLocale(String hote) {
+        if (hote == null || hote.isBlank()) return false;
+        try {
+            InetAddress cible = InetAddress.getByName(hote.strip());
+            if (cible.isLoopbackAddress() || cible.isAnyLocalAddress()) return true;
+            for (NetworkInterface carte : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                for (InetAddress adresse : Collections.list(carte.getInetAddresses())) {
+                    if (adresse.equals(cible)) return true;
+                }
+            }
+        } catch (Exception ex) {
+            return false;
+        }
+        return false;
     }
 
     /** Le nom (technique + affiché) ne doit désigner ni carte virtuelle d'hôte ni tunnel. */
