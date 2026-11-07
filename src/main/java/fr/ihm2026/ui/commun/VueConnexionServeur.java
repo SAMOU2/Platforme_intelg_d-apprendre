@@ -54,6 +54,10 @@ public class VueConnexionServeur extends StackPane {
     private final ProgressIndicator indicateurChargement = new ProgressIndicator();
     private final HBox bandeauEtat = new HBox(8, symboleEtat, etat, indicateurChargement);
     private ScrollPane defilementConnexion;
+    private final Label titreFormulaire = new Label("Connexion");
+    private final Label sousTitreFormulaire = new Label("Retrouvez votre espace d'apprentissage.");
+    private VBox formulaireAnime;
+    private javafx.animation.Timeline transitionFormulaire;
     private final Button connecter = new Button("Se connecter");
     private final CheckBox memoriserAppareil =
             new CheckBox("Faire confiance à ce poste pendant 2 jours");
@@ -266,7 +270,12 @@ public class VueConnexionServeur extends StackPane {
             // l'adresse saisie, elle se contente d'actualiser le port HTTPS annonce.
             if(!adresseServeur.isDisabled() && !rechercheEnCours.get())rechercher.run();
         },erreur -> { });
-        sceneProperty().addListener((o,a,b) -> {if(b==null)generationDecouverte++;});
+        sceneProperty().addListener((o,a,b) -> {
+            if (b == null) {
+                generationDecouverte++;
+                terminerTransitionFormulaire();
+            }
+        });
         parametresWifi.setOnAction(e -> TaskRunner.run(() -> {
             fr.ihm2026.reseau.WifiWindows.ouvrirParametres();
             return true;
@@ -373,6 +382,7 @@ public class VueConnexionServeur extends StackPane {
         connecter.setDefaultButton(true);
         connecter.setOnAction(e -> seConnecter());
         activation.setOnAction(e -> {
+            terminerTransitionFormulaire();
             modeActivation = !modeActivation;
             modeInscription = false;
             motDePasse.clear();
@@ -382,12 +392,14 @@ public class VueConnexionServeur extends StackPane {
         });
         inscription.setOnAction(e -> {
             if (modeActivation) {
+                terminerTransitionFormulaire();
                 modeActivation = false;
                 codeInvitation.clear();
                 actualiserModeInscription();
                 return;
             }
             if (attenteCodeConnexion) {
+                terminerTransitionFormulaire();
                 attenteCodeConnexion = false;
                 identifiantChallenge = null;
                 hoteServeur = null;
@@ -404,6 +416,9 @@ public class VueConnexionServeur extends StackPane {
             }
             modeInscription = !modeInscription;
             actualiserModeInscription();
+            animerChangementFormulaire(modeInscription);
+            if (modeInscription) nom.requestFocus();
+            else email.requestFocus();
         });
 
         // Panneau réseau superposé : les contrôles et leur logique de découverte restent inchangés.
@@ -467,11 +482,9 @@ public class VueConnexionServeur extends StackPane {
         HBox ligneTitre = new HBox(10, bienvenue, espaceTitre, ouvrirReseau);
         ligneTitre.setAlignment(Pos.CENTER_LEFT);
         ouvrirReseau.setTooltip(new javafx.scene.control.Tooltip("Paramètres réseau : adresse et port du serveur"));
-        Label titre = new Label("Connexion");
-        titre.getStyleClass().add("connexion-titre");
-        Label sousTitre = new Label("Retrouvez votre espace d'apprentissage.");
-        sousTitre.getStyleClass().add("connexion-sous-titre");
-        sousTitre.setWrapText(true);
+        titreFormulaire.getStyleClass().add("connexion-titre");
+        sousTitreFormulaire.getStyleClass().add("connexion-sous-titre");
+        sousTitreFormulaire.setWrapText(true);
 
         StackPane champEmail = champAvecIcone(email, "M3 5 H21 V19 H3 Z M3 6 L12 13 L21 6");
         StackPane champMotDePasse = champAvecIcone(ChampSecret.envelopper(motDePasse, true),
@@ -552,11 +565,13 @@ public class VueConnexionServeur extends StackPane {
         aideRepliable.setExpanded(false);
         aideRepliable.setMaxWidth(Double.MAX_VALUE);
 
-        VBox carte = new VBox(10, ligneTitre, titre, sousTitre,
+        formulaireAnime = new VBox(10, titreFormulaire, sousTitreFormulaire,
                 etiquetteInvitation, codeInvitation, etiquetteNom, nom, etiquetteEmail, champEmail,
                 etiquetteMotDePasse, champMotDePasse,
                 etiquetteConfirmation, champConfirmation, etiquetteCodeConnexion, codeConnexion,
                 confiance, ligne, bandeauEtat, actionsCompte);
+        formulaireAnime.setId("connexion-formulaire");
+        VBox carte = new VBox(10, ligneTitre, formulaireAnime);
         carte.getStyleClass().addAll("card", "login-card", "carte-reseau", "connexion-carte-nuit");
         carte.setAlignment(Pos.CENTER_LEFT);
         carte.setMaxWidth(556);
@@ -625,6 +640,21 @@ public class VueConnexionServeur extends StackPane {
             // Entrée du login : la carte monte et se découvre (fondu + légère croissance).
             Animations.apparaitrePanneau(carte);
         });
+    }
+
+    /** Le changement de mode est immédiat ; seule son apparition est animée. */
+    private void animerChangementFormulaire(boolean versInscription) {
+        terminerTransitionFormulaire();
+        transitionFormulaire = Animations.transitionFormulaire(formulaireAnime, versInscription);
+    }
+
+    private void terminerTransitionFormulaire() {
+        Animations.arreter(transitionFormulaire);
+        transitionFormulaire = null;
+        if (formulaireAnime != null) {
+            formulaireAnime.setOpacity(1);
+            formulaireAnime.setTranslateX(0);
+        }
     }
 
     private static javafx.scene.shape.SVGPath icone(String chemin) {
@@ -1123,6 +1153,11 @@ public class VueConnexionServeur extends StackPane {
     }
 
     private void actualiserModeInscription() {
+        titreFormulaire.setText(modeInscription ? "Créer un compte"
+                : modeActivation ? "Activer mon compte" : "Connexion");
+        sousTitreFormulaire.setText(modeInscription ? "Rejoignez votre espace d'apprentissage."
+                : modeActivation ? "Activez votre compte avec le PIN reçu par e-mail."
+                : "Retrouvez votre espace d'apprentissage.");
         inscription.setVisible(role != Session.Role.ADMINISTRATEUR || attenteCodeConnexion || modeActivation);
         inscription.setManaged(inscription.isVisible());
         etiquetteInvitation.setVisible(modeActivation);
