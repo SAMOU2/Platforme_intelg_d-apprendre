@@ -128,8 +128,9 @@ public class VueConnexionServeur extends StackPane {
                     etatDecouverte.setText("Plateforme sélectionnée, mais son port HTTPS n'est pas annoncé. "
                             + "Gardez la fenêtre d'authentification ouverte, puis cliquez sur Réessayer.");
                 } else {
-                    etatDecouverte.setText("Plateforme sélectionnée : " + choix.nom()
-                            + ". Connectez-vous à votre compte. L'identité sera vérifiée par HTTPS.");
+                    etatDecouverte.setText("Plateforme sélectionnée : " + choix.nom() + " ("
+                            + choix.hote() + ":" + choix.portHttps()
+                            + "). Connectez-vous à votre compte. L'identité sera vérifiée par HTTPS.");
                 }
             }
         });
@@ -145,7 +146,24 @@ public class VueConnexionServeur extends StackPane {
                         rechercheEnCours.set(false);
                         if (adresseServeur.isDisabled()) return;
                         if (avance.isExpanded() && !adresseServeur.getText().isBlank()) {
-                            etatDecouverte.setText("Adresse manuelle conservée. Connectez-vous à votre compte.");
+                            String hoteManuel = adresseServeur.getText().strip();
+                            for (var candidat : liste) {
+                                if (candidat.hote().equals(hoteManuel)
+                                        && candidat.portHttps() != fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
+                                    portHttpsManuel.setText(Integer.toString(candidat.portHttps()));
+                                    etatDecouverte.setText("Adresse manuelle conservée (" + hoteManuel
+                                            + "), port HTTPS pris du réseau : " + candidat.portHttps() + ".");
+                                    return;
+                                }
+                            }
+                            if (portChoisi == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
+                                etatDecouverte.setText("Port HTTPS non annoncé pour " + hoteManuel + " : la valeur "
+                                        + fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI
+                                        + " est un ancien repli. Videz l'adresse pour revenir à la découverte "
+                                        + "automatique, ou saisissez le port de la fenêtre d'authentification.");
+                            } else {
+                                etatDecouverte.setText("Adresse manuelle conservée. Connectez-vous à votre compte.");
+                            }
                             return;
                         }
                         var selection=serveurs.getValue();
@@ -161,7 +179,8 @@ public class VueConnexionServeur extends StackPane {
                                         + "). Gardez la fenêtre d'authentification ouverte, attendez quelques "
                                         + "secondes, puis cliquez sur Réessayer.");
                             } else {
-                                etatDecouverte.setText("Plateforme trouvée. Connectez-vous à votre compte. "
+                                etatDecouverte.setText("Plateforme trouvée : " + liste.get(0).hote() + ":"
+                                        + liste.get(0).portHttps() + ". Connectez-vous à votre compte. "
                                         + "L'identité est vérifiée par HTTPS.");
                             }
                         } else if (liste.size() > 1) {
@@ -187,7 +206,9 @@ public class VueConnexionServeur extends StackPane {
             rechercher.run();
         });
         new ActualisationVue<Long>(this,System::nanoTime,tick -> {
-            if(!avance.isExpanded() && !adresseServeur.isDisabled() && !rechercheEnCours.get())rechercher.run();
+            // La recherche tourne aussi en mode adresse manuelle : elle n'ecrase jamais
+            // l'adresse saisie, elle se contente d'actualiser le port HTTPS annonce.
+            if(!adresseServeur.isDisabled() && !rechercheEnCours.get())rechercher.run();
         },erreur -> { });
         sceneProperty().addListener((o,a,b) -> {if(b==null)generationDecouverte++;});
         parametresWifi.setOnAction(e -> TaskRunner.run(() -> {

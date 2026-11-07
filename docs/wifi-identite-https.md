@@ -135,9 +135,16 @@ boucle locale, les cartes virtuelles de l'hôte et les tunnels (vEthernet WSL/Hy
 Docker, VMware, VirtualBox, Cloudflare WARP et VPN) pour la découverte comme pour les
 adresses du certificat ; elles ne remplacent pas une IP LAN par 127.0.0.1.
 
-L'écran de connexion relance périodiquement la découverte lorsqu'il est affiché en mode
-automatique. Les recherches se suspendent pendant la connexion/OTP et en mode adresse
-manuelle. Aucun nom, mot de passe, OTP ou formulaire n'est effacé par une recherche en fond.
+L'écran de connexion relance périodiquement la découverte. En mode adresse manuelle
+(Options avancées ouvertes avec une adresse saisie), l'adresse reste celle de l'utilisateur :
+la recherche ne l'écrase jamais, elle se contente d'actualiser le port HTTPS annoncé pour
+cette même adresse. Les recherches se suspendent pendant la connexion/OTP. Aucun nom, mot de
+passe, OTP ou formulaire n'est effacé par une recherche en fond.
+
+Le port HTTPS est **préféré, pas subi** : les lanceurs PC1 demandent le port 28443 et, s'il est
+occupé, le service en choisit un libre qu'il annonce alors aux postes. Rien n'est à saisir sur
+les clients. La valeur 8443 n'est plus qu'un ancien repli : si elle apparaît, aucun port n'a
+été annoncé et l'écran le signale.
 Après un changement de Wi-Fi, attendre la nouvelle annonce et la rotation du certificat
 (environ 10 secondes plus le temps de signature). Une tentative trop précoce peut encore
 échouer : réessayer après le message de rotation. Ne pas changer de CA pour cette erreur.
