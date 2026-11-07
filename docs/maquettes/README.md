@@ -20,3 +20,15 @@ administrateur. Vérifier à chaque fois le rendu et la navigation au clavier :
 
 Ces vérifications nécessitent un service HTTPS et une base de test configurés sur PC1 ; ne
 jamais utiliser de mot de passe, code ou jeton réel dans une capture ou un rapport.
+
+## Transition connexion / inscription
+
+« Créer un compte » fait apparaître le formulaire d'inscription par la droite avec un léger
+fondu ; « J'ai déjà un compte » revient par la gauche. Le mode et les champs changent sans
+attendre la fin de la `Timeline`, et le focus passe au premier champ utile. Les clics rapides
+interrompent la transition précédente. Avec `-Dihm.animations=off`, le changement est immédiat.
+La durée suit `ihm.animations.echelle` comme les autres animations de l'application.
+
+À vérifier sur les postes : allers-retours rapides, navigation Tab/Entrée, petits écrans avec
+défilement, inscription, activation et saisie de code, puis même parcours avec les animations
+désactivées. Les changements de mode ne déclenchent aucune requête réseau supplémentaire.

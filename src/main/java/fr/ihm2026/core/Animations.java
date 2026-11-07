@@ -118,6 +118,44 @@ public final class Animations {
         animation.play();
     }
 
+    /** Arrête une animation suivie sans laisser de référence dans le registre. */
+    public static void arreter(Animation animation) {
+        if (animation != null) {
+            animation.stop();
+            EN_COURS.remove(animation);
+        }
+    }
+
+    /**
+     * Transition directionnelle du formulaire après changement immédiat de mode.
+     * Le modèle et les contrôles sont déjà à jour : aucun traitement métier n'est
+     * différé par l'animation. Retourne null si le mouvement est désactivé.
+     */
+    public static Timeline transitionFormulaire(Node formulaire, boolean versInscription) {
+        if (formulaire == null) return null;
+        formulaire.setOpacity(1);
+        formulaire.setTranslateX(0);
+        if (!actives) return null;
+        double depart = versInscription ? 18 : -18;
+        formulaire.setOpacity(0.72);
+        formulaire.setTranslateX(depart);
+        Timeline transition = creerTransitionFormulaire(formulaire, versInscription);
+        lancer(transition);
+        return transition;
+    }
+
+    /** Construction séparée du lancement pour vérifier les étapes sans écran graphique. */
+    static Timeline creerTransitionFormulaire(Node formulaire, boolean versInscription) {
+        double depart = versInscription ? 18 : -18;
+        return new Timeline(
+                new KeyFrame(Duration.ZERO,
+                        new KeyValue(formulaire.opacityProperty(), 0.72),
+                        new KeyValue(formulaire.translateXProperty(), depart)),
+                new KeyFrame(AMPLE,
+                        new KeyValue(formulaire.opacityProperty(), 1, Interpolator.EASE_BOTH),
+                        new KeyValue(formulaire.translateXProperty(), 0, Interpolator.EASE_BOTH)));
+    }
+
     /** Amène immédiatement toutes les animations à leur état final (captures, tests). */
     public static void terminerTout() {
         for (Runnable action : List.copyOf(FINALISATIONS)) {
