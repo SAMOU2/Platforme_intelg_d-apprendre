@@ -1242,3 +1242,224 @@
     -fx-border-color: -color-texte;
     -fx-border-style: segments(4, 3);
 }
+
+/* Écran de connexion : palette nuit, indépendante du thème du reste de l'application. */
+.connexion-nuit {
+    -fx-background-color: linear-gradient(to bottom right, #192436, #14263d);
+}
+.connexion-nuit .connexion-carte-nuit {
+    -fx-background-color: #111c30;
+    -fx-background-radius: 20;
+    -fx-border-color: #344156;
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+    -fx-padding: 38 40 32 40;
+    -fx-effect: dropshadow(gaussian, rgba(4, 12, 25, 0.20), 28, 0, 0, 8);
+}
+.connexion-nuit .connexion-titre {
+    -fx-font-family: "Inter", "Segoe UI", sans-serif;
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f7f9ff;
+}
+.connexion-nuit .connexion-marque {
+    -fx-background-color: #172d50;
+    -fx-background-radius: 20;
+    -fx-border-color: #21477e;
+    -fx-border-radius: 20;
+    -fx-padding: 4 10;
+    -fx-font-weight: bold;
+    -fx-text-fill: #63adff;
+}
+.connexion-nuit .connexion-securite {
+    -fx-text-fill: #9aaac1;
+    -fx-font-size: 14px;
+    -fx-graphic-text-gap: 8;
+    -fx-padding: 0 0 8 0;
+}
+.connexion-icone {
+    -fx-fill: transparent;
+    -fx-stroke: #aab9cd;
+    -fx-stroke-width: 1.8;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+.connexion-nuit .connexion-securite .connexion-icone {
+    -fx-stroke: #19d6a5;
+    -fx-scale-x: 0.68;
+    -fx-scale-y: 0.68;
+}
+.connexion-nuit .connexion-reseau-bouton {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 10;
+    -fx-padding: 9;
+    -fx-cursor: hand;
+}
+.connexion-nuit .connexion-reseau-bouton:hover,
+.connexion-nuit .connexion-reseau-bouton:focused {
+    -fx-background-color: #28384e;
+    -fx-border-color: #5eafff;
+    -fx-border-radius: 10;
+}
+.connexion-nuit .connexion-separation .line {
+    -fx-border-color: #2b394d transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.connexion-nuit .connexion-separation { -fx-padding: 8 0 10 0; }
+.connexion-nuit .connexion-carte-nuit .role-nom {
+    -fx-font-family: "Inter", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #c6d0df;
+    -fx-padding: 3 0 0 0;
+}
+.connexion-nuit .connexion-carte-nuit .text-field,
+.connexion-nuit .connexion-carte-nuit .password-field {
+    -fx-font-family: "Inter", "Segoe UI", sans-serif;
+    -fx-font-size: 16px;
+    -fx-min-height: 52;
+    -fx-background-color: #1c293e;
+    -fx-control-inner-background: #1c293e;
+    -fx-background-radius: 14;
+    -fx-border-color: #3b495d;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-text-fill: #f2f5fb;
+    -fx-prompt-text-fill: #7f90a8;
+}
+.connexion-nuit .connexion-carte-nuit .text-field:focused,
+.connexion-nuit .connexion-carte-nuit .password-field:focused {
+    -fx-border-color: #5ba8ff;
+    -fx-effect: none;
+}
+.connexion-nuit .connexion-champ-icone > .text-field {
+    -fx-padding: 10 14 10 50;
+}
+.connexion-icone-champ {
+    -fx-stroke: #94a7bf;
+    -fx-scale-x: 0.82;
+    -fx-scale-y: 0.82;
+}
+.connexion-nuit .connexion-champ-icone .champ-secret {
+    -fx-background-color: #1c293e;
+    -fx-background-radius: 14;
+    -fx-border-color: #3b495d;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-spacing: 0;
+}
+.connexion-nuit .connexion-champ-icone .champ-secret .text-field,
+.connexion-nuit .connexion-champ-icone .champ-secret .password-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 10 4 10 50;
+}
+.connexion-nuit .connexion-champ-icone .connexion-secret-bouton {
+    -fx-min-width: 44;
+    -fx-min-height: 50;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 8;
+}
+.connexion-icone-oeil {
+    -fx-fill: transparent;
+    -fx-stroke: #9aacc3;
+    -fx-stroke-width: 1.7;
+    -fx-scale-x: 0.8;
+    -fx-scale-y: 0.8;
+}
+.connexion-nuit .connexion-carte-nuit .check-box {
+    -fx-text-fill: #c7d1df;
+    -fx-font-size: 14px;
+    -fx-padding: 8 0 3 0;
+}
+.connexion-nuit .connexion-carte-nuit .connexion-bouton-principal {
+    -fx-background-color: #2861e8;
+    -fx-background-radius: 14;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-min-height: 55;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(36, 98, 245, 0.28), 18, 0, 0, 7);
+}
+.connexion-nuit .connexion-carte-nuit .connexion-bouton-principal:hover { -fx-background-color: #3775fa; }
+.connexion-nuit .connexion-carte-nuit .connexion-action-compte {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #9baac0;
+    -fx-font-size: 13px;
+    -fx-padding: 5 2;
+    -fx-cursor: hand;
+}
+.connexion-nuit .connexion-carte-nuit .connexion-action-compte:hover,
+.connexion-nuit .connexion-carte-nuit .connexion-action-compte:focused {
+    -fx-text-fill: #75b5ff;
+    -fx-underline: true;
+}
+.connexion-nuit .connexion-statut-reseau { -fx-text-fill: #9fb0c7; -fx-font-size: 13px; }
+.connexion-nuit .connexion-statut-reseau:pret { -fx-text-fill: #6bd7b4; }
+.connexion-nuit .connexion-aide {
+    -fx-background-color: #101d31;
+    -fx-background-radius: 14;
+    -fx-border-color: #27364a;
+    -fx-border-radius: 14;
+}
+.connexion-nuit .connexion-aide > .title {
+    -fx-background-color: transparent;
+    -fx-padding: 14 16;
+}
+.connexion-nuit .connexion-aide > .title > .text { -fx-fill: #c6d0df; -fx-font-size: 14px; -fx-font-weight: bold; }
+.connexion-nuit .connexion-aide > .title > .arrow-button .arrow { -fx-background-color: #9eafc5; }
+.connexion-nuit .connexion-aide > .content { -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0 16 16 16; }
+.connexion-nuit .connexion-aide-texte { -fx-text-fill: #a1b2ca; -fx-font-size: 13px; -fx-line-spacing: 3px; }
+.connexion-nuit .connexion-version { -fx-text-fill: #7f90a7; -fx-font-family: monospace; -fx-font-size: 11px; }
+.connexion-nuit .connexion-role { -fx-text-fill: #c2cfdf; -fx-font-size: 12px; -fx-background-color: #1b2b42; -fx-border-color: #304058; -fx-border-radius: 5; -fx-background-radius: 5; -fx-padding: 5 9; }
+.connexion-nuit .connexion-copyright { -fx-text-fill: #738399; -fx-font-size: 12px; }
+
+/* Le menu est une Popup, donc les règles ne dépendent pas d'un parent .connexion-nuit. */
+.connexion-menu-reseau {
+    -fx-background-color: #101c30;
+    -fx-background-radius: 15;
+    -fx-border-color: #3a4a60;
+    -fx-border-radius: 15;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 22, 0, 0, 6);
+}
+.connexion-menu-titre { -fx-text-fill: #93a5bd; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 0 8 5 8; }
+.connexion-menu-reseau .connexion-menu-action {
+    -fx-alignment: center-left;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #d5dfed;
+    -fx-font-size: 14px;
+    -fx-padding: 10 12;
+    -fx-cursor: hand;
+}
+.connexion-menu-reseau .connexion-menu-action:hover,
+.connexion-menu-reseau .connexion-menu-action:focused { -fx-background-color: #1f2c42; -fx-background-radius: 8; }
+.connexion-menu-reseau .connexion-menu-avance > .title { -fx-background-color: #1b293e; -fx-background-radius: 8; -fx-padding: 10 12; }
+.connexion-menu-reseau .connexion-menu-avance > .title > .text { -fx-fill: #d5dfed; }
+.connexion-menu-reseau .connexion-menu-avance > .title > .arrow-button .arrow { -fx-background-color: #a3b2c8; }
+.connexion-menu-reseau .connexion-menu-avance > .content { -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 10 8; }
+.connexion-menu-reseau .label { -fx-text-fill: #b6c3d5; }
+.connexion-menu-reseau .text-field { -fx-background-color: #1c293e; -fx-text-fill: #f2f5fb; -fx-prompt-text-fill: #8b9bb1; -fx-border-color: #41516a; -fx-background-radius: 7; -fx-border-radius: 7; }
+.connexion-menu-reseau .connexion-menu-appliquer { -fx-background-color: #2459c9; -fx-text-fill: white; -fx-background-radius: 7; -fx-cursor: hand; }
+.connexion-menu-reseau .etat-reseau { -fx-background-color: #1a2a40; -fx-text-fill: #c5d2e3; -fx-font-size: 12px; }
+.connexion-nuit .connexion-champ-icone .champ-secret .text-field:focused,
+.connexion-nuit .connexion-champ-icone .champ-secret .password-field:focused {
+    -fx-border-color: #5ba8ff;
+    -fx-border-radius: 13;
+}
+.connexion-menu-reseau .connexion-menu-action .connexion-icone,
+.connexion-nuit .connexion-aide .connexion-icone { -fx-stroke: #69b2ff; }
+.connexion-nuit .connexion-aide > .title { -fx-text-fill: #c6d0df; }
+.connexion-menu-reseau .connexion-menu-avance > .title { -fx-text-fill: #d5dfed; }
+.connexion-menu-reseau .text-field:focused,
+.connexion-menu-reseau .connexion-menu-appliquer:focused { -fx-border-color: #5ba8ff; -fx-border-radius: 7; }
+
+.connexion-nuit .connexion-bouton-principal .connexion-icone { -fx-stroke: white; }
+.connexion-nuit .connexion-carte-nuit .connexion-bouton-principal:focused { -fx-border-color: #a9d1ff; -fx-border-radius: 14; -fx-border-width: 2; }
