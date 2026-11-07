@@ -176,6 +176,8 @@ public final class Router {
         if (fabrique == null) {
             throw new IllegalArgumentException("Route inconnue : " + route);
         }
+        boolean premierAffichage = current == null;
+        boolean ancienEcranPublic = LOGIN.equals(current) || RESEAU.equals(current);
         current = route;
         // Quitter l'écran de test referme la fenêtre d'évaluation, quel que soit le chemin
         // (résultat, parcours, déconnexion) : la règle ne dépend pas des boutons de la vue.
@@ -185,6 +187,11 @@ public final class Router {
 
         // Ces deux écrans précèdent l'accès métier : configuration du poste et connexion serveur.
         boolean public_ = LOGIN.equals(route) || RESEAU.equals(route);
+        if (premierAffichage || ancienEcranPublic != public_) {
+            // La préférence du reste de l'application reste inchangée ; seule la palette
+            // affichée est temporairement sombre sur les écrans publics.
+            ThemeManager.appliquerPourEcran(scene, public_);
+        }
         root.getStyleClass().remove("racine--login");
         if (public_) {
             fr.ihm2026.ui.commun.Notifications.effacer(stage);
@@ -209,6 +216,7 @@ public final class Router {
             root.setLeft(barreLaterale);
         }
         barreTitre.afficherBoutonLaterale(!public_);
+        barreTitre.afficherBoutonTheme(!public_);
         root.setTop(barreTitre);
 
         // Changement de contenu animé : l'ancien s'efface, le nouveau arrive du bon côté.

@@ -38,6 +38,7 @@ public class BarreTitre extends HBox {
     private final Button retour = new Button();
     private final Button avance = new Button();
     private final Button laterale = new Button();
+    private final Button theme = new Button();
     private final Tooltip infoLaterale = new Tooltip();
     /** Action à exécuter quand le style change (installer ou retirer le balayage cathodique). */
     private static Runnable retroActif = () -> { };
@@ -77,7 +78,7 @@ public class BarreTitre extends HBox {
             retroActif.run();
         });
 
-        Button theme = new Button(ThemeManager.isDark() ? "☾" : "☀");
+        theme.setText(ThemeManager.isDark() ? "☾" : "☀");
         theme.getStyleClass().add("bouton-apparence");
         theme.setAccessibleText("Changer l’apparence claire ou sombre");
         theme.setTooltip(new Tooltip("Apparence : clair / sombre"));
@@ -113,6 +114,12 @@ public class BarreTitre extends HBox {
     public void afficherBoutonLaterale(boolean afficher) {
         laterale.setVisible(afficher);
         laterale.setManaged(afficher);
+    }
+
+    /** Le thème de connexion est fixe ; le réglage reste disponible après connexion. */
+    public void afficherBoutonTheme(boolean afficher) {
+        theme.setVisible(afficher);
+        theme.setManaged(afficher);
     }
 
     /** Nomme l'action réellement disponible, au lieu d'un libellé générique afficher/masquer. */

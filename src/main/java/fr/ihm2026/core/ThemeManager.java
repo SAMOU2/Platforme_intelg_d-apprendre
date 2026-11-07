@@ -21,6 +21,7 @@ public final class ThemeManager {
      * l'utilisateur peut retrouver son réglage dans un raccourci.
      */
     private static boolean dark = "dark".equalsIgnoreCase(System.getProperty("ihm.theme", "light"));
+    private static final String ECRAN_CONNEXION = ThemeManager.class.getName() + ".connexion";
 
     public static boolean isDark() {
         return dark;
@@ -61,22 +62,36 @@ public final class ThemeManager {
         }
     }
 
-    /** Applique le thème courant à la scène (ordre : AtlantaFX, app.css, surcharge de thème). */
+    /** Applique la préférence courante, sauf sur un écran de connexion fixé en sombre. */
     public static void apply(Scene scene) {
-        // Le style rétro est un thème sombre : il doit aussi recevoir la feuille d'agent sombre,
-        // sinon les commandes que nous ne redéfinissons pas (en-têtes d'onglets, barres de
-        // défilement, zones de saisie) gardent les gris clairs de PrimerLight et font des taches
-        // blanches sur le fond phosphore.
-        boolean sombre = dark || StyleVisuel.estRetro();
+        boolean connexion = Boolean.TRUE.equals(scene.getProperties().get(ECRAN_CONNEXION));
+        boolean paletteSombre = paletteSombre(dark, connexion);
+        // Le style rétro utilise aussi la feuille d'agent sombre, indépendamment de la
+        // préférence clair/sombre stockée, comme avant.
+        boolean agentSombre = paletteSombre || StyleVisuel.estRetro();
         Application.setUserAgentStylesheet(
-                (sombre ? new PrimerDark() : new PrimerLight()).getUserAgentStylesheet());
+                (agentSombre ? new PrimerDark() : new PrimerLight()).getUserAgentStylesheet());
         scene.getStylesheets().setAll(
                 css("/fr/ihm2026/css/app.css"),
-                css(dark ? "/fr/ihm2026/css/theme-dark.css" : "/fr/ihm2026/css/theme-light.css"),
+                css(paletteSombre ? "/fr/ihm2026/css/theme-dark.css" : "/fr/ihm2026/css/theme-light.css"),
                 css("/fr/ihm2026/css/retro.css"),
                 css("/fr/ihm2026/css/syntax/syntax-java.css"),
                 css("/fr/ihm2026/css/syntax/syntax-python.css"),
                 css("/fr/ihm2026/css/syntax/syntax-cpp.css"));
+    }
+
+    /**
+     * La connexion utilise toujours la palette sombre, sans changer la préférence de
+     * l'utilisateur pour les écrans métier. L'état est lié à la scène afin qu'une bascule
+     * d'apparence retardée par son animation respecte aussi l'écran actuellement affiché.
+     */
+    public static void appliquerPourEcran(Scene scene, boolean connexion) {
+        scene.getProperties().put(ECRAN_CONNEXION, connexion);
+        apply(scene);
+    }
+
+    static boolean paletteSombre(boolean preferenceSombre, boolean connexion) {
+        return connexion || preferenceSombre;
     }
 
     private static String css(String path) {

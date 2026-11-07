@@ -32,3 +32,11 @@ La durée suit `ihm.animations.echelle` comme les autres animations de l'applica
 À vérifier sur les postes : allers-retours rapides, navigation Tab/Entrée, petits écrans avec
 défilement, inscription, activation et saisie de code, puis même parcours avec les animations
 désactivées. Les changements de mode ne déclenchent aucune requête réseau supplémentaire.
+
+## Apparence du login
+
+Le login et l'écran de poste non configuré utilisent toujours la palette sombre ; leur bouton
+clair/sombre est masqué. Après connexion, le bouton réapparaît et la préférence d'apparence
+précédente (ou la valeur de `-Dihm.theme`) est restaurée. Le bouton de style rétro et les autres
+commandes de fenêtre restent indépendants. Vérifier le passage login → application → déconnexion
+avec une préférence claire puis sombre, ainsi que la lisibilité du menu réseau et des dialogues.
