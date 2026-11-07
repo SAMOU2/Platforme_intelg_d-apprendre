@@ -112,6 +112,10 @@ Cette préparation se fait **une seule fois sur le poste choisi comme PC1**. Si 
 
 > Ne jamais copier `configuration-PC1.local.cmd` ni un fichier `.p12` sur un client. Seul le certificat public `.crt` peut être transmis.
 
+> Pour distribuer les postes clients sans fournir le code source, voir la fabrication des
+> [installateurs Windows](docs/installateurs-windows.md). Les MSI doivent être construits sur
+> Windows et ne remplacent pas la préparation du serveur PC1 ci-dessus.
+
 ### 4.2 Démarrage normal
 
 #### Sur PC1

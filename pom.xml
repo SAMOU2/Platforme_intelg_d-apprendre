@@ -103,6 +103,21 @@
         <version>3.2.5</version>
       </plugin>
 
+      <!-- Les dépendances runtime sont placées à côté du JAR pour les installateurs jpackage. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <mainClass>fr.ihm2026.Launcher</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
       <!-- mvn javafx:run -->
       <plugin>
         <groupId>org.openjfx</groupId>
