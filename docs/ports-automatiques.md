@@ -77,3 +77,37 @@ second lancement HTTPS sans doublon ; découverte depuis PC1 puis un autre PC ; 
 activation et connexion OTP sur le port annoncé ; arrêt et redécouverte après redémarrage ;
 connexion manuelle avec port ; règle pare-feu. L'absence d'erreur de syntaxe et les contrôles
 Python ne remplacent pas ces essais.
+
+## Diagnostic d'un port HTTPS inaccessible depuis un autre PC
+
+Un certificat valide et un Wi-Fi de même nom ne prouvent pas que le port TCP est joignable.
+Sur PC1, laissez ouvertes **authentification-PC1.bat** et **1-serveur-PC1.bat** et relevez
+l'IPv4 de la carte utilisée ainsi que le port réellement affiché par l'authentification.
+Le port peut changer après chaque redémarrage, même si une préférence est configurée.
+
+1. Depuis le poste client à jour, exécutez `postes\tester-reseau-https.cmd` et saisissez
+   cette IPv4 et ce port. Le test n'envoie ni identifiant ni mot de passe. Un succès indique
+   seulement que TCP est ouvert, pas que le certificat ou le compte est valide.
+2. En cas d'échec TCP, vérifiez que l'adresse et le port correspondent toujours à PC1, que
+   le service écoute encore et qu'aucun VPN, pare-feu ou isolation entre clients Wi-Fi
+   (réseau invité / point d'accès) ne bloque les connexions. La découverte UDP peut fonctionner
+   alors que TCP est bloqué ; l'inverse est également possible.
+3. Si la politique réseau l'autorise, sur **PC1** lancez par clic droit **Exécuter en tant
+   qu'administrateur** `postes\autoriser-https-pare-feu.cmd`, après démarrage du service.
+   Après confirmation, il crée une règle entrante TCP limitée au programme Java du serveur,
+   au port actif, au sous-réseau local et au profil Windows **Privé**. Il ne désactive ni le
+   pare-feu ni TLS. Relancez-le après chaque changement de port ou de JDK. Le réseau doit
+   effectivement utiliser le profil Privé ; sur un réseau Public ou Domaine, consultez
+   l'administrateur réseau plutôt que d'élargir la règle sans autorisation. Pour supprimer
+   la règle : Pare-feu Windows avancé → règles de trafic entrant → « IHM 2026 HTTPS
+   (port courant) ». Les règles de blocage ou politiques de l'établissement peuvent prévaloir.
+4. Si TCP réussit mais que l'application échoue, utilisez `postes\verifier-certificat-https.cmd`
+   avec le JDK du client et consultez les journaux HTTPS sur PC1. Le diagnostic de certificat
+   utilise un contrôle de nom plus strict que l'application. Ne partagez jamais de mot de
+   passe, code OTP, jeton de session, clé privée ou journal contenant ces données.
+
+Si la découverte n'aboutit pas, saisir l'adresse et le port dans les options avancées ; un
+port saisi manuellement est conservé pendant les recherches en arrière-plan. Refermez les
+options avancées et cliquez sur Réessayer pour revenir à la sélection automatique. La règle
+ci-dessus n'ouvre pas UDP 7777 pour la découverte ni le port du serveur de salle : si nécessaire,
+faire autoriser ces flux séparément par l'administrateur réseau.

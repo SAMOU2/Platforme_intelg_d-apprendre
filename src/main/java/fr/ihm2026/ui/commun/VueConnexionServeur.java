@@ -69,6 +69,14 @@ public class VueConnexionServeur extends StackPane {
     private long generationDecouverte;
     private final TextField portHttpsManuel = new TextField(Integer.toString(ClientAuthentificationHttps.portConfigure()));
     private int portChoisi = ClientAuthentificationHttps.portConfigure();
+    private boolean portSaisiManuellement;
+    private boolean miseAJourPortAutomatique;
+
+    private void afficherPortAutomatique(int port) {
+        miseAJourPortAutomatique = true;
+        try { portHttpsManuel.setText(Integer.toString(port)); }
+        finally { miseAJourPortAutomatique = false; }
+    }
     /** Dernier couple hote:port deja rechauffe ; evite de relancer l'echauffement a chaque tick. */
     private String prechauffageCle = null;
     private int portChallenge;
@@ -103,7 +111,7 @@ public class VueConnexionServeur extends StackPane {
 
     private int portHttpsPour(String hote) {
         int port = portChoisi;
-        if (fr.ihm2026.reseau.InterfacesReseau.adresseLocale(hote)) {
+        if (!portSaisiManuellement && fr.ihm2026.reseau.InterfacesReseau.adresseLocale(hote)) {
             int publie = fr.ihm2026.reseau.InstanceHttpsLocale.portActif();
             if (publie > 0) {
                 if (publie != port) {
@@ -123,6 +131,7 @@ public class VueConnexionServeur extends StackPane {
                 "Un rôle de poste doit être configuré avant la connexion.");
         portHttpsManuel.textProperty().addListener((o,a,b) -> {
             try { portChoisi=Integer.parseInt(b.strip()); } catch(NumberFormatException ex){portChoisi=-1;}
+            if (!miseAJourPortAutomatique) portSaisiManuellement = true;
         });
         getStyleClass().add("login-view");
         boolean visuelConnexion = PanneauVisuelConnexion.roleEligible(role);
@@ -164,7 +173,8 @@ public class VueConnexionServeur extends StackPane {
         serveurs.setOnAction(e -> {
             var choix = serveurs.getValue();
             if (choix != null && !adresseServeur.isDisabled()) {
-                portHttpsManuel.setText(Integer.toString(choix.portHttps()));
+                portSaisiManuellement = false;
+                afficherPortAutomatique(choix.portHttps());
                 adresseServeur.setText(choix.hote());
                 prechaufferSiPossible();
                 if (choix.portHttps() == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
@@ -193,14 +203,15 @@ public class VueConnexionServeur extends StackPane {
                             for (var candidat : liste) {
                                 if (candidat.hote().equals(hoteManuel)
                                         && candidat.portHttps() != fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
-                                    portHttpsManuel.setText(Integer.toString(candidat.portHttps()));
+                                    if (!portSaisiManuellement) afficherPortAutomatique(candidat.portHttps());
                                     prechaufferSiPossible();
                                     etatDecouverte.setText("Adresse manuelle conservée (" + hoteManuel
-                                            + "), port HTTPS pris du réseau : " + candidat.portHttps() + ".");
+                                            + "), " + (portSaisiManuellement ? "port saisi conservé : " + portChoisi
+                                            : "port HTTPS pris du réseau : " + candidat.portHttps()) + ".");
                                     return;
                                 }
                             }
-                            if (portChoisi == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
+                            if (!portSaisiManuellement && portChoisi == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
                                 etatDecouverte.setText("Port HTTPS non annoncé pour " + hoteManuel + " : la valeur "
                                         + fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI
                                         + " est un ancien repli. Videz l'adresse pour revenir à la découverte "
@@ -216,7 +227,8 @@ public class VueConnexionServeur extends StackPane {
                         if (liste.size() == 1) {
                             serveurs.getSelectionModel().selectFirst();
                             adresseServeur.setText(liste.get(0).hote());
-                            portHttpsManuel.setText(Integer.toString(liste.get(0).portHttps()));
+                            portSaisiManuellement = false;
+                            afficherPortAutomatique(liste.get(0).portHttps());
                             prechaufferSiPossible();
                             if (liste.get(0).portHttps() == fr.ihm2026.reseau.DecouverteServeurs.PORT_REPLI) {
                                 etatDecouverte.setText("Plateforme trouvée, mais son port HTTPS n'est pas annoncé "
@@ -247,7 +259,10 @@ public class VueConnexionServeur extends StackPane {
                     });
         };
         actualiserServeurs.setOnAction(e -> {
-            if (!avance.isExpanded()) adresseServeur.clear();
+            if (!avance.isExpanded()) {
+                portSaisiManuellement = false;
+                adresseServeur.clear();
+            }
             rechercher.run();
         });
         new ActualisationVue<Long>(this,System::nanoTime,tick -> {

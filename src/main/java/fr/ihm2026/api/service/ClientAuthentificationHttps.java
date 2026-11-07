@@ -66,16 +66,39 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         return builder.build();
     }
 
-    private static ErreurAuthentification inaccessible(String hote, int port, Exception ex) {
-        return new ErreurAuthentification("Service HTTPS d'authentification inaccessible (" + hote + ":"
-                + port + "). Verifier que la fenetre d'authentification est ouverte, que ce port est bien "
-                + "celui affiche dans cette fenetre, et que le poste est sur le meme reseau Wi-Fi.", ex);
+    /** Distingue les erreurs de transport sans afficher les messages internes ou les secrets. */
+    static ErreurAuthentification inaccessible(String hote, int port, Exception ex) {
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause instanceof javax.net.ssl.SSLException) return certificatInconnu(ex);
+        }
+        String cible = hote + ":" + port;
+        String aide = " Vérifiez l'adresse et le port affichés sur PC1. Sur le poste client, "
+                + "lancez postes\\tester-reseau-https.cmd ; si TCP échoue, vérifiez le pare-feu "
+                + "de PC1 et l'isolation des clients Wi-Fi.";
+        if (ex instanceof java.net.http.HttpConnectTimeoutException) {
+            return new ErreurAuthentification("Délai de connexion HTTPS dépassé (" + cible + ")." + aide, ex);
+        }
+        if (ex instanceof java.net.http.HttpTimeoutException) {
+            return new ErreurAuthentification("Le service HTTPS n'a pas répondu à temps (" + cible
+                    + "). Vérifiez également les journaux du service sur PC1." + aide, ex);
+        }
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause instanceof java.net.ConnectException) {
+                return new ErreurAuthentification("Connexion HTTPS impossible ou refusée (" + cible
+                        + "). Vérifiez que le service d'authentification fonctionne sur PC1." + aide, ex);
+            }
+            if (cause instanceof java.net.UnknownHostException) {
+                return new ErreurAuthentification("Adresse du serveur introuvable (" + cible + ")." + aide, ex);
+            }
+        }
+        return new ErreurAuthentification("Échange HTTPS interrompu ou impossible (" + cible
+                + "). Consultez aussi les journaux du service sur PC1." + aide, ex);
     }
 
     private static ErreurAuthentification certificatInconnu(Exception ex) {
-        return new ErreurAuthentification("Certificat HTTPS non reconnu : l'autorite privee de la plateforme "
-                + "n'est pas approuvee dans ce JDK (lancer postes\\approuver-autorite-client.bat), ou le serveur "
-                + "n'est pas celui de la plateforme.", ex);
+        return new ErreurAuthentification("Échec TLS : vérifiez le certificat du serveur et l'autorité "
+                + "approuvée dans le JDK de ce poste (postes\\verifier-certificat-https.cmd), ainsi que "
+                + "les journaux du service sur PC1. Ne désactivez pas la vérification TLS.", ex);
     }
     private final URI base;
     private final Compte compte;
@@ -148,7 +171,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new ErreurAuthentification("Activation interrompue.", ex);
         } catch (IOException ex) {
-            throw new ErreurAuthentification("Activation impossible : vérifier HTTPS et le serveur.", ex);
+            throw inaccessible(hote, port, ex);
         }
     }
 

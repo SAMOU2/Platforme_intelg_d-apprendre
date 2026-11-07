@@ -169,14 +169,14 @@ adresses du certificat ; elles ne remplacent pas une IP LAN par 127.0.0.1.
 
 L'écran de connexion relance périodiquement la découverte. En mode adresse manuelle
 (Options avancées ouvertes avec une adresse saisie), l'adresse reste celle de l'utilisateur :
-la recherche ne l'écrase jamais, elle se contente d'actualiser le port HTTPS annoncé pour
-cette même adresse. Les recherches se suspendent pendant la connexion/OTP. Aucun nom, mot de
+la recherche ne l'écrase jamais. Elle actualise le port annoncé pour cette même adresse,
+sauf si le port a été saisi manuellement : dans ce cas, il reste inchangé. Les recherches se suspendent pendant la connexion/OTP. Aucun nom, mot de
 passe, OTP ou formulaire n'est effacé par une recherche en fond.
 
 Le port HTTPS est **entièrement automatique** : les lanceurs PC1 demandent le port 0, donc un
 port libre choisi au démarrage, publié dans le registre puis annoncé aux postes par la
-découverte (UDP 7777). Rien n'est à saisir sur les clients, même avec une adresse écrite à la
-main : la découverte actualise le port sans jamais écraser l'adresse. La valeur 8443 n'est
+découverte (UDP 7777). En l'absence de saisie manuelle du port, la découverte peut l'actualiser
+sans écraser l'adresse. Un port saisi manuellement reste prioritaire. La valeur 8443 n'est
 qu'un marqueur : si elle apparaît à l'écran, c'est qu'aucun port n'a été annoncé, et le
 message le dit.
 Après un changement de Wi-Fi, attendre la nouvelle annonce et la rotation du certificat
