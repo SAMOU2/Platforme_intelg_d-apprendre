@@ -116,6 +116,11 @@ Attention : ce diagnostic utilise les contrôles stricts du JDK (chaîne **et** 
 l'application, elle, se fie à l'autorité privée sans exiger le nom (voir ci-dessus). Un refus de
 nom dans le diagnostic n'annonce donc pas forcément un échec de l'application.
 
+Si le message de l'application indique le port **8443**, aucun port HTTPS n'a été annoncé :
+c'est la valeur de repli historique, jamais le port réel. Vérifier que la fenêtre
+d'authentification est bien ouverte (elle publie son port dans `.ihm-runtime\https.port` et
+dans `%USERPROFILE%\.ihm2026-reseau`), puis cliquer sur « Réessayer ».
+
 Interprétation : échec de confiance avec un SAN qui ne contient pas l'adresse utilisée ⇒
 certificat non encore renouvelé pour le réseau courant (attendre la rotation) ou mauvaise
 adresse ; échec sans certificat ⇒ port/adresse erronés, service arrêté ou pare-feu. Un code

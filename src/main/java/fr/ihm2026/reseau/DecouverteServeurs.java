@@ -9,8 +9,11 @@ import java.util.*;
 public final class DecouverteServeurs {
     private DecouverteServeurs() { }
 
+    /** Valeur de repli historique : elle ne doit plus jamais être utilisée à l'aveugle. */
+    public static final int PORT_REPLI = 8443;
+
     public record Serveur(String nom, String hote, int portHttps) {
-        public Serveur(String nom,String hote){this(nom,hote,8443);}
+        public Serveur(String nom,String hote){this(nom,hote,PORT_REPLI);}
         @Override public String toString() { return nom; }
     }
 
@@ -26,6 +29,7 @@ public final class DecouverteServeurs {
         if (port < 1 || port > 65535) throw new IllegalArgumentException("Port invalide");
         Map<String, Serveur> trouves = new LinkedHashMap<>();
         Set<String> clesModernes = new HashSet<>();
+        Set<String> depuisRegistreLocal = new HashSet<>();
         Set<InetAddress> destinations = new LinkedHashSet<>();
         destinations.add(InetAddress.getByName("255.255.255.255"));
         for (NetworkInterface carte : Collections.list(NetworkInterface.getNetworkInterfaces())) {
@@ -57,12 +61,26 @@ public final class DecouverteServeurs {
                 String texte = new String(paquet.getData(), paquet.getOffset(), paquet.getLength(), StandardCharsets.UTF_8);
                 Serveur serveur = lireAnnonce(texte, paquet.getAddress().getHostAddress());
                 if (serveur != null) {
+                    boolean annonceV3 = texte.startsWith("IHM2026:SERVER:3:");
+                    // Même PC et annonce sans port : lire le registre du port HTTPS plutot
+                    // que de laisser le poste viser 8443, qui n'est jamais le port reel.
+                    boolean depuisRegistre = false;
+                    if (!annonceV3 && locale != null) {
+                        int publie = InstanceHttpsLocale.portActif();
+                        if (publie > 0) {
+                            serveur = new Serveur(serveur.nom(), serveur.hote(), publie);
+                            depuisRegistre = true;
+                        }
+                    }
                     String cle=locale!=null ? "ce-pc" : serveur.hote();
-                    // Une annonce v3 (port HTTPS réel) remplace un repli v2 pour la même
-                    // clé, mais une seconde réponse v3 du même PC (autre carte) ne doit
+                    // Une annonce avec le port HTTPS réel remplace un repli sans port pour
+                    // la même clé, mais une seconde réponse du même PC (autre carte) ne doit
                     // pas écraser la première au hasard de l'ordre d'arrivée.
-                    if (texte.startsWith("IHM2026:SERVER:3:")) {
-                        if (clesModernes.add(cle)) trouves.put(cle, serveur);
+                    if (annonceV3 || depuisRegistre) {
+                        if (clesModernes.add(cle) || (annonceV3 && depuisRegistreLocal.remove(cle))) {
+                            trouves.put(cle, serveur);
+                        }
+                        if (depuisRegistre) depuisRegistreLocal.add(cle);
                     } else if (!clesModernes.contains(cle)) {
                         trouves.putIfAbsent(cle, serveur);
                     }
@@ -73,7 +91,7 @@ public final class DecouverteServeurs {
     }
 
     static Serveur lireAnnonce(String texte, String hote) {
-        int portHttps=8443;
+        int portHttps=PORT_REPLI;
         if(texte.startsWith("IHM2026:SERVER:3:")) {
             String[] champs=texte.substring("IHM2026:SERVER:3:".length()).split(":",2);
             if(champs.length!=2)return null;
