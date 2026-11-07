@@ -36,8 +36,10 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     public static final int PORT_PAR_DEFAUT = 8443;
     private static final Duration DELAI_CONNEXION = Duration.ofSeconds(5);
     private static final Duration DELAI_REQUETE = Duration.ofSeconds(8);
-    // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS.
-    private static final Duration DELAI_ENVOI_EMAIL = Duration.ofSeconds(60);
+    // Les routes qui envoient un e-mail attendent aussi les échanges SMTP/TLS, et la
+    // première requête d'une JVM doit charger le magasin de confiance : 60 s était trop
+    // court sur les postes lents, ce qui produisait « service inaccessible » à tort.
+    private static final Duration DELAI_ENVOI_EMAIL = Duration.ofSeconds(120);
     private static final Duration DELAI_DECISIONS_LOT = Duration.ofMinutes(3);
     private static final int LOT_DECISIONS_MAX = 20;
 
@@ -582,7 +584,18 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     }
 
     private static JsonNode envoyer(HttpRequest requete) throws IOException, InterruptedException {
-        HttpResponse<String> reponse = HTTP.send(requete, HttpResponse.BodyHandlers.ofString());
+        long debut = System.nanoTime();
+        HttpResponse<String> reponse;
+        try {
+            reponse = HTTP.send(requete, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException ex) {
+            LOGGER.warning("[auth-client] echec " + requete.method() + " " + requete.uri()
+                    + " apres " + dureeMs(debut) + " ms : " + ex.getClass().getSimpleName()
+                    + " : " + ex.getMessage());
+            throw ex;
+        }
+        LOGGER.info("[auth-client] " + requete.method() + " " + requete.uri() + " -> HTTP "
+                + reponse.statusCode() + " en " + dureeMs(debut) + " ms");
         if ("/api/ia/aide".equals(requete.uri().getPath()) && reponse.statusCode() != 200) {
             LOGGER.warning("[ia-pc1] HTTP " + reponse.statusCode()
                     + " : consulter le service HTTPS (session, contexte, quota ou version serveur).");
@@ -602,6 +615,10 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
             throw new ErreurAuthentification(message);
         }
         return resultat;
+    }
+
+    private static long dureeMs(long debutNano) {
+        return java.time.Duration.ofNanos(System.nanoTime() - debutNano).toMillis();
     }
 
     private static URI base(String hote, int port) {
