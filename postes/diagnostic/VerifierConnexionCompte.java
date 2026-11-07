@@ -130,15 +130,21 @@ public class VerifierConnexionCompte {
         System.out.println("Corps : " + reponse);
         System.out.println("");
         System.out.println("=== Interpretation ===");
-        if (statut == 200) {
+        if (statut == 200 || statut == 202) {
             if (reponse.contains("\"jeton\"")) {
                 System.out.println("CONNEXION OK : session ouverte directement");
                 System.out.println("(poste de confiance encore valide, aucun code e-mail demande).");
             } else if (reponse.contains("\"identifiant\"")) {
                 System.out.println("CONNEXION OK : le serveur a accepte e-mail et mot de passe.");
                 System.out.println("Il a envoye un code par e-mail : saisir ce code dans l'interface.");
+                System.out.println("(202 = demande acceptee et traitee en cours d'envoi du courriel.)");
             } else {
-                System.out.println("Reponse inattendue du serveur (200 sans jeton ni identifiant).");
+                System.out.println("Reponse inattendue du serveur (" + statut
+                        + " sans jeton ni identifiant).");
+            }
+            if (duree > 15000) {
+                System.out.println("Attention : " + duree + " ms avant la reponse. Le poste abandonne a 60 s ;");
+                System.out.println("un envoi de courriel lent declenche donc « service inaccessible ».");
             }
         } else if (statut == 401) {
             System.out.println("IDENTIFIANTS REFUSES : e-mail ou mot de passe incorrect,");

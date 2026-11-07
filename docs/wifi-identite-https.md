@@ -119,11 +119,16 @@ Une session en cours est interrompue : c'est le but d'une relance complète.
 connexion (`POST /api/auth/connexion`) avec la même confiance, puis interprète la réponse :
 
 - `HTTP 200` avec `jeton` → session ouverte (poste de confiance encore valide) ;
-- `HTTP 200` avec `identifiant` → **e-mail et mot de passe acceptés**, code envoyé par e-mail ;
+- `HTTP 202` (ou `200`) avec `identifiant` → **e-mail et mot de passe acceptés**, code envoyé par
+  e-mail : c'est le fonctionnement normal d'une connexion par code ;
 - `HTTP 401` → identifiants refusés : le serveur répond donc, le problème n'est ni le
   certificat, ni le port, ni le réseau ;
 - `HTTP 403` → compte non activé (PIN) ou non accepté par l'administrateur ;
 - erreur de connexion → port obsolète, service arrêté ou pare-feu.
+
+Si la réponse dépasse 15 s, le script le signale : l'application abandonne à 60 s, donc un envoi
+de courriel trop lent se traduit par « service inaccessible ». Depuis la PR #53, le serveur
+répond sans attendre la fin de l'envoi du courriel (attente bornée à 10 s).
 
 Le mot de passe est demandé sans affichage, transmis directement au programme Java : jamais en
 argument (visible dans le gestionnaire de tâches), jamais écrit sur le disque, jamais affiché.
