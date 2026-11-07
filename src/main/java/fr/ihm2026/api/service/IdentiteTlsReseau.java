@@ -38,6 +38,9 @@ public final class IdentiteTlsReseau implements AutoCloseable {
         },10,10,TimeUnit.SECONDS);
     }
     public SSLContext contexte(){return contexte;}
+
+    /** Adresses couvertes par le certificat en cours ; sert au préchauffage du service. */
+    public synchronized java.util.Set<String> adressesCertifiees(){return dernieres;}
     X509Certificate certificatCourant(){return cles.getCertificateChain(cles.chooseServerAlias("RSA",null,null))[0];}
     static Set<String> adressesReseau() throws SocketException {
         Set<String> resultat=new TreeSet<>();
