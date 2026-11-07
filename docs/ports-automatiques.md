@@ -111,3 +111,16 @@ port saisi manuellement est conservé pendant les recherches en arrière-plan. R
 options avancées et cliquez sur Réessayer pour revenir à la sélection automatique. La règle
 ci-dessus n'ouvre pas UDP 7777 pour la découverte ni le port du serveur de salle : si nécessaire,
 faire autoriser ces flux séparément par l'administrateur réseau.
+
+## Délais du client HTTPS
+
+Le client laisse jusqu'à 30 secondes pour établir une nouvelle connexion HTTPS (au lieu de
+5 secondes). Les requêtes d'activation, de confirmation du code et d'oubli d'un appareil ont
+un délai global de 45 secondes ; la connexion et l'inscription gardent leur délai global de
+120 secondes. Le préchauffage est limité à 45 secondes. Ces limites ne désactivent pas TLS
+et ne déclenchent pas de nouvelle tentative automatique pouvant répéter une opération.
+
+Il faut relancer le client à jour pour appliquer ces valeurs. Une connexion toujours bloquée
+après 30 secondes peut venir d'un port périmé, du pare-feu ou de l'isolation Wi-Fi : augmenter
+le délai ne rend pas un service inaccessible joignable. Vérifier le port actuel de PC1 et
+exécuter `postes\tester-reseau-https.cmd` **sur le poste qui affiche l'erreur**.
