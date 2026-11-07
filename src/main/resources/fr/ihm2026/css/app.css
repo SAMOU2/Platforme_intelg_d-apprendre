@@ -1619,3 +1619,14 @@
 .connexion-nuit .connexion-aide-titre { -fx-text-fill: #f4f7fd; -fx-font-size: 14px; -fx-font-weight: bold; }
 .connexion-nuit .connexion-aide-sous-titre { -fx-text-fill: #aabbd1; -fx-font-size: 12px; }
 .connexion-nuit .connexion-version { -fx-font-family: "Inter", "Segoe UI", sans-serif; -fx-text-fill: #aabbd1; -fx-font-size: 12px; }
+
+/* Phrases de fond : contraste doux et aucun encadrement supplémentaire. */
+.connexion-nuit .connexion-conseil-volant {
+    -fx-text-fill: #aabbd1;
+    -fx-opacity: 0.78;
+    -fx-font-family: "Inter", "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-line-spacing: 3px;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}

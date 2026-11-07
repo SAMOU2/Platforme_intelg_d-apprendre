@@ -40,3 +40,16 @@ clair/sombre est masqué. Après connexion, le bouton réapparaît et la préfé
 précédente (ou la valeur de `-Dihm.theme`) est restaurée. Le bouton de style rétro et les autres
 commandes de fenêtre restent indépendants. Vérifier le passage login → application → déconnexion
 avec une préférence claire puis sombre, ainsi que la lisibilité du menu réseau et des dialogues.
+
+## Conseils animés en arrière-plan
+
+Sur le login, six phrases de motivation et conseils de programmation flottent lentement dans
+les marges, derrière le formulaire. Elles ne sont pas interactives et ne reçoivent pas le focus.
+Pour préserver la lisibilité, elles disparaissent sur les petites fenêtres (moins de 1100 × 540).
+Avec `-Dihm.animations=off`, elles restent immobiles sur les grands écrans. Le mouvement s'arrête
+lorsque l'écran est quitté et suit l'échelle `ihm.animations.echelle`.
+
+À vérifier sur un poste JavaFX : ouvrir le login en 1280×720 et en plein écran, redimensionner
+sous le seuil puis agrandir, utiliser le formulaire et le menu réseau, aller en inscription,
+se connecter et revenir ; refaire avec les animations désactivées. Les conseils doivent rester
+dans les marges, sans masquer les champs ni gêner le clavier ou la souris.
