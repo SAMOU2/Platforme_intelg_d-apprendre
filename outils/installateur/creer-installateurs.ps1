@@ -33,12 +33,37 @@ try {
     if ($release -notmatch '(?m)^OS_ARCH="(?:amd64|x86_64)"') {
         throw 'La fabrication et les installateurs sont prevus pour Windows x64.'
     }
-    # jpackage a besoin des outils WiX v3 sur le PATH pour produire un MSI.
+    # Accepter WiX deja sur le PATH ou son installation habituelle, y compris au double-clic.
+    $dossiersWix = @()
+    if ($env:WIX) { $dossiersWix += (Join-Path $env:WIX 'bin') }
+    $programmes86 = ${env:ProgramFiles(x86)}
+    if ($programmes86 -and (Test-Path -LiteralPath $programmes86)) {
+        $dossiersWix += @(Get-ChildItem -LiteralPath $programmes86 -Directory -Filter 'WiX Toolset v3*' |
+            Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'bin' })
+    }
+    foreach ($dossier in $dossiersWix) {
+        if ((Test-Path -LiteralPath (Join-Path $dossier 'candle.exe')) -and
+            (Test-Path -LiteralPath (Join-Path $dossier 'light.exe'))) {
+            $env:PATH = $dossier + ';' + $env:PATH
+            break
+        }
+    }
     if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue) -or
         -not (Get-Command light.exe -ErrorAction SilentlyContinue)) {
-        throw 'WiX Toolset 3 est requis : ajouter son dossier bin au PATH (candle.exe et light.exe).'
+        throw 'WiX Toolset 3 introuvable. Installer avec : winget install --id WiXToolset.WiXToolset --version 3.14.1.8722 --exact --source winget'
     }
-    if (-not $CertificatPublic) { $CertificatPublic = Read-Host 'Chemin du certificat PUBLIC .crt ou .cer de PC1' }
+    if (-not $CertificatPublic) {
+        $defaut = Join-Path $racine 'postes\secrets\autorite-ihm.crt'
+        if (Test-Path -LiteralPath $defaut -PathType Leaf) {
+            Write-Host "Certificat public local propose : $defaut"
+            $CertificatPublic = Read-Host 'Appuyer sur Entree pour ce fichier, ou saisir un autre chemin .crt/.cer'
+            if (-not $CertificatPublic) { $CertificatPublic = $defaut }
+        } else {
+            Write-Host 'Certificat public de PC1 introuvable dans postes\secrets\autorite-ihm.crt.'
+            Write-Host 'Copier uniquement le .crt de PC1 sur ce PC, ou preparer PC1 avant de continuer.'
+            $CertificatPublic = Read-Host 'Chemin du certificat PUBLIC .crt ou .cer de PC1'
+        }
+    }
     $CertificatPublic = $CertificatPublic.Trim().Trim('"')
     if ([IO.Path]::GetExtension($CertificatPublic).ToLowerInvariant() -notin @('.crt', '.cer')) {
         throw 'Fournir uniquement un certificat public .crt ou .cer, jamais une cle privee ou un .p12.'
@@ -64,6 +89,8 @@ try {
     } finally { $cert.Dispose() }
     Write-Host "Empreinte SHA-256 du certificat : $empreinte"
     Write-Host 'Comparer avec PC1 par un canal fiable, independamment du fichier recu.'
+    Write-Host 'Sur PC1, depuis le dossier du projet, ouvrir un autre PowerShell et executer :'
+    Write-Host '  & "$env:JAVA_HOME\bin\keytool.exe" -printcert -file .\postes\secrets\autorite-ihm.crt'
     if (-not $EmpreinteSHA256) { $EmpreinteSHA256 = Read-Host 'Saisir l empreinte SHA-256 verifiee sur PC1' }
     $attendue = ($EmpreinteSHA256 -replace '[:\s-]', '').ToUpperInvariant()
     if ($attendue -notmatch '^[0-9A-F]{64}$' -or $attendue -ne $empreinte) {
@@ -107,10 +134,19 @@ try {
                 '--vendor', 'Plateforme apprentissage', '--input', $entree, '--dest', $sortie,
                 '--main-jar', 'plateforme.jar', '--main-class', 'fr.ihm2026.Launcher',
                 '--runtime-image', $runtime, '--arguments', "--role=$($r.Role) --poste=$($r.Poste) --port=7777",
-                '--win-per-user-install', '--win-menu', '--win-shortcut', '--win-upgrade-uuid', $r.UUID)
+                '--win-per-user-install', '--install-dir', ('Programs\' + $r.Nom),
+                '--win-menu', '--win-shortcut', '--win-upgrade-uuid', $r.UUID)
         }
+        $msis = @(Get-ChildItem -LiteralPath $sortie -Filter '*.msi')
+        if ($msis.Count -ne 3) { throw "Trois MSI attendus, $($msis.Count) trouves." }
+        $sommes = @($msis | Sort-Object Name | ForEach-Object {
+            $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
+            $hash.Hash + '  ' + $_.Name
+        })
+        Set-Content -LiteralPath (Join-Path $sortie 'SHA256SUMS.txt') -Value $sommes -Encoding ASCII
         Write-Host "`n[OK] Installateurs crees dans : $sortie" -ForegroundColor Green
-        Get-ChildItem -LiteralPath $sortie -Filter '*.msi' | ForEach-Object { Write-Host $_.Name }
+        $msis | ForEach-Object { Write-Host $_.Name }
+        Write-Host 'SHA256SUMS.txt contient les empreintes des trois MSI.'
     } finally { Pop-Location }
 } catch {
     Write-Host "`n[ERREUR] $($_.Exception.Message)" -ForegroundColor Red

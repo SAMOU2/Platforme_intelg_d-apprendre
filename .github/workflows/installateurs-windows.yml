@@ -1,0 +1,86 @@
+name: Installateurs Windows
+
+on:
+  pull_request:
+    paths:
+      - 'outils/installateur/**'
+      - 'src/**'
+      - 'pom.xml'
+      - '.github/workflows/installateurs-windows.yml'
+  workflow_dispatch:
+    inputs:
+      certificat_public_base64:
+        description: 'Certificat PUBLIC CA de PC1 encodé en Base64 (pas de .p12)'
+        required: true
+        type: string
+      empreinte_sha256:
+        description: 'Empreinte SHA-256 de la CA vérifiée sur PC1'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  construire-et-verifier:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Installer WiX 3 si nécessaire
+        shell: pwsh
+        run: |
+          $wix = Join-Path ${env:ProgramFiles(x86)} 'WiX Toolset v3.14\bin'
+          if (-not ((Test-Path "$wix\candle.exe") -and (Test-Path "$wix\light.exe"))) {
+            choco install wixtoolset --version=3.14.1.20250415 --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Installation WiX échouée' }
+          }
+      - name: Préparer le certificat public
+        shell: pwsh
+        env:
+          CERTIFICAT_PUBLIC_BASE64: ${{ inputs.certificat_public_base64 }}
+          EMPREINTE_PC1: ${{ inputs.empreinte_sha256 }}
+        run: |
+          $certificat = Join-Path $env:RUNNER_TEMP 'autorite-publique.cer'
+          if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            # CA jetable de test uniquement : les MSI obtenus ne seront jamais distribués.
+            $magasin = Join-Path $env:RUNNER_TEMP 'ca-ephemere.p12'
+            & "$env:JAVA_HOME\bin\keytool.exe" -genkeypair -alias test -keyalg RSA -keysize 2048 -dname 'CN=CA test CI' -validity 2 -ext 'BC=ca:true' -ext 'KU=keyCertSign,cRLSign' -keystore $magasin -storetype PKCS12 -storepass changeit -keypass changeit
+            if ($LASTEXITCODE -ne 0) { throw 'Création de la CA de test impossible' }
+            & "$env:JAVA_HOME\bin\keytool.exe" -exportcert -alias test -keystore $magasin -storepass changeit -file $certificat
+            if ($LASTEXITCODE -ne 0) { throw 'Export de la CA de test impossible' }
+            $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certificat)
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            try { $empreinte = [Convert]::ToHexString($sha.ComputeHash($cert.RawData)) }
+            finally { $sha.Dispose(); $cert.Dispose() }
+          } else {
+            # Ce champ est public : ne jamais y coller de clé privée ou de magasin .p12.
+            $octets = [Convert]::FromBase64String(($env:CERTIFICAT_PUBLIC_BASE64 -replace '\s',''))
+            [IO.File]::WriteAllBytes($certificat, $octets)
+            $empreinte = $env:EMPREINTE_PC1
+          }
+          "CERTIFICAT_PC1=$certificat" >> $env:GITHUB_ENV
+          "EMPREINTE_PC1=$empreinte" >> $env:GITHUB_ENV
+      - name: Construire les trois MSI
+        shell: pwsh
+        run: |
+          & ./outils/installateur/creer-installateurs.ps1 -CertificatPublic $env:CERTIFICAT_PC1 -EmpreinteSHA256 $env:EMPREINTE_PC1
+          if ($LASTEXITCODE -ne 0) { throw 'Fabrication des MSI échouée' }
+      - name: Installer, inspecter et désinstaller les trois postes
+        shell: pwsh
+        run: ./outils/installateur/tester-installateurs.ps1 -EmpreinteSHA256 $env:EMPREINTE_PC1
+      - name: Publier les MSI liés à PC1
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: installateurs-windows-pc1
+          path: |
+            target/installateurs/*.msi
+            target/installateurs/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
