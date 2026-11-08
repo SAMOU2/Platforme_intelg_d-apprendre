@@ -4,6 +4,66 @@
    basculer d'apparence ne peut donc laisser aucun élément sans couleur.
    ===================================================================== */
 .root {
+    /* Palette de la connexion et de son menu : identique en clair et en sombre.
+       Les nuances historiques restent distinctes pour conserver le rendu existant. */
+    -color-connexion-nuance-101c30: #101c30;
+    -color-connexion-carte: #101d30;
+    -color-connexion-nuance-101d31: #101d31;
+    -color-connexion-nuance-111c30: #111c30;
+    -color-connexion-fond: #14263d;
+    -color-connexion-nuance-172d50: #172d50;
+    -color-connexion-nuance-1a2a40: #1a2a40;
+    -color-connexion-nuance-1b293e: #1b293e;
+    -color-connexion-nuance-1b2b42: #1b2b42;
+    -color-connexion-nuance-1b2c45: #1b2c45;
+    -color-connexion-nuance-1c293e: #1c293e;
+    -color-connexion-champ: #1c2c43;
+    -color-connexion-nuance-1c3457: #1c3457;
+    -color-connexion-nuance-1f2c42: #1f2c42;
+    -color-connexion-nuance-21477e: #21477e;
+    -color-connexion-nuance-2459c9: #2459c9;
+    -color-connexion-nuance-27364a: #27364a;
+    -color-connexion-nuance-28384e: #28384e;
+    -color-connexion-accent: #2861e8;
+    -color-connexion-nuance-2b394d: #2b394d;
+    -color-connexion-nuance-304058: #304058;
+    -color-connexion-nuance-344156: #344156;
+    -color-connexion-accent-survol: #3775fa;
+    -color-connexion-nuance-3a4a60: #3a4a60;
+    -color-connexion-nuance-3b495d: #3b495d;
+    -color-connexion-nuance-41516a: #41516a;
+    -color-connexion-nuance-5ba8ff: #5ba8ff;
+    -color-connexion-nuance-5eafff: #5eafff;
+    -color-connexion-nuance-63adff: #63adff;
+    -color-connexion-nuance-69b2ff: #69b2ff;
+    -color-connexion-nuance-738399: #738399;
+    -color-connexion-nuance-75b5ff: #75b5ff;
+    -color-connexion-nuance-7f90a7: #7f90a7;
+    -color-connexion-nuance-7f90a8: #7f90a8;
+    -color-connexion-accent-clair: #83bdff;
+    -color-connexion-nuance-8b9bb1: #8b9bb1;
+    -color-connexion-bordure: #91a5bf;
+    -color-connexion-nuance-93a5bd: #93a5bd;
+    -color-connexion-nuance-94a7bf: #94a7bf;
+    -color-connexion-nuance-9aaac1: #9aaac1;
+    -color-connexion-nuance-9aacc3: #9aacc3;
+    -color-connexion-nuance-9baac0: #9baac0;
+    -color-connexion-nuance-9eafc5: #9eafc5;
+    -color-connexion-nuance-9fb0c7: #9fb0c7;
+    -color-connexion-nuance-a1b2ca: #a1b2ca;
+    -color-connexion-nuance-a3b2c8: #a3b2c8;
+    -color-connexion-nuance-a9d1ff: #a9d1ff;
+    -color-connexion-nuance-aab9cd: #aab9cd;
+    -color-connexion-texte-secondaire: #aabbd1;
+    -color-connexion-nuance-b6c3d5: #b6c3d5;
+    -color-connexion-nuance-c2cfdf: #c2cfdf;
+    -color-connexion-nuance-c5d2e3: #c5d2e3;
+    -color-connexion-nuance-c6d0df: #c6d0df;
+    -color-connexion-nuance-c7d1df: #c7d1df;
+    -color-connexion-nuance-d5dfed: #d5dfed;
+    -color-connexion-nuance-f2f5fb: #f2f5fb;
+    -color-connexion-texte: #f4f7fd;
+    -color-connexion-nuance-f7f9ff: #f7f9ff;
     /* Notifications et symboles sur les pastilles colorées de fenêtre. */
     -color-texte-feu: #151515;
     -color-notification-fond: #ffffff;
