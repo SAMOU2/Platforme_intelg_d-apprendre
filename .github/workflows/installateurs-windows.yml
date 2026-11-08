@@ -32,14 +32,6 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Installer WiX 3 si nécessaire
-        shell: pwsh
-        run: |
-          $wix = Join-Path ${env:ProgramFiles(x86)} 'WiX Toolset v3.14\bin'
-          if (-not ((Test-Path "$wix\candle.exe") -and (Test-Path "$wix\light.exe"))) {
-            choco install wixtoolset --version=3.14.1.20250415 --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { throw 'Installation WiX échouée' }
-          }
       - name: Préparer le certificat public
         shell: pwsh
         env:
@@ -66,10 +58,21 @@ jobs:
           }
           "CERTIFICAT_PC1=$certificat" >> $env:GITHUB_ENV
           "EMPREINTE_PC1=$empreinte" >> $env:GITHUB_ENV
+      - name: Refuser un cache WiX corrompu
+        shell: pwsh
+        run: |
+          $cache = Join-Path $env:GITHUB_WORKSPACE 'outils/installateur/.wix'
+          $archive = Join-Path $cache 'wix314-binaries.zip'
+          New-Item -ItemType Directory -Force -Path $cache | Out-Null
+          [IO.File]::WriteAllText($archive, 'archive volontairement incorrecte')
+          $resultat = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./outils/installateur/creer-installateurs.ps1 -ForcerWiXIntegre -SansTelechargementWiX -CertificatPublic $env:CERTIFICAT_PC1 -EmpreinteSHA256 $env:EMPREINTE_PC1 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          if ($code -eq 0 -or $resultat -notmatch 'Archive WiX incorrecte') { throw "Le cache corrompu n'a pas été refusé : $resultat" }
+          Remove-Item -LiteralPath $archive -Force
       - name: Construire les trois MSI
         shell: pwsh
         run: |
-          & ./outils/installateur/creer-installateurs.ps1 -CertificatPublic $env:CERTIFICAT_PC1 -EmpreinteSHA256 $env:EMPREINTE_PC1
+          & ./outils/installateur/creer-installateurs.ps1 -CertificatPublic $env:CERTIFICAT_PC1 -EmpreinteSHA256 $env:EMPREINTE_PC1 -ForcerWiXIntegre
           if ($LASTEXITCODE -ne 0) { throw 'Fabrication des MSI échouée' }
       - name: Installer, inspecter et désinstaller les trois postes
         shell: pwsh

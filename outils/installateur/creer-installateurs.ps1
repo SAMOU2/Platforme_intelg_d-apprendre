@@ -2,7 +2,10 @@
 # Ne jamais fournir ici le magasin .p12 de PC1 ni un mot de passe serveur.
 param(
     [string]$CertificatPublic,
-    [string]$EmpreinteSHA256
+    [string]$EmpreinteSHA256,
+    [string]$WixBin,
+    [switch]$SansTelechargementWiX,
+    [switch]$ForcerWiXIntegre
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -11,6 +14,16 @@ function Executer([string]$Programme, [string[]]$Arguments) {
     Write-Host ("`n> " + $Programme + ' ' + ($Arguments -join ' '))
     & $Programme @Arguments
     if ($LASTEXITCODE -ne 0) { throw "Echec de $Programme (code $LASTEXITCODE)." }
+}
+
+# WiX v3.14.1 officiel. SHA-256 aussi epingle par tauri-bundler et MongoDB.
+$wixUrl = 'https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip'
+$wixSha256 = '6ac824e1642d6f7277d0ed7ea09411a508f6116ba6fae0aa5f2c7daa2ff43d31'
+$dossierTempWix = $null
+
+function EstDossierWix([string]$Dossier) {
+    return $Dossier -and (Test-Path -LiteralPath (Join-Path $Dossier 'candle.exe') -PathType Leaf) -and
+        (Test-Path -LiteralPath (Join-Path $Dossier 'light.exe') -PathType Leaf)
 }
 
 try {
@@ -33,25 +46,64 @@ try {
     if ($release -notmatch '(?m)^OS_ARCH="(?:amd64|x86_64)"') {
         throw 'La fabrication et les installateurs sont prevus pour Windows x64.'
     }
-    # Accepter WiX deja sur le PATH ou son installation habituelle, y compris au double-clic.
-    $dossiersWix = @()
-    if ($env:WIX) { $dossiersWix += (Join-Path $env:WIX 'bin') }
-    $programmes86 = ${env:ProgramFiles(x86)}
-    if ($programmes86 -and (Test-Path -LiteralPath $programmes86)) {
-        $dossiersWix += @(Get-ChildItem -LiteralPath $programmes86 -Directory -Filter 'WiX Toolset v3*' |
-            Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'bin' })
-    }
-    foreach ($dossier in $dossiersWix) {
-        if ((Test-Path -LiteralPath (Join-Path $dossier 'candle.exe')) -and
-            (Test-Path -LiteralPath (Join-Path $dossier 'light.exe'))) {
-            $env:PATH = $dossier + ';' + $env:PATH
-            break
+    # WiX utilise uniquement pendant cette fabrication : aucun PATH global n'est modifie.
+    if ($WixBin -and $ForcerWiXIntegre) { throw 'Choisir -WixBin ou -ForcerWiXIntegre, pas les deux.' }
+    $wixChoisi = $null
+    if ($WixBin) {
+        $WixBin = $WixBin.Trim().Trim('"')
+        if (-not (EstDossierWix $WixBin)) { throw "Dossier WiX invalide : $WixBin (candle.exe et light.exe requis)." }
+        $wixChoisi = (Resolve-Path -LiteralPath $WixBin).Path
+    } elseif (-not $ForcerWiXIntegre) {
+        $dossiersWix = @()
+        if ($env:WIX) { $dossiersWix += (Join-Path $env:WIX 'bin') }
+        $programmes86 = ${env:ProgramFiles(x86)}
+        if ($programmes86 -and (Test-Path -LiteralPath $programmes86)) {
+            $dossiersWix += @(Get-ChildItem -LiteralPath $programmes86 -Directory -Filter 'WiX Toolset v3*' |
+                Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'bin' })
+        }
+        $candle = Get-Command candle.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($candle) { $dossiersWix += (Split-Path -Parent $candle.Source) }
+        foreach ($dossier in $dossiersWix) {
+            if (EstDossierWix $dossier) { $wixChoisi = $dossier; break }
         }
     }
-    if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue) -or
-        -not (Get-Command light.exe -ErrorAction SilentlyContinue)) {
-        throw 'WiX Toolset 3 introuvable. Installer avec : winget install --id WiXToolset.WiXToolset --version 3.14.1.8722 --exact --source winget'
+    if (-not $wixChoisi) {
+        # L'archive seule est conservee dans le projet (ignoree par Git, hors target/mvn clean).
+        # Chaque utilisation re-verifie une copie privee avant extraction ; jamais d'exe non verifie.
+        $cache = Join-Path $PSScriptRoot '.wix'
+        $archiveCache = Join-Path $cache 'wix314-binaries.zip'
+        if (-not (Test-Path -LiteralPath $archiveCache -PathType Leaf) -and $SansTelechargementWiX) {
+            throw 'WiX introuvable et telechargement interdit. Installer WiX 3 ou relancer sans -SansTelechargementWiX.'
+        }
+        $dossierTempWix = Join-Path ([IO.Path]::GetTempPath()) ('ihm-wix-' + [Guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $dossierTempWix | Out-Null
+        $archive = Join-Path $dossierTempWix 'wix314-binaries.zip'
+        if (Test-Path -LiteralPath $archiveCache -PathType Leaf) {
+            Write-Host "WiX integre : verification du cache $archiveCache"
+            Copy-Item -LiteralPath $archiveCache -Destination $archive
+        } else {
+            Write-Host "Telechargement de WiX 3.14.1 depuis $wixUrl (environ 40 Mo)..."
+            try {
+                [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+                Invoke-WebRequest -Uri $wixUrl -OutFile $archive -UseBasicParsing -TimeoutSec 300
+            } catch {
+                throw "Telechargement WiX impossible : $($_.Exception.Message). Verifier Internet ou fournir -WixBin."
+            }
+        }
+        $hashWix = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($hashWix -ne $wixSha256) {
+            throw "Archive WiX incorrecte (SHA-256 : $hashWix). Aucun programme ne sera execute. Supprimer uniquement $archiveCache si ce cache est corrompu."
+        }
+        if (-not (Test-Path -LiteralPath $archiveCache -PathType Leaf)) {
+            New-Item -ItemType Directory -Force -Path $cache | Out-Null
+            Copy-Item -LiteralPath $archive -Destination $archiveCache
+        }
+        $wixChoisi = Join-Path $dossierTempWix 'bin'
+        Expand-Archive -LiteralPath $archive -DestinationPath $wixChoisi
+        if (-not (EstDossierWix $wixChoisi)) { throw 'Archive WiX verifiee mais fichiers candle.exe ou light.exe absents.' }
     }
+    $env:PATH = $wixChoisi + ';' + $env:PATH
+    Write-Host "WiX utilise : $wixChoisi"
     if (-not $CertificatPublic) {
         $defaut = Join-Path $racine 'postes\secrets\autorite-ihm.crt'
         if (Test-Path -LiteralPath $defaut -PathType Leaf) {
@@ -151,4 +203,8 @@ try {
 } catch {
     Write-Host "`n[ERREUR] $($_.Exception.Message)" -ForegroundColor Red
     exit 1
+} finally {
+    if ($dossierTempWix -and (Test-Path -LiteralPath $dossierTempWix)) {
+        Remove-Item -LiteralPath $dossierTempWix -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }

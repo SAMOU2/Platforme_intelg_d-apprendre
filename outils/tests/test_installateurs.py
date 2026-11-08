@@ -44,6 +44,21 @@ class InstallateursTest(unittest.TestCase):
         for verification in ("msiexec.exe", "'/i'", "'/x'", "plateforme-ca-", "javafx-graphics-*-win.jar", "--role="):
             self.assertIn(verification, test_msi)
 
+    def test_wix_integre_verifie_avant_execution(self):
+        url = "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip"
+        self.assertIn(url, self.script)
+        self.assertIn("6ac824e1642d6f7277d0ed7ea09411a508f6116ba6fae0aa5f2c7daa2ff43d31", self.script)
+        self.assertIn("SansTelechargementWiX", self.script)
+        self.assertIn("ForcerWiXIntegre", self.script)
+        self.assertIn("Get-FileHash -LiteralPath $archive -Algorithm SHA256", self.script)
+        self.assertLess(self.script.index("if ($hashWix -ne $wixSha256)"), self.script.index("Expand-Archive"))
+        self.assertLess(self.script.index("Expand-Archive"), self.script.index("$env:PATH = $wixChoisi"))
+        self.assertIn("Remove-Item -LiteralPath $dossierTempWix", self.script)
+        self.assertIn("/outils/installateur/.wix/", (ROOT / ".gitignore").read_text())
+        workflow = (ROOT / ".github/workflows/installateurs-windows.yml").read_text(encoding="utf-8")
+        self.assertIn("Refuser un cache WiX corrompu", workflow)
+        self.assertIn("-ForcerWiXIntegre", workflow)
+
     def test_lanceur_et_dependances(self):
         pom = ElementTree.parse(ROOT / "pom.xml").getroot()
         ns = {"m": "http://maven.apache.org/POM/4.0.0"}

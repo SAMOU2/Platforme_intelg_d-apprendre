@@ -51,3 +51,6 @@ venv/
 
 # Registre et verrou locaux du service HTTPS (aucun secret).
 /.ihm-runtime/
+
+# WiX portable telecharge et verifie localement par le generateur Windows.
+/outils/installateur/.wix/
