@@ -28,23 +28,28 @@ clés SMTP/NVIDIA ou la base de données. Ne jamais accepter l'empreinte d'une a
 Sur un PC Windows x64 de fabrication (qui peut être PC1) :
 
 1. Récupérer le projet complet et installer un **JDK 25 x64 complet** ; définir `JAVA_HOME`.
-2. Installer **WiX Toolset 3**. Dans PowerShell administrateur :
-
-   ```powershell
-   winget install --id WiXToolset.WiXToolset --version 3.14.1.8722 --exact --source winget
-   ```
-
-   Le générateur recherche son dossier standard automatiquement. S'il est installé ailleurs,
-   ajouter son dossier `bin` au `PATH`. Internet est nécessaire si Maven et les dépendances ne
-   sont pas déjà en cache.
-3. Placer le certificat public hors de `target/`. Double-cliquer sur
-   `outils\installateur\creer-installateurs.cmd`. Sur PC1, appuyer sur Entrée pour accepter
+2. Double-cliquer sur `outils\installateur\creer-installateurs.cmd`. Le script recherche
+   WiX Toolset 3 dans son emplacement habituel, dans `WIX`, puis dans le `PATH`. Si aucun WiX
+   n'est trouvé, il télécharge automatiquement l'archive officielle **WiX 3.14.1** (environ
+   40 Mo) et contrôle son empreinte SHA-256 avant toute extraction. Aucune installation globale,
+   modification permanente du `PATH` ou permission administrateur n'est nécessaire pour WiX.
+   Le fichier vérifié est conservé dans `outils\installateur\.wix\` (ignoré par Git), puis
+   recontrôlé et extrait dans un dossier temporaire à chaque fabrication. Une connexion Internet
+   est nécessaire au premier téléchargement, ainsi que pour Maven si ses dépendances ne sont pas
+   déjà en cache. Si le téléchargement échoue, vérifier l'accès à GitHub ; pour un WiX installé
+   ailleurs, lancer le script PowerShell avec `-WixBin "chemin-vers-le-dossier-bin"`. L'option
+   `-SansTelechargementWiX` interdit tout téléchargement ; `-ForcerWiXIntegre` ignore les WiX
+   installés et utilise le cache ou télécharge l'archive officielle.
+3. Placer le certificat public hors de `target/`. Quand le programme le demande, sur PC1,
+   appuyer sur Entrée pour accepter
    le certificat local proposé ; sinon indiquer le chemin d'une copie du certificat public de PC1.
    Saisir ensuite son empreinte vérifiée indépendamment. Le script refuse un certificat non CA, expiré,
    une empreinte différente ou un fichier autre que `.crt`/`.cer`.
 4. Attendre la compilation, les tests Maven et la fabrication. Les trois MSI se trouvent dans
    `target\installateurs\`. Cette opération exécute `mvn clean` et supprime le contenu précédent
    de `target/` ; ne pas y conserver de données personnelles. Un échec interrompt la fabrication.
+   Si le cache WiX est signalé corrompu, supprimer seulement le fichier
+   `outils\installateur\.wix\wix314-binaries.zip` puis relancer pour le télécharger à nouveau.
    `SHA256SUMS.txt` permet de vérifier que les MSI n'ont pas été altérés pendant leur transfert ;
    communiquer les empreintes par un canal sûr (ce fichier ne remplace pas une signature).
 
@@ -78,7 +83,8 @@ son ZIP contient les trois MSI et leurs sommes SHA-256. L'artefact est conservé
 accessible selon les droits du dépôt. Ne jamais saisir de fichier `.p12`, clé privée, mot de passe
 ou configuration serveur dans les champs du workflow : leurs valeurs peuvent être visibles aux
 personnes ayant accès à l'exécution. Les MSI restent liés à la CA publique fournie. Les contrôles
-automatiques installent, inspectent et désinstallent les trois postes sur Windows ; ils ne remplacent
+automatiques testent aussi le refus d'un cache WiX corrompu, puis installent, inspectent et
+désinstallent les trois postes sur Windows ; ils ne remplacent
 pas un essai graphique ni une connexion réelle à PC1. Pour les pull requests, une CA **jetable**
 est utilisée uniquement pour les tests et les MSI correspondants ne sont pas publiés.
 
