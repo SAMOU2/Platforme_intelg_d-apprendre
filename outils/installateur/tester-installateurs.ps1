@@ -25,18 +25,21 @@ try {
         $candidats = @(Get-ChildItem -LiteralPath $sortie -File -Filter ($r.Nom + '-*.msi'))
         if ($candidats.Count -ne 1) { throw "Un seul MSI attendu pour $($r.Nom)." }
         $msi = $candidats[0].FullName
-        $programmes = Join-Path $env:LOCALAPPDATA 'Programs'
-        if (Test-Path -LiteralPath $programmes) {
-            $existant = @(Get-ChildItem -LiteralPath $programmes -Filter ($r.Nom + '.exe') -File -Recurse)
-            if ($existant.Count -gt 0) { throw "Poste deja installe : utiliser une machine de test vierge pour $($r.Nom)." }
+        # jpackage installe chaque role directement dans LocalAppData ; refuser aussi l'ancien
+        # emplacement Programs pour ne pas ecraser une installation sur un vrai poste.
+        $dossier = Join-Path $env:LOCALAPPDATA $r.Nom
+        $ancienDossier = Join-Path (Join-Path $env:LOCALAPPDATA 'Programs') $r.Nom
+        if ((Test-Path -LiteralPath $dossier) -or (Test-Path -LiteralPath $ancienDossier)) {
+            throw "Poste deja present : utiliser une machine de test vierge pour $($r.Nom)."
         }
+        $exe = Join-Path $dossier ($r.Nom + '.exe')
         $installe = $false
         try {
             Msiexec @('/i', ('"' + $msi + '"'), '/qn', '/norestart')
             $installe = $true
-            $exe = @(Get-ChildItem -LiteralPath $programmes -Filter ($r.Nom + '.exe') -File -Recurse)
-            if ($exe.Count -ne 1) { throw "Lanceur installe introuvable ou multiple pour $($r.Nom)." }
-            $dossier = $exe[0].Directory.FullName
+            if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+                throw "Lanceur installe introuvable : $exe"
+            }
             $cfg = Join-Path $dossier ('app\' + $r.Nom + '.cfg')
             $jar = Join-Path $dossier 'app\plateforme.jar'
             $cacerts = Join-Path $dossier 'runtime\lib\security\cacerts'
@@ -76,7 +79,7 @@ try {
         } finally {
             if ($installe) { Msiexec @('/x', ('"' + $msi + '"'), '/qn', '/norestart') }
         }
-        if (Test-Path -LiteralPath $exe[0].FullName) { throw "Desinstallation incomplete : $($r.Nom)." }
+        if (Test-Path -LiteralPath $exe) { throw "Desinstallation incomplete : $($r.Nom)." }
         Write-Host "[OK] Desinstallation : $($r.Nom)"
     }
 } catch {
