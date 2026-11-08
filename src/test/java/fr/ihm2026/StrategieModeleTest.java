@@ -190,10 +190,14 @@ class StrategieModeleTest {
         java.util.Collections.sort(avecHttpClient);
         // ClientAuthentificationHttps est l'unique client des identifiants ; il impose HTTPS et
         // n'envoie le jeton qu'au service d'authentification configuré.
-        // IdentiteTlsReseau est aussi détecté : ses callbacks X509ExtendedKeyManager reçoivent
-        // java.net.Socket. Il participe au TLS entrant sans ouvrir de connexion sortante.
+        // Les callbacks TLS de ConfiancePlateforme et IdentiteTlsReseau reçoivent un Socket ;
+        // InterfacesReseau importe SocketException et peut résoudre un nom d'hôte. Le serveur
+        // HTTPS ouvre volontairement une connexion vers lui-même pour préchauffer TLS.
+        // Ces fichiers sont explicitement recensés : tout nouvel usage reste à examiner.
         assertEquals(List.of("ApiClient.java", "ClientAuthentificationHttps.java",
-                        "ClientReseau.java", "IdentiteTlsReseau.java", "ServeurLocal.java", "TransportHttp.java"),
+                        "ClientReseau.java", "ConfiancePlateforme.java", "IdentiteTlsReseau.java",
+                        "InterfacesReseau.java", "ServeurAuthentificationHttps.java", "ServeurLocal.java",
+                        "TransportHttp.java"),
                 avecHttpClient,
                 "Inventaire des sorties réseau : API métier, authentification HTTPS, serveur de "
                         + "salle et fournisseur de modèle. Tout nouveau fichier doit être ajouté "

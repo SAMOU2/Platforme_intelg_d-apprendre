@@ -131,6 +131,22 @@ class StyleTest {
     }
 
     @Test
+    @DisplayName("La connexion et son menu conservent leur palette nuit dans les deux thèmes")
+    void paletteConnexionIdentiqueEtDeclaree() throws Exception {
+        String app = lire(APP);
+        assertTrue(app.contains("-fx-background-color: -color-connexion-fond;"));
+        assertTrue(app.contains("-fx-text-fill: -color-connexion-texte-secondaire;"));
+        assertTrue(app.contains(".connexion-menu-reseau"));
+        for (String theme : List.of(CLAIR, SOMBRE)) {
+            String css = lire(theme);
+            assertTrue(css.contains("-color-connexion-fond: #14263d;"));
+            assertTrue(css.contains("-color-connexion-carte: #101d30;"));
+            assertTrue(css.contains("-color-connexion-texte-secondaire: #aabbd1;"));
+            assertTrue(css.contains("-color-connexion-accent: #2861e8;"));
+        }
+    }
+
+    @Test
     @DisplayName("Notifications et actions de fenêtre utilisent les palettes clair et sombre")
     void notificationsEtActionsFenetreUtilisentLesJetons() throws Exception {
         String app = lire(APP);
