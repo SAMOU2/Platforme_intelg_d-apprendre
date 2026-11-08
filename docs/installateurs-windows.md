@@ -48,6 +48,8 @@ Sur un PC Windows x64 de fabrication (qui peut être PC1) :
 4. Attendre la compilation, les tests Maven et la fabrication. Les trois MSI se trouvent dans
    `target\installateurs\`. Cette opération exécute `mvn clean` et supprime le contenu précédent
    de `target/` ; ne pas y conserver de données personnelles. Un échec interrompt la fabrication.
+   `jpackage` affiche ses diagnostics détaillés : en cas d'échec, relever les lignes `error`,
+   `LGHT` et `ICE` avant le code de sortie, en masquant les informations personnelles.
    Si le cache WiX est signalé corrompu, supprimer seulement le fichier
    `outils\installateur\.wix\wix314-binaries.zip` puis relancer pour le télécharger à nouveau.
    `SHA256SUMS.txt` permet de vérifier que les MSI n'ont pas été altérés pendant leur transfert ;
@@ -92,7 +94,10 @@ est utilisée uniquement pour les tests et les MSI correspondants ne sont pas pu
 
 - Envoyer à chacun le MSI correspondant à son rôle. L'installation est par utilisateur et crée
   un raccourci dans le menu Démarrer et sur le bureau. Les trois produits peuvent coexister dans
-  `%LOCALAPPDATA%\Programs`, chacun dans son propre dossier.
+  `%LOCALAPPDATA%`, chacun dans son propre dossier (par exemple
+  `%LOCALAPPDATA%\Plateforme Apprenant`). Ce chemin par défaut de `jpackage` vise à éviter
+  le dossier intermédiaire associé à l'erreur WiX ICE64 ; les contrôles MSI restent actifs.
+  La fabrication et la désinstallation doivent être vérifiées sur Windows.
 - Le certificat public vérifié est déjà intégré : les utilisateurs n'ont pas à importer la CA
   dans leur JDK système. Les MSI sont propres à l'autorité PC1 choisie lors de leur fabrication.
 - Chaque personne utilise son propre compte ; l'inscription/activation et les codes e-mail restent

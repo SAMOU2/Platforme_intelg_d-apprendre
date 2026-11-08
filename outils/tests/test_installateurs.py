@@ -23,6 +23,21 @@ class InstallateursTest(unittest.TestCase):
         self.assertIn("--win-per-user-install", self.script)
         self.assertIn("--runtime-image", self.script)
 
+    def test_installation_par_defaut_sans_repertoire_intermediaire(self):
+        # Le chemin personnalisé Programs/<rôle> introduisait un répertoire utilisateur
+        # sans RemoveFolder dans les fragments jpackage et faisait échouer ICE64.
+        debut = self.script.index("Executer $jpackage @(")
+        fin = self.script.index("'--win-upgrade-uuid', $r.UUID)", debut)
+        arguments = self.script[debut:fin]
+        self.assertIn("'--win-per-user-install'", arguments)
+        self.assertIn("'--verbose'", arguments)
+        self.assertNotIn("'--install-dir'", arguments)
+        self.assertNotIn("-sice:ICE64", arguments)
+        test_msi = (ROOT / "outils/installateur/tester-installateurs.ps1").read_text(encoding="utf-8")
+        self.assertIn("Join-Path $env:LOCALAPPDATA $r.Nom", test_msi)
+        self.assertIn("Test-Path -LiteralPath $exe -PathType Leaf", test_msi)
+        self.assertIn("Poste deja present", test_msi)
+
     def test_confiance_fondee_sur_ca_publique_verifiee(self):
         for garde in ("CertificateAuthority", "HasPrivateKey", "SHA256", "$attendue -ne $empreinte",
                       "plateforme-ca-", "Join-Path $runtime 'lib\\security\\cacerts'"):

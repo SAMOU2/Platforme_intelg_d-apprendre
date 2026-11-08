@@ -182,11 +182,13 @@ try {
             @{ Nom='Plateforme Administrateur'; Role='administrateur'; Poste='PC2'; UUID='ef057e55-a85c-470e-bacb-6dcfcf19ed43' }
         )
         foreach ($r in $roles) {
-            Executer $jpackage @('--type', 'msi', '--name', $r.Nom, '--app-version', $version,
+            # Le dossier par defaut de jpackage evite un repertoire intermediaire dans le profil
+            # sans regle de suppression (ICE64). Le journal detaille conserve les erreurs WiX.
+            Executer $jpackage @('--verbose', '--type', 'msi', '--name', $r.Nom, '--app-version', $version,
                 '--vendor', 'Plateforme apprentissage', '--input', $entree, '--dest', $sortie,
                 '--main-jar', 'plateforme.jar', '--main-class', 'fr.ihm2026.Launcher',
                 '--runtime-image', $runtime, '--arguments', "--role=$($r.Role) --poste=$($r.Poste) --port=7777",
-                '--win-per-user-install', '--install-dir', ('Programs\' + $r.Nom),
+                '--win-per-user-install',
                 '--win-menu', '--win-shortcut', '--win-upgrade-uuid', $r.UUID)
         }
         $msis = @(Get-ChildItem -LiteralPath $sortie -Filter '*.msi')
