@@ -28,16 +28,25 @@ clés SMTP/NVIDIA ou la base de données. Ne jamais accepter l'empreinte d'une a
 Sur un PC Windows x64 de fabrication (qui peut être PC1) :
 
 1. Récupérer le projet complet et installer un **JDK 25 x64 complet** ; définir `JAVA_HOME`.
-2. Installer **WiX Toolset 3** et ajouter son dossier `bin` au `PATH` pour que `candle.exe` et
-   `light.exe` soient accessibles. Une connexion Internet est nécessaire si Maven et les
-   dépendances ne sont pas déjà en cache.
+2. Installer **WiX Toolset 3**. Dans PowerShell administrateur :
+
+   ```powershell
+   winget install --id WiXToolset.WiXToolset --version 3.14.1.8722 --exact --source winget
+   ```
+
+   Le générateur recherche son dossier standard automatiquement. S'il est installé ailleurs,
+   ajouter son dossier `bin` au `PATH`. Internet est nécessaire si Maven et les dépendances ne
+   sont pas déjà en cache.
 3. Placer le certificat public hors de `target/`. Double-cliquer sur
-   `outils\installateur\creer-installateurs.cmd`. Indiquer le chemin du certificat public puis
-   saisir son empreinte vérifiée indépendamment. Le script refuse un certificat non CA, expiré,
+   `outils\installateur\creer-installateurs.cmd`. Sur PC1, appuyer sur Entrée pour accepter
+   le certificat local proposé ; sinon indiquer le chemin d'une copie du certificat public de PC1.
+   Saisir ensuite son empreinte vérifiée indépendamment. Le script refuse un certificat non CA, expiré,
    une empreinte différente ou un fichier autre que `.crt`/`.cer`.
 4. Attendre la compilation, les tests Maven et la fabrication. Les trois MSI se trouvent dans
    `target\installateurs\`. Cette opération exécute `mvn clean` et supprime le contenu précédent
    de `target/` ; ne pas y conserver de données personnelles. Un échec interrompt la fabrication.
+   `SHA256SUMS.txt` permet de vérifier que les MSI n'ont pas été altérés pendant leur transfert ;
+   communiquer les empreintes par un canal sûr (ce fichier ne remplace pas une signature).
 
 Pour un usage automatisé sur Windows, le script PowerShell accepte aussi `-CertificatPublic`
 et `-EmpreinteSHA256` en paramètres. Il importe la CA publique seulement dans le runtime copié
@@ -47,10 +56,37 @@ Java (`changeit`) ne protège aucune clé privée ; si le magasin de votre JDK s
 mot de passe différent, la fabrication échouera. Les MSI ne sont **pas signés** : Windows peut
 avertir de l'éditeur inconnu. Ne pas désactiver les protections pour masquer cet avertissement.
 
+## Fabrication facultative par GitHub Actions
+
+Si le dépôt est sur GitHub et que les Actions sont activées, le workflow **Installateurs Windows**
+peut fabriquer les MSI sans installer WiX ou Java sur ton PC. Le workflow doit d'abord être présent
+sur la branche par défaut. Dans l'onglet **Actions**, ouvrir ce workflow, choisir **Run workflow**
+et la branche à construire. Les deux champs demandent uniquement :
+
+1. Le contenu **public** du fichier `.crt` ou `.cer` de la CA PC1, encodé en Base64. Sur PC1,
+   dans PowerShell à la racine du projet, copier ce texte dans le presse-papiers avec :
+
+   ```powershell
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path .\postes\secrets\autorite-ihm.crt).Path)) | Set-Clipboard
+   ```
+
+2. L'empreinte SHA-256 du certificat, affichée séparément sur PC1 avec la commande `keytool`
+   indiquée plus haut, puis vérifiée. Une empreinte incorrecte bloque la fabrication.
+
+Après réussite, télécharger l'artefact `installateurs-windows-pc1` dans la page de l'exécution :
+son ZIP contient les trois MSI et leurs sommes SHA-256. L'artefact est conservé 14 jours et reste
+accessible selon les droits du dépôt. Ne jamais saisir de fichier `.p12`, clé privée, mot de passe
+ou configuration serveur dans les champs du workflow : leurs valeurs peuvent être visibles aux
+personnes ayant accès à l'exécution. Les MSI restent liés à la CA publique fournie. Les contrôles
+automatiques installent, inspectent et désinstallent les trois postes sur Windows ; ils ne remplacent
+pas un essai graphique ni une connexion réelle à PC1. Pour les pull requests, une CA **jetable**
+est utilisée uniquement pour les tests et les MSI correspondants ne sont pas publiés.
+
 ## Distribuer et utiliser
 
 - Envoyer à chacun le MSI correspondant à son rôle. L'installation est par utilisateur et crée
-  un raccourci dans le menu Démarrer et sur le bureau. Les trois produits peuvent coexister.
+  un raccourci dans le menu Démarrer et sur le bureau. Les trois produits peuvent coexister dans
+  `%LOCALAPPDATA%\Programs`, chacun dans son propre dossier.
 - Le certificat public vérifié est déjà intégré : les utilisateurs n'ont pas à importer la CA
   dans leur JDK système. Les MSI sont propres à l'autorité PC1 choisie lors de leur fabrication.
 - Chaque personne utilise son propre compte ; l'inscription/activation et les codes e-mail restent
@@ -64,6 +100,11 @@ avertir de l'éditeur inconnu. Ne pas désactiver les protections pour masquer c
   dans l'interface, jamais `localhost` pour un autre ordinateur.
 
 ## Recette avant distribution
+
+Sur une machine Windows x64 vierge de test, le script PowerShell
+`outils\installateur\tester-installateurs.ps1` permet de tester les trois MSI générés, en lui
+fournissant l'empreinte SHA-256 vérifiée de la CA par le paramètre `-EmpreinteSHA256`. Il installe
+et désinstalle réellement les postes : ne pas l'exécuter sur un PC déjà utilisé pour ces rôles.
 
 Sur un Windows x64 propre, sans Java ni Maven, installer chaque MSI, lancer ses raccourcis et
 vérifier le rôle, puis se connecter à PC1 depuis un autre ordinateur. Tester refus d'un compte

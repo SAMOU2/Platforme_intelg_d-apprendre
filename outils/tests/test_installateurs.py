@@ -30,6 +30,20 @@ class InstallateursTest(unittest.TestCase):
         self.assertNotIn("configuration-PC1.local.cmd", self.script)
         self.assertNotIn("IHM_TLS_CA_PASSWORD", self.script)
 
+    def test_fabrication_assistee_et_integration_windows(self):
+        self.assertIn("WiX Toolset v3*", self.script)
+        self.assertIn("postes\\secrets\\autorite-ihm.crt", self.script)
+        self.assertIn("SHA256SUMS.txt", self.script)
+        workflow = (ROOT / ".github/workflows/installateurs-windows.yml").read_text(encoding="utf-8")
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("pull_request:", workflow)
+        self.assertIn("github.event_name == 'workflow_dispatch'", workflow)
+        self.assertIn("tester-installateurs.ps1", workflow)
+        self.assertIn("empreinte_sha256", workflow)
+        test_msi = (ROOT / "outils/installateur/tester-installateurs.ps1").read_text(encoding="utf-8")
+        for verification in ("msiexec.exe", "'/i'", "'/x'", "plateforme-ca-", "javafx-graphics-*-win.jar", "--role="):
+            self.assertIn(verification, test_msi)
+
     def test_lanceur_et_dependances(self):
         pom = ElementTree.parse(ROOT / "pom.xml").getroot()
         ns = {"m": "http://maven.apache.org/POM/4.0.0"}
