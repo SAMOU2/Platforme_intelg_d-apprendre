@@ -122,6 +122,13 @@ public final class AdminApi {
         }
     }
 
+    public static int supprimerComptes(List<String> emails) {
+        if (!Reseau.sessionCompteInstallee()) {
+            throw new IllegalStateException("Une session administrateur réelle est nécessaire pour supprimer des comptes.");
+        }
+        return Reseau.sessionAuthentification().supprimerComptes(emails);
+    }
+
     public static UtilisateurVM definirCompteActif(String email, boolean actif) {
         if (Reseau.sessionCompteInstallee()) {
             return versVue(Reseau.sessionAuthentification().definirCompteActif(email, actif));

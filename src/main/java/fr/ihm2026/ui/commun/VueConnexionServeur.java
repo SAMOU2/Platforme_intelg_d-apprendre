@@ -61,6 +61,7 @@ public class VueConnexionServeur extends StackPane {
     private final Button connecter = new Button("Se connecter");
     private final CheckBox memoriserAppareil =
             new CheckBox("Faire confiance à ce poste pendant 2 jours");
+    private final Button motDePasseOublie = new Button("Mot de passe oublié ?");
     private final Button oublierAppareil = new Button("Oublier ce poste de confiance");
     private final Button inscription = new Button("Créer un compte");
     private boolean modeActivation;
@@ -315,6 +316,8 @@ public class VueConnexionServeur extends StackPane {
                 + "avant quarante-huit heures. Ne cochez pas cette case sur un poste partagé.");
         oublierAppareil.setAccessibleText("Oublier ce poste de confiance pour l'adresse e-mail saisie");
         oublierAppareil.setOnAction(e -> oublierAppareilConfiance());
+        motDePasseOublie.setOnAction(e -> commencerReinitialisation());
+        motDePasseOublie.setAccessibleText("Réinitialiser le mot de passe par e-mail");
         email.textProperty().addListener((observable, ancien, nouveau) -> {
             if (!modeActivation && !modeInscription
                     && MemoireAppareilConfiance.lire(nouveau, role).isPresent()) {
@@ -503,7 +506,7 @@ public class VueConnexionServeur extends StackPane {
         connecter.setGraphicTextGap(12);
         HBox ligne = new HBox(connecter);
         HBox.setHgrow(connecter, Priority.ALWAYS);
-        for (Button action : java.util.List.of(inscription, activation, oublierAppareil)) {
+        for (Button action : java.util.List.of(inscription, activation, oublierAppareil, motDePasseOublie)) {
             action.getStyleClass().add("connexion-action-compte");
         }
         Label inviteInscription = new Label("Pas encore de compte ?");
@@ -525,7 +528,7 @@ public class VueConnexionServeur extends StackPane {
         ligneActivation.setAlignment(Pos.CENTER_LEFT);
         ligneActivation.visibleProperty().bind(activation.visibleProperty().or(oublierAppareil.visibleProperty()));
         ligneActivation.managedProperty().bind(ligneActivation.visibleProperty());
-        VBox actionsCompte = new VBox(6, ligneInscription, ligneActivation);
+        VBox actionsCompte = new VBox(6, ligneInscription, ligneActivation, motDePasseOublie);
         actionsCompte.getStyleClass().add("connexion-actions-compte");
 
         Label conseilConfiance = new Label("À éviter sur un ordinateur partagé.");
@@ -844,6 +847,7 @@ public class VueConnexionServeur extends StackPane {
         boolean utiliserConfiance = memoriserAppareil.isSelected();
         memoriserAppareil.setDisable(true);
         oublierAppareil.setDisable(true);
+        motDePasseOublie.setDisable(true);
         etat.setText("Connexion au serveur central…");
         TaskRunner.run(() -> {
             try {
@@ -889,6 +893,8 @@ public class VueConnexionServeur extends StackPane {
             inscription.setManaged(true);
             oublierAppareil.setVisible(false);
             oublierAppareil.setManaged(false);
+            motDePasseOublie.setVisible(false);
+            motDePasseOublie.setManaged(false);
             definirChampsActifs(true);
             adresseServeur.setDisable(true);
             email.setDisable(true);
@@ -990,6 +996,87 @@ public class VueConnexionServeur extends StackPane {
         Reseau.installerAuthentification(session);
         Session.setRole(session.compte().role());
         router.go(ecranDuRole());
+    }
+
+    private void commencerReinitialisation() {
+        String adresse = adresseServeur.getText();
+        String identifiant = email.getText() == null ? "" : email.getText().strip();
+        if (adresse == null || adresse.isBlank() || identifiant.isBlank()) {
+            etat.setText("Saisissez votre e-mail et vérifiez la connexion au serveur PC1.");
+            return;
+        }
+        var dialogue = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        if (getScene() != null && getScene().getWindow() != null) dialogue.initOwner(getScene().getWindow());
+        dialogue.setTitle("Mot de passe oublié");
+        dialogue.setHeaderText("Réinitialiser le mot de passe");
+        dialogue.setContentText("Demandez un code par e-mail ou saisissez un code déjà reçu pour " + identifiant + ".");
+        var demander = new javafx.scene.control.ButtonType("Envoyer un code");
+        var saisir = new javafx.scene.control.ButtonType("J’ai déjà un code");
+        dialogue.getButtonTypes().setAll(demander, saisir, javafx.scene.control.ButtonType.CANCEL);
+        var choix = dialogue.showAndWait();
+        if (choix.isEmpty() || choix.get() == javafx.scene.control.ButtonType.CANCEL) return;
+        if (choix.get() == saisir) { saisirCodeReinitialisation(adresse, identifiant); return; }
+        definirChampsActifs(false);
+        etat.setText("Demande de réinitialisation…");
+        TaskRunner.run(() -> {
+            String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
+            ClientAuthentificationHttps.demanderReinitialisation(hote, portHttpsPour(hote), identifiant);
+            return true;
+        }, ok -> {
+            definirChampsActifs(true);
+            etat.setText("Si le compte est éligible, un code sera envoyé par e-mail. Vérifiez aussi les courriers indésirables.");
+            saisirCodeReinitialisation(adresse, identifiant);
+        }, erreur -> {
+            definirChampsActifs(true);
+            etat.setText("Demande impossible : " + erreur.getMessage());
+        });
+    }
+
+    private void saisirCodeReinitialisation(String adresse, String identifiant) {
+        javafx.scene.control.Dialog<java.util.List<String>> dialogue = new javafx.scene.control.Dialog<>();
+        if (getScene() != null && getScene().getWindow() != null) dialogue.initOwner(getScene().getWindow());
+        dialogue.setTitle("Nouveau mot de passe");
+        dialogue.setHeaderText("Code reçu par e-mail pour " + identifiant);
+        TextField code = new TextField(); code.setPromptText("Code à 8 chiffres");
+        PasswordField secret = new PasswordField(); secret.setPromptText("Nouveau mot de passe");
+        PasswordField confirmation = new PasswordField(); confirmation.setPromptText("Confirmer le mot de passe");
+        var contenu = new VBox(8, new Label("Code (valable 10 minutes)"), code,
+                new Label("Nouveau mot de passe (12 caractères minimum)"), secret,
+                new Label("Confirmation"), confirmation);
+        dialogue.getDialogPane().setContent(contenu);
+        var valider = new javafx.scene.control.ButtonType("Modifier", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        dialogue.getDialogPane().getButtonTypes().addAll(valider, javafx.scene.control.ButtonType.CANCEL);
+        dialogue.setResultConverter(b -> b == valider
+                ? java.util.List.of(code.getText(), secret.getText(), confirmation.getText()) : null);
+        var resultat = dialogue.showAndWait();
+        secret.clear(); confirmation.clear(); code.clear();
+        if (resultat.isEmpty()) return;
+        String valeur = resultat.get().get(1);
+        if (!resultat.get().get(0).matches("[0-9]{8}") || !valeur.equals(resultat.get().get(2))
+                || valeur.codePointCount(0, valeur.length()) < 12
+                || valeur.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+            etat.setText("Code à 8 chiffres et mots de passe identiques de 12 caractères minimum (72 octets maximum) requis. Vous pouvez saisir le code à nouveau.");
+            return;
+        }
+        char[] nouveau = valeur.toCharArray();
+        String codeSaisi = resultat.get().get(0);
+        definirChampsActifs(false);
+        etat.setText("Modification du mot de passe…");
+        TaskRunner.run(() -> {
+            try {
+                String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
+                ClientAuthentificationHttps.confirmerReinitialisation(hote, portHttpsPour(hote), identifiant, codeSaisi, nouveau);
+                return true;
+            } finally { java.util.Arrays.fill(nouveau, '\0'); }
+        }, ok -> {
+            definirChampsActifs(true);
+            MemoireAppareilConfiance.oublier(identifiant, role);
+            motDePasse.clear();
+            etat.setText("Mot de passe modifié. Connectez-vous avec le nouveau mot de passe et le code de connexion.");
+        }, erreur -> {
+            definirChampsActifs(true);
+            etat.setText("Modification non confirmée. Vérifiez le code et son expiration, puis réessayez : " + erreur.getMessage());
+        });
     }
 
     private void oublierAppareilConfiance() {
@@ -1191,6 +1278,8 @@ public class VueConnexionServeur extends StackPane {
         memoriserAppareil.setManaged(connexionCompte);
         oublierAppareil.setVisible(connexionCompte && !attenteCodeConnexion);
         oublierAppareil.setManaged(connexionCompte && !attenteCodeConnexion);
+        motDePasseOublie.setVisible(connexionCompte && !attenteCodeConnexion);
+        motDePasseOublie.setManaged(motDePasseOublie.isVisible());
         inscription.setText(modeActivation ? "Retour à la connexion" : modeInscription ? "J'ai déjà un compte" : "Créer un compte");
         if (attenteCodeConnexion) {
             inscription.setText("Annuler");
@@ -1217,6 +1306,7 @@ public class VueConnexionServeur extends StackPane {
         codeConnexion.setDisable(!actifs);
         memoriserAppareil.setDisable(!actifs);
         oublierAppareil.setDisable(!actifs);
+        motDePasseOublie.setDisable(!actifs);
         inscription.setDisable(!actifs);
     }
 

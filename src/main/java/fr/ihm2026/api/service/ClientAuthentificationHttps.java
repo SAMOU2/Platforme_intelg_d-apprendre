@@ -122,6 +122,29 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         this.appareilConfiance = appareilConfiance;
     }
 
+    public static void demanderReinitialisation(String hote, int port, String email) {
+        envoyerReinitialisation(hote, port, "/api/auth/mot-de-passe/demande", Map.of("email", email));
+    }
+
+    public static void confirmerReinitialisation(String hote, int port, String email, String code, char[] secret) {
+        try {
+            envoyerReinitialisation(hote, port, "/api/auth/mot-de-passe/confirmer",
+                    Map.of("email", email, "code", code, "motDePasse", new String(secret)));
+        } finally { Arrays.fill(secret, '\0'); }
+    }
+
+    private static void envoyerReinitialisation(String hote, int port, String chemin, Map<String, String> valeurs) {
+        try {
+            String corps = MAPPER.writeValueAsString(valeurs);
+            envoyer(HttpRequest.newBuilder(base(hote, port).resolve(chemin)).timeout(DELAI_REQUETE_AUTH)
+                    .header("Content-Type", "application/json; charset=utf-8")
+                    .POST(HttpRequest.BodyPublishers.ofString(corps)).build());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ErreurAuthentification("Opération interrompue.", ex);
+        } catch (IOException ex) { throw inaccessible(hote, port, ex); }
+    }
+
     public static CompteInscrit inscrireCompte(String hote, int port,
             String nom, String email, char[] motDePasse, Session.Role role) {
         if (motDePasse == null) {
@@ -465,6 +488,21 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
         } finally {
             Arrays.fill(motDePasse, '\0');
         }
+    }
+
+    public int supprimerComptes(List<String> emails) {
+        if (emails == null || emails.isEmpty() || emails.size() > 50) throw new ErreurAuthentification("Sélection invalide.");
+        try {
+            String corps = MAPPER.writeValueAsString(Map.of("emails", emails));
+            JsonNode resultat = envoyer(HttpRequest.newBuilder(base.resolve("/api/admin/comptes/suppression"))
+                    .timeout(DELAI_REQUETE_AUTH).header("Authorization", "Bearer " + jeton)
+                    .header("Content-Type", "application/json; charset=utf-8")
+                    .POST(HttpRequest.BodyPublishers.ofString(corps)).build());
+            return resultat.path("supprimes").asInt();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ErreurAuthentification("Suppression interrompue ; actualisez la liste pour vérifier le résultat.", ex);
+        } catch (IOException ex) { throw inaccessible(base.getHost(), base.getPort(), ex); }
     }
 
     public CompteAdmin definirCompteActif(String email, boolean actif) {

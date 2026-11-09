@@ -37,6 +37,7 @@ services:
       - ./12-parcours-enseignants.sql:/docker-entrypoint-initdb.d/12-parcours-enseignants.sql:ro
       - ./13-scalabilite-comptes.sql:/docker-entrypoint-initdb.d/13-scalabilite-comptes.sql:ro
       - ./14-appareils-confiance-48h.sql:/docker-entrypoint-initdb.d/14-appareils-confiance-48h.sql:ro
+      - ./15-reinitialisation-mot-de-passe.sql:/docker-entrypoint-initdb.d/15-reinitialisation-mot-de-passe.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ihm2026 -d ihm2026"]
       interval: 5s

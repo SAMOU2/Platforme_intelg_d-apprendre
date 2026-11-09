@@ -69,11 +69,11 @@ public final class PostgresAuthentificationService {
             }
 
             effacerEchecs(emailNormalise, empreinte(adresseSource));
-            var sessionDirecte = ouvrirSessionAvecAppareilConfiance(compte, jetonConfiance);
+            var sessionDirecte = ouvrirSessionAvecAppareilConfiance(compte, jetonConfiance, motDePasse);
             if (sessionDirecte.isPresent()) {
                 return new DebutConnexion(null, sessionDirecte.get());
             }
-            return new DebutConnexion(creerCodeConnexion(compte), null);
+            return new DebutConnexion(creerCodeConnexion(compte, motDePasse), null);
         } finally {
             java.util.Arrays.fill(motDePasse, '\0');
         }
@@ -341,7 +341,7 @@ public final class PostgresAuthentificationService {
     }
 
     private Optional<ResultatConnexion> ouvrirSessionAvecAppareilConfiance(
-            CompteAuthentifie compte, String jetonConfiance) throws SQLException {
+            CompteAuthentifie compte, String jetonConfiance, char[] motDePasse) throws SQLException {
         if (!jetonOpaqueValide(jetonConfiance)) {
             return Optional.empty();
         }
@@ -357,10 +357,12 @@ public final class PostgresAuthentificationService {
                       AND a.expire_le > now()
                       AND u.actif
                       AND u.statut_inscription = 'ACCEPTE'
+                      AND u.mot_de_passe = crypt(?, u.mot_de_passe)
                     FOR UPDATE OF a, u
                     """)) {
                 requete.setLong(1, compte.id());
                 requete.setString(2, empreinte(jetonConfiance));
+                requete.setString(3, new String(motDePasse));
                 java.util.UUID appareilId;
                 Instant expireLe;
                 try (ResultSet resultat = requete.executeQuery()) {
@@ -437,11 +439,22 @@ public final class PostgresAuthentificationService {
         return propre.length() <= 80 ? propre : propre.substring(0, 80).strip();
     }
 
-    private ChallengeConnexion creerCodeConnexion(CompteAuthentifie compte) throws SQLException {
+    private ChallengeConnexion creerCodeConnexion(CompteAuthentifie compte, char[] motDePasse) throws SQLException {
         String identifiant = java.util.UUID.randomUUID().toString();
         String code = String.format(Locale.ROOT, "%06d", ALEA.nextInt(1_000_000));
         try (Connection connexion = ouvrir()) {
             connexion.setAutoCommit(false);
+            // Revérifier sous verrou : un ancien mot de passe ne doit pas créer de code
+            // après une réinitialisation concurrente.
+            try (PreparedStatement verrou = connexion.prepareStatement("""
+                    SELECT 1 FROM utilisateurs WHERE id = ? AND actif AND statut_inscription = 'ACCEPTE'
+                    AND mot_de_passe = crypt(?, mot_de_passe) FOR UPDATE
+                    """)) {
+                verrou.setLong(1, compte.id()); verrou.setString(2, new String(motDePasse));
+                try (ResultSet r = verrou.executeQuery()) {
+                    if (!r.next()) { connexion.rollback(); throw new AuthentificationRefuseeException(); }
+                }
+            }
             try (PreparedStatement supprimer = connexion.prepareStatement(
                     "DELETE FROM codes_connexion WHERE utilisateur_id = ?")) {
                 supprimer.setLong(1, compte.id());
@@ -518,6 +531,117 @@ public final class PostgresAuthentificationService {
             requete.executeUpdate();
         }
     }
+
+    /** Crée au plus trois codes par compte et vingt par adresse source et par heure. */
+    public Optional<ChallengeReinitialisation> demanderReinitialisation(String email, String source)
+            throws SQLException {
+        String adresse;
+        try { adresse = PostgresCompteRepository.normaliserEmail(email); }
+        catch (IllegalArgumentException ex) { return Optional.empty(); }
+        if (adresse.length() > 254 || source == null || source.isBlank()) return Optional.empty();
+        try (Connection c = ouvrir()) {
+            c.setAutoCommit(false);
+            try {
+                // Nettoyage opportuniste des quotas périmés ; aucune donnée utilisateur en clair.
+                if (ALEA.nextInt(1000) == 0) {
+                    try (PreparedStatement purge = c.prepareStatement(
+                            "DELETE FROM quotas_reinitialisation WHERE debut < now() - INTERVAL '2 hours'")) {
+                        purge.executeUpdate();
+                    }
+                }
+                // Un ordre constant évite les interblocages entre demandes concurrentes.
+                boolean quotaEmail = quotaReinitialisation(c, "e:" + empreinte(adresse), 3);
+                boolean quotaSource = quotaReinitialisation(c, "s:" + empreinte(source), 20);
+                if (!quotaEmail || !quotaSource) { c.commit(); return Optional.empty(); }
+                long id;
+                String nom, destination;
+                try (PreparedStatement q = c.prepareStatement("""
+                        SELECT id, nom, email FROM utilisateurs WHERE lower(email) = ?
+                        AND actif AND statut_inscription = 'ACCEPTE' FOR UPDATE
+                        """)) {
+                    q.setString(1, adresse);
+                    try (ResultSet r = q.executeQuery()) {
+                        if (!r.next()) { c.commit(); return Optional.empty(); }
+                        id = r.getLong("id"); nom = r.getString("nom"); destination = r.getString("email");
+                    }
+                }
+                String code = String.format(Locale.ROOT, "%08d", ALEA.nextInt(100_000_000));
+                try (PreparedStatement q = c.prepareStatement("""
+                        INSERT INTO reinitialisations_mot_de_passe(utilisateur_id, empreinte_code, expire_le, echecs)
+                        VALUES (?, crypt(?, gen_salt('bf', 12)), now() + INTERVAL '10 minutes', 0)
+                        ON CONFLICT (utilisateur_id) DO UPDATE SET empreinte_code = EXCLUDED.empreinte_code,
+                            expire_le = EXCLUDED.expire_le, echecs = 0
+                        """)) {
+                    q.setLong(1, id); q.setString(2, code); q.executeUpdate();
+                }
+                c.commit();
+                return Optional.of(new ChallengeReinitialisation(destination, nom, code));
+            } catch (SQLException | RuntimeException ex) { c.rollback(); throw ex; }
+        }
+    }
+
+    private static boolean quotaReinitialisation(Connection c, String cle, int maximum) throws SQLException {
+        try (PreparedStatement q = c.prepareStatement("""
+                INSERT INTO quotas_reinitialisation(cle, debut, nombre) VALUES (?, now(), 1)
+                ON CONFLICT (cle) DO UPDATE SET
+                  nombre = CASE WHEN quotas_reinitialisation.debut <= now() - INTERVAL '1 hour'
+                                THEN 1 ELSE quotas_reinitialisation.nombre + 1 END,
+                  debut = CASE WHEN quotas_reinitialisation.debut <= now() - INTERVAL '1 hour'
+                               THEN now() ELSE quotas_reinitialisation.debut END
+                RETURNING nombre
+                """)) {
+            q.setString(1, cle);
+            try (ResultSet r = q.executeQuery()) { return r.next() && r.getInt(1) <= maximum; }
+        }
+    }
+
+    public void reinitialiserMotDePasse(String email, String code, char[] nouveau) throws SQLException {
+        Objects.requireNonNull(nouveau, "nouveau");
+        try {
+            PostgresCompteRepository.validerCompte("Compte", email, nouveau, Session.Role.APPRENANT);
+            if (code == null || !code.matches("[0-9]{8}")) throw new AuthentificationRefuseeException();
+            try (Connection c = ouvrir()) {
+                c.setAutoCommit(false);
+                try {
+                    long id;
+                    boolean correspond;
+                    try (PreparedStatement q = c.prepareStatement("""
+                            SELECT u.id, r.empreinte_code = crypt(?, r.empreinte_code) AS valide
+                            FROM utilisateurs u JOIN reinitialisations_mot_de_passe r ON r.utilisateur_id = u.id
+                            WHERE lower(u.email) = ? AND u.actif AND u.statut_inscription = 'ACCEPTE'
+                              AND r.expire_le > now() AND r.echecs < 5 FOR UPDATE OF u, r
+                            """)) {
+                        q.setString(1, code); q.setString(2, PostgresCompteRepository.normaliserEmail(email));
+                        try (ResultSet r = q.executeQuery()) {
+                            if (!r.next()) { c.rollback(); throw new AuthentificationRefuseeException(); }
+                            id = r.getLong("id"); correspond = r.getBoolean("valide");
+                        }
+                    }
+                    if (!correspond) {
+                        try (PreparedStatement q = c.prepareStatement("UPDATE reinitialisations_mot_de_passe SET echecs = echecs + 1 WHERE utilisateur_id = ?")) {
+                            q.setLong(1, id); q.executeUpdate();
+                        }
+                        c.commit();
+                        throw new AuthentificationRefuseeException();
+                    }
+                    try (PreparedStatement q = c.prepareStatement("UPDATE utilisateurs SET mot_de_passe = crypt(?, gen_salt('bf', 12)) WHERE id = ?")) {
+                        q.setString(1, new String(nouveau)); q.setLong(2, id); q.executeUpdate();
+                    }
+                    for (String sql : new String[] {
+                        "DELETE FROM reinitialisations_mot_de_passe WHERE utilisateur_id = ?",
+                        "DELETE FROM codes_connexion WHERE utilisateur_id = ?",
+                        "DELETE FROM sessions WHERE utilisateur_id = ?",
+                        "DELETE FROM appareils_confiance WHERE utilisateur_id = ?"
+                    }) {
+                        try (PreparedStatement q = c.prepareStatement(sql)) { q.setLong(1, id); q.executeUpdate(); }
+                    }
+                    c.commit();
+                } catch (SQLException | RuntimeException ex) { c.rollback(); throw ex; }
+            }
+        } finally { java.util.Arrays.fill(nouveau, '\0'); }
+    }
+
+    public record ChallengeReinitialisation(String email, String nom, String code) {}
 
     private Connection ouvrir() throws SQLException {
         return java.sql.DriverManager.getConnection(configuration.url(),
