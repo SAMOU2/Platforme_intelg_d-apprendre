@@ -429,6 +429,76 @@ public final class PostgresCompteRepository {
         }
     }
 
+    /** Suppression atomique et irréversible ; les dépendances pédagogiques sont supprimées aussi. */
+    public int supprimerComptes(List<String> emails, long acteurId) throws SQLException {
+        if (emails == null || emails.isEmpty() || emails.size() > 50) {
+            throw new IllegalArgumentException("Sélectionner entre 1 et 50 comptes.");
+        }
+        List<String> normalises = emails.stream().map(PostgresCompteRepository::normaliserEmail)
+                .distinct().sorted().toList();
+        if (normalises.size() != emails.size()) throw new IllegalArgumentException("Comptes en double.");
+        try (Connection c = ouvrir()) {
+            c.setAutoCommit(false);
+            try {
+                try (PreparedStatement q = c.prepareStatement("SELECT pg_advisory_xact_lock(20261029, 1)")) { q.execute(); }
+                try (PreparedStatement q = c.prepareStatement("""
+                        SELECT 1 FROM utilisateurs WHERE id = ? AND role = 'ADMINISTRATEUR'
+                        AND actif AND statut_inscription = 'ACCEPTE' FOR UPDATE
+                        """)) {
+                    q.setLong(1, acteurId);
+                    try (ResultSet r = q.executeQuery()) {
+                        if (!r.next()) throw new IllegalStateException("Session administrateur indisponible.");
+                    }
+                }
+                java.sql.Array adresses = c.createArrayOf("text", normalises.toArray());
+                List<Compte> selection = new ArrayList<>();
+                try (PreparedStatement q = c.prepareStatement("""
+                        SELECT id, nom, email, role::text AS role, actif, statut_inscription, cree_le
+                        FROM utilisateurs WHERE lower(email) = ANY (?) ORDER BY id FOR UPDATE
+                        """)) {
+                    q.setArray(1, adresses);
+                    try (ResultSet r = q.executeQuery()) { while (r.next()) selection.add(lireCompte(r)); }
+                }
+                if (selection.size() != normalises.size()) throw new IllegalStateException("Un compte sélectionné n'existe plus : aucune suppression effectuée.");
+                if (selection.stream().anyMatch(compte -> compte.id() == acteurId)) {
+                    throw new IllegalStateException("Vous ne pouvez pas supprimer votre propre compte.");
+                }
+                long adminsSupprimes = selection.stream().filter(compte -> compte.actif()
+                        && compte.role() == Session.Role.ADMINISTRATEUR).count();
+                if (nombreAdministrateursActifs(c) <= adminsSupprimes) {
+                    throw new IllegalStateException("Le dernier administrateur actif ne peut pas être supprimé.");
+                }
+                java.sql.Array ids = c.createArrayOf("int8", selection.stream().map(Compte::id).toArray());
+                // Les parcours des enseignants et les copies liées peuvent concerner d'autres apprenants.
+                String[] suppressions = {
+                    "DELETE FROM affectations_pedagogiques WHERE apprenant_id = ANY (?) OR enseignant_id = ANY (?) OR affecte_par = ANY (?)",
+                    "DELETE FROM tentatives WHERE enseignant_id = ANY (?)",
+                    "DELETE FROM entrainements_niveaux WHERE cree_par = ANY (?)",
+                    "DELETE FROM niveaux WHERE cree_par = ANY (?)",
+                    "DELETE FROM parcours WHERE id IN (SELECT parcours_id FROM parcours_enseignants WHERE enseignant_id = ANY (?))"
+                };
+                for (String sql : suppressions) {
+                    try (PreparedStatement q = c.prepareStatement(sql)) {
+                        for (int i = 1; i <= (sql.startsWith("DELETE FROM affectations") ? 3 : 1); i++) q.setArray(i, ids);
+                        q.executeUpdate();
+                    }
+                }
+                try (PreparedStatement q = c.prepareStatement("DELETE FROM invitations_inscription WHERE lower(email_cible) = ANY (?) OR cree_par = ANY (?)")) {
+                    q.setArray(1, adresses); q.setArray(2, ids); q.executeUpdate();
+                }
+                for (Compte compte : selection) {
+                    journaliser(c, acteurId, "SUPPRESSION_COMPTE", compte.email(), compte.role().name(), compte.actif());
+                }
+                try (PreparedStatement q = c.prepareStatement("DELETE FROM utilisateurs WHERE id = ANY (?)")) {
+                    q.setArray(1, ids);
+                    if (q.executeUpdate() != selection.size()) throw new SQLException("Suppression incomplète.");
+                }
+                c.commit();
+                return selection.size();
+            } catch (SQLException | RuntimeException ex) { c.rollback(); throw ex; }
+        }
+    }
+
     public Compte definirActif(String email, boolean actif, long acteurId) throws SQLException {
         String normalise = normaliserEmail(email);
         try (Connection connexion = ouvrir()) {

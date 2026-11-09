@@ -36,6 +36,10 @@ public final class AuthentificationApiHttps implements HttpHandler {
     private static final String REFUS = "Identifiants invalides ou compte indisponible.";
     private static final int LOT_DECISIONS_MAX = 20;
 
+    // File bornée : la réponse publique ne révèle jamais l'existence du compte.
+    private final java.util.concurrent.ThreadPoolExecutor reinitialisations = new java.util.concurrent.ThreadPoolExecutor(
+            2, 2, 0L, TimeUnit.SECONDS, new java.util.concurrent.ArrayBlockingQueue<>(100),
+            r -> { Thread t = new Thread(r, "reinitialisation-email"); t.setDaemon(true); return t; });
     private final PostgresAuthentificationService authentification;
     private final PostgresCompteRepository comptes;
     private final ServiceEmail email;
@@ -84,6 +88,8 @@ public final class AuthentificationApiHttps implements HttpHandler {
             switch (chemin) {
                 case "/api/pedagogie" -> pedagogie(exchange);
                 case "/api/ia/aide" -> aideIa(exchange);
+                case "/api/auth/mot-de-passe/demande" -> demanderReinitialisation(exchange);
+                case "/api/auth/mot-de-passe/confirmer" -> confirmerReinitialisation(exchange);
                 case "/api/auth/connexion" -> connexion(exchange);
                 case "/api/auth/code" -> confirmerCodeConnexion(exchange);
                 case "/api/auth/appareil-confiance/oublier" -> oublierAppareilConfiance(exchange);
@@ -93,6 +99,7 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 case "/api/auth/ping" -> ping(exchange);
                 case "/api/auth/deconnexion" -> deconnexion(exchange);
                 case "/api/admin/comptes" -> administrerComptes(exchange);
+                case "/api/admin/comptes/suppression" -> supprimerComptes(exchange);
                 case "/api/admin/comptes/etat" -> definirCompteActif(exchange);
                 case "/api/admin/comptes/decision" -> deciderInscription(exchange);
                 case "/api/admin/comptes/decisions" -> deciderInscriptions(exchange);
@@ -244,6 +251,49 @@ public final class AuthentificationApiHttps implements HttpHandler {
         }
         System.out.println("[auth-https] courriel envoye en " + duree + " ms.");
         return java.util.Optional.empty();
+    }
+
+    private void demanderReinitialisation(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) { envoyerJson(exchange, 405, erreur("Méthode non autorisée.")); return; }
+        if (!typeJson(exchange.getRequestHeaders())) { envoyerJson(exchange, 415, erreur("JSON requis.")); return; }
+        JsonNode corps = lireCorps(exchange);
+        if (corps == null || !texte(corps, "email") || corps.path("email").asText().length() > 254) {
+            envoyerJson(exchange, 400, erreur("Requête invalide.")); return;
+        }
+        String adresse = corps.path("email").asText();
+        String source = exchange.getRemoteAddress().getAddress().getHostAddress();
+        try {
+            reinitialisations.execute(() -> {
+                try {
+                    var challenge = authentification.demanderReinitialisation(adresse, source);
+                    if (challenge.isPresent()) {
+                        var c = challenge.get();
+                        email.envoyer(c.email(), "Réinitialisation du mot de passe",
+                                "Bonjour,\n\nVotre code de réinitialisation est : " + c.code()
+                                + "\nIl expire dans 10 minutes. Ne le communiquez à personne."
+                                + "\nSi vous n'avez pas demandé ce code, ignorez ce message.");
+                    }
+                } catch (SQLException | RuntimeException ex) {
+                    System.err.println("[auth-https] réinitialisation : envoi ou stockage indisponible.");
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException ex) {
+            System.err.println("[auth-https] file de réinitialisation pleine.");
+        }
+        envoyerJson(exchange, 202, Map.of("message", "Si le compte est éligible, un code sera envoyé par e-mail."));
+    }
+
+    private void confirmerReinitialisation(HttpExchange exchange) throws IOException, SQLException {
+        if (!"POST".equals(exchange.getRequestMethod())) { envoyerJson(exchange, 405, erreur("Méthode non autorisée.")); return; }
+        if (!typeJson(exchange.getRequestHeaders())) { envoyerJson(exchange, 415, erreur("JSON requis.")); return; }
+        JsonNode corps = lireCorps(exchange);
+        if (corps == null || !texte(corps, "email") || !texte(corps, "code") || !texte(corps, "motDePasse")
+                || corps.path("email").asText().length() > 254 || corps.path("motDePasse").asText().length() > 72) {
+            envoyerJson(exchange, 400, erreur("Requête invalide.")); return;
+        }
+        authentification.reinitialiserMotDePasse(corps.path("email").asText(), corps.path("code").asText(),
+                corps.path("motDePasse").asText().toCharArray());
+        envoyerJson(exchange, 200, Map.of("message", "Mot de passe modifié. Reconnectez-vous."));
     }
 
     private void connexion(HttpExchange exchange) throws IOException, SQLException {
@@ -554,6 +604,27 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 corps.path("motDePasse").asText().toCharArray(), role,
                 corps.path("actif").asBoolean(), acteur.utilisateurId());
         envoyerJson(exchange, 201, versReponseCompte(compte));
+    }
+
+    private void supprimerComptes(HttpExchange exchange) throws IOException, SQLException {
+        SessionAuthentifiee acteur = sessionAdministrateur(exchange);
+        if (acteur == null) return;
+        if (!"POST".equals(exchange.getRequestMethod())) { envoyerJson(exchange, 405, erreur("Méthode non autorisée.")); return; }
+        if (!typeJson(exchange.getRequestHeaders())) { envoyerJson(exchange, 415, erreur("JSON requis.")); return; }
+        JsonNode corps = lireCorps(exchange);
+        if (corps == null || !corps.isObject() || !corps.path("emails").isArray()
+                || corps.path("emails").isEmpty() || corps.path("emails").size() > 50) {
+            envoyerJson(exchange, 400, erreur("Sélection invalide.")); return;
+        }
+        List<String> emails = new ArrayList<>();
+        for (JsonNode element : corps.path("emails")) {
+            if (!element.isTextual() || element.asText().length() > 254) {
+                envoyerJson(exchange, 400, erreur("Sélection invalide.")); return;
+            }
+            emails.add(element.asText());
+        }
+        int nombre = comptes.supprimerComptes(emails, acteur.utilisateurId());
+        envoyerJson(exchange, 200, Map.of("supprimes", nombre));
     }
 
     private void definirCompteActif(HttpExchange exchange) throws IOException, SQLException {

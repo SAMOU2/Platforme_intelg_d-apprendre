@@ -55,6 +55,7 @@ public class ComptesView extends BorderPane {
     private final Button pagePrecedente = new Button("Page précédente");
     private final Button pageSuivante = new Button("Page suivante");
     private final Button accepterLot = new Button("Accepter la sélection");
+    private final Button supprimerLot = new Button("Supprimer la sélection");
     private final Button refuserLot = new Button("Refuser la sélection");
     private final Label symboleEtatListe = new Label("ℹ");
     private final Label etatListe = new Label("Chargement des comptes…");
@@ -111,9 +112,9 @@ public class ComptesView extends BorderPane {
                     return;
                 }
                 caseCocher.setSelected(emailsCoches.contains(compteCourant.getEmail()));
-                caseCocher.setDisable(!compteCourant.isEnAttente());
+                caseCocher.setDisable(operationCompteEnCours);
                 caseCocher.setAccessibleText(
-                        "Sélectionner pour traitement par lot la demande de " + compteCourant.getEmail());
+                        "Sélectionner le compte de " + compteCourant.getEmail());
                 setGraphic(caseCocher);
             }
         });
@@ -296,6 +297,9 @@ public class ComptesView extends BorderPane {
         refuserLot.setDisable(true);
         refuserLot.setAccessibleText("Refuser toutes les demandes cochées dans cette page");
         refuserLot.setOnAction(e -> deciderSelection(false));
+        supprimerLot.setDisable(true);
+        supprimerLot.setAccessibleText("Supprimer définitivement les comptes cochés de cette page");
+        supprimerLot.setOnAction(e -> supprimerSelection());
         table.getSelectionModel().selectedItemProperty().addListener((obs, ancienne, selection) -> {
             boolean enAttente = selection != null && selection.isEnAttente();
             accepter.setDisable(!enAttente);
@@ -312,7 +316,7 @@ public class ComptesView extends BorderPane {
                 journalTexte()));
 
         FlowPane barre = new FlowPane(8, 8, creer, genererInvitation, accepter, refuser,
-                accepterLot, refuserLot, activer, desactiver, actualiser, audit);
+                accepterLot, refuserLot, supprimerLot, activer, desactiver, actualiser, audit);
         barre.getStyleClass().add("barre-actions");
 
         resumeInscriptions.getStyleClass().add("texte-secondaire");
@@ -604,12 +608,47 @@ public class ComptesView extends BorderPane {
         });
     }
 
+    private void supprimerSelection() {
+        if (operationCompteEnCours) return;
+        List<String> emails = table.getItems().stream()
+                .filter(compte -> emailsCoches.contains(compte.getEmail()))
+                .map(UtilisateurVM::getEmail).toList();
+        if (emails.isEmpty()) return;
+        String texte = "Supprimer définitivement ces " + emails.size() + " compte(s) ?\n\n"
+                + String.join("\n", emails) + "\n\nCette action est irréversible : résultats, "
+                + "progressions, copies et contenus associés seront supprimés. La suppression "
+                + "d’un enseignant peut aussi supprimer ses parcours et les résultats d’autres apprenants. "
+                + "Les affectations et invitations créées par ces comptes seront supprimées. Le journal d’audit est conservé. "
+                + "Votre propre compte ne peut pas être supprimé.";
+        if (!Dialogue.confirmer(fenetre(), "Suppression définitive", texte, "Supprimer définitivement")) return;
+        operationCompteEnCours = true;
+        table.setDisable(true);
+        actualiserBoutonsLot();
+        TaskRunner.run(() -> AdminApi.supprimerComptes(emails), nombre -> {
+            operationCompteEnCours = false;
+            table.setDisable(false);
+            emailsCoches.clear();
+            Dialogue.info(fenetre(), "Suppression terminée", nombre + " compte(s) supprimé(s).");
+            chargerComptes();
+        }, erreur -> {
+            operationCompteEnCours = false;
+            table.setDisable(false);
+            Dialogue.erreur(fenetre(), "Suppression non confirmée",
+                    messageErreur(erreur) + "\nActualisez la liste pour vérifier le résultat.");
+            chargerComptes();
+        });
+    }
+
     private void actualiserBoutonsLot() {
         long selection = table.getItems().stream()
                 .filter(UtilisateurVM::isEnAttente)
                 .filter(compte -> emailsCoches.contains(compte.getEmail()))
                 .count();
         boolean disponible = selection > 0 && !operationCompteEnCours;
+        long comptesSelectionnes = table.getItems().stream()
+                .filter(compte -> emailsCoches.contains(compte.getEmail())).count();
+        supprimerLot.setDisable(comptesSelectionnes == 0 || operationCompteEnCours);
+        supprimerLot.setText(comptesSelectionnes > 0 ? "Supprimer la sélection (" + comptesSelectionnes + ")" : "Supprimer la sélection");
         accepterLot.setDisable(!disponible);
         refuserLot.setDisable(!disponible);
         accepterLot.setText(selection > 0

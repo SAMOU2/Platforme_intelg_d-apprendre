@@ -223,6 +223,21 @@ Elle ne modifie ni les comptes ni les sessions. Sauvegarder la base, arrêter HT
 après 13, puis relancer. Détails et recette :
 [appareil de confiance de 48 heures](../docs/appareil-confiance-48h.md).
 
+## Migration 15 — mot de passe oublié
+
+Avant déploiement, sauvegarder PostgreSQL et arrêter le service HTTPS sur PC1. Appliquer d'abord
+les migrations 07 à 14, puis depuis PowerShell à la racine du projet :
+
+```powershell
+Get-Content -Raw -Encoding UTF8 .\db\15-reinitialisation-mot-de-passe.sql | docker exec -i ihm2026-postgres psql -v ON_ERROR_STOP=1 -U ihm2026 -d ihm2026
+```
+
+Vérifier que la commande réussit, puis relancer le serveur HTTPS avec le nouveau code. Docker
+initialise automatiquement les nouveaux volumes, mais ne migre **pas** les volumes existants.
+Les clients doivent également être mis à jour (et les MSI reconstruits pour la distribution).
+La migration ne stocke pas de mot de passe en clair et ne supprime pas les comptes.
+Voir [récupération et suppression des comptes](../docs/recuperation-et-suppression-comptes.md).
+
 ## Lanceur automatique Docker / PostgreSQL sous Windows (PC1)
 
 Double-cliquer `postes\demarrer-docker-PC1.bat` ou lancer depuis PowerShell :
