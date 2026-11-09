@@ -195,9 +195,11 @@ public final class Router {
         root.getStyleClass().remove("racine--login");
         if (public_) {
             fr.ihm2026.ui.commun.Notifications.effacer(stage);
-            // Écran public : pas de barre latérale ; le bouton correspondant est masqué.
+            // Ne pas réutiliser le profil d'une précédente session, même si le prochain
+            // compte a le même rôle. La nouvelle barre lira le nom authentifié après connexion.
             root.getStyleClass().add("racine--login");
             root.setLeft(null);
+            barreLaterale = null;
         } else {
             boolean nouvelle = barreLaterale == null || barreLaterale.role() != Session.role();
             if (nouvelle) {
