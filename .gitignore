@@ -54,3 +54,6 @@ venv/
 
 # WiX portable telecharge et verifie localement par le generateur Windows.
 /outils/installateur/.wix/
+
+# Les installeurs compilés sont distribués en pièces jointes de GitHub Releases, pas dans Git.
+*.msi

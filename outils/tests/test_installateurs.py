@@ -74,6 +74,18 @@ class InstallateursTest(unittest.TestCase):
         self.assertIn("Refuser un cache WiX corrompu", workflow)
         self.assertIn("-ForcerWiXIntegre", workflow)
 
+    def test_publication_release_msi_sans_executables_ni_secrets(self):
+        publication = (ROOT / "outils/installateur/publier-msi.ps1").read_text(encoding="utf-8")
+        for attendu in ("SAMOU2/Platforme_intelg_d-apprendre", "Plateforme $role-$version.msi",
+                        "D0-CF-11-E0-A1-B1-1A-E1", "Get-FileHash", "SHA256SUMS.txt",
+                        "gh release create", "--draft", "--target $commit", "repos/$depot/commits/$commit",
+                        "git ls-remote --exit-code --refs", "if ($codeTag -ne 2)"):
+            self.assertIn(attendu, publication)
+        self.assertNotIn("--clobber", publication)
+        self.assertNotIn("IHM_TLS_CA_PASSWORD", publication)
+        self.assertTrue((ROOT / "outils/installateur/publier-msi.cmd").is_file())
+        self.assertIn("*.msi", (ROOT / ".gitignore").read_text(encoding="utf-8"))
+
     def test_lanceur_et_dependances(self):
         pom = ElementTree.parse(ROOT / "pom.xml").getroot()
         ns = {"m": "http://maven.apache.org/POM/4.0.0"}
