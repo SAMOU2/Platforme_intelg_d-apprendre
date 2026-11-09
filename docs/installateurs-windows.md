@@ -63,6 +63,33 @@ Java (`changeit`) ne protège aucune clé privée ; si le magasin de votre JDK s
 mot de passe différent, la fabrication échouera. Les MSI ne sont **pas signés** : Windows peut
 avertir de l'éditeur inconnu. Ne pas désactiver les protections pour masquer cet avertissement.
 
+## Mettre les MSI existants sur GitHub
+
+Sur le PC Windows qui a **déjà fabriqué et testé les trois MSI** dans `target\installateurs` :
+
+1. Installer Git et GitHub CLI (`gh`), puis connecter GitHub CLI sur ce PC si nécessaire.
+   Ne partager aucun mot de passe ou jeton dans une conversation.
+2. Vérifier que les trois MSI correspondent à la version du `pom.xml`, au commit du projet
+   présent sur GitHub et à la bonne autorité publique PC1. Tester chaque poste et la connexion
+   à PC1 avant diffusion. Le dépôt GitHub étant public, une release publiée sera téléchargeable
+   par tous. Vérifier qu'ils contiennent uniquement la CA publique, **jamais** la clé privée
+   ni les secrets PC1. La vérification de signature de fichier ne contrôle pas leur contenu.
+3. Double-cliquer sur `outils\installateur\publier-msi.cmd`. Le script vérifie GitHub CLI,
+   le commit et la signature de fichier MSI, calcule les sommes SHA-256 et crée une **release
+   en brouillon** sur `SAMOU2/Platforme_intelg_d-apprendre`. Il envoie uniquement les trois MSI
+   et `SHA256SUMS.txt` : aucun `.exe`, source, configuration privée ni magasin `.p12` séparé.
+4. Ouvrir l'adresse affichée dans le navigateur, contrôler les fichiers et le commit cible, puis
+   cliquer sur **Publish release** pour rendre les MSI téléchargeables. Un brouillon n'est pas
+   visible publiquement. Les sommes vérifient l'intégrité du transfert, pas l'origine ni la
+   sécurité du contenu ; les MSI ne sont pas signés.
+
+Le script ne construit pas les MSI et ne peut pas accéder à une autre machine. Il ne modifie pas
+les fichiers dans `target\installateurs` et échoue plutôt que d'écraser une release existante.
+Un nouveau tag est créé automatiquement sur le commit vérifié ; un tag déjà présent est refusé.
+`publier-msi.ps1` accepte aussi `-Tag` et
+`-DossierInstallateurs`. Les MSI restent hors de Git et peuvent dépasser la taille permise pour
+un fichier Git normal : les joindre à une release évite de gonfler l'historique du dépôt.
+
 ## Fabrication facultative par GitHub Actions
 
 Si le dépôt est sur GitHub et que les Actions sont activées, le workflow **Installateurs Windows**
