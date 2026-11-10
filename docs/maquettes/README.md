@@ -1,4 +1,40 @@
-# Écran de connexion
+# Maquettes de la plateforme
+
+## Maquettes basse fidélité (dossier rapport v2.0)
+
+L’ensemble des 12 planches couvrant tous les écrans, les 3 rôles (`Apprenant`, `Enseignant`, `Administrateur`), la cinématique `PC1`–`PC4`, l’assistant IA (`IA1`) et l’accessibilité clavier (`UX1`) est disponible en français sous deux formes complémentaires (formats `SVG` et `PNG` `1560 × 1000 px`) :
+
+- `croquis-papier/` — **12 croquis papier** (*paper prototypes* manuscrits sur grille quadrillée, centrés sur l’exploration spatiale et la cinématique).
+- `wireframes/` — **12 wireframes filaires** (niveaux de gris, centrés sur la hiérarchie, les états normalisés et la traçabilité IHM).
+- Synthèse prête pour le rapport : [`../Maquettes-basse-fidelite.pdf`](../Maquettes-basse-fidelite.pdf) (source Markdown : [`../sources-v2/maquettes-basse-fidelite.md`](../sources-v2/maquettes-basse-fidelite.md)).
+
+### Planches incluses (`00` à `11`)
+
+| N° | Slug | Tâches HTA | Contenu |
+|---|---|---|---|
+| `00` | `00-cinematique-navigation` | `A0`–`UX1` | Cinématique globale des écrans (PC1–PC4) |
+| `01` | `01-connexion-decouverte-confiance` | `A0` | Connexion, popup réseau PC1, OTP 6 ch., confiance 48 h, poste non configuré |
+| `02` | `02-inscription-activation-pin` | `A1` | Demande de compte sans PIN, activation par PIN 8 ch., mot de passe oublié |
+| `03` | `03-apprenant-parcours-niveaux` | `A2`, `A4` | Parcours par langage (`Java`/`Python`/`C++`), états et seuils |
+| `04` | `04-apprenant-cours-assistant-ia` | `A2`, `IA1` | Lecture du cours (lecture seule) et assistant IA NVIDIA via PC1 |
+| `05` | `05-apprenant-entrainement-ia` | `A2`, `IA1` | Entraînement local (sans exécution fictive) et aide IA sur code |
+| `06` | `06-apprenant-test-final-sans-ia` | `A3` | Test final (IA bloquée serveur/client), abandon ou soumission |
+| `07` | `07-apprenant-copies-resultats-tableau-bord` | `A4` | Mes copies (`SOUMISE`/`CORRIGEE`) et tableau de bord |
+| `08` | `08-enseignant-niveaux-contenus` | `E1` | Gestion des niveaux en 4 étapes (`Créer`, `Cours/Exo`, `Test`, `Publier`) |
+| `09` | `09-enseignant-apprenants-corrections` | `E2` | Copies affectées, brouillon privé et publication humaine de décision |
+| `10` | `10-administrateur-comptes-affectations` | `AD1` | Comptes, filtres SQL, avis du bot de tri, lots bornés et affectations |
+| `11` | `11-transversal-accessibilite-etats-sidebar` | `UX1` | Barre latérale réduite (`244↔76 px`), `F1/F6/F8/Échap`, 4 états et thèmes |
+
+### Régénération
+
+```bash
+node outils/generer_maquettes_bf.mjs
+python3 outils/generer_maquettes_pdf.py
+```
+
+---
+
+# Écran de connexion (référence statique haute fidélité)
 
 `proposition-connexion.svg` est la référence visuelle statique. L'écran JavaFX reprend
 la carte bleu nuit sans marque nominative, tout en conservant les commandes réelles :

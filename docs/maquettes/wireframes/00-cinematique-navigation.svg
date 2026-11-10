@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1000" viewBox="0 0 1560 1000">
+<rect width="1560" height="1000" fill="#F4F5F7"/>
+<rect x="18" y="14" width="1524" height="972" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<rect x="18" y="14" width="1524" height="64" rx="8" fill="#F8FAFC"/>
+<line x1="18" y1="78" x2="1542" y2="78" stroke="#CBD5E1" stroke-width="1.5"/>
+<rect x="34" y="26" width="184" height="38" rx="6" fill="#1E293B"/>
+<text x="126" y="51" font-family="DejaVu Sans, sans-serif" font-size="14.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">WIREFRAME 00/11</text>
+<text x="234" y="43" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#0F172A" text-anchor="start">Cinématique globale des écrans (Storyboard)</text>
+<text x="234" y="65" font-family="DejaVu Sans, sans-serif" font-size="13.5" fill="#475569" text-anchor="start">Flux complet PC1–PC4 : découverte, authentification, pédagogie et correction humaine</text>
+<rect x="1098" y="20" width="430" height="50" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.2"/>
+<text x="1112" y="40" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#1E293B" text-anchor="start">Rôle : Tous (PC1, PC2, PC3, PC4)</text>
+<text x="1112" y="59" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#475569" text-anchor="start">HTA : A0-&gt;A1-&gt;A2/A3/A4 · E1/E2 · AD1 · IA1 · UX1</text>
+<text x="36" y="978" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#64748B" text-anchor="start">Maquette filaire basse fidélité (niveaux de gris) · Plateforme d'apprentissage v0.14.4 · Planche 00/11</text>
+<rect x="44" y="98" width="1040" height="856" rx="8" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"/>
+<rect x="64" y="114" width="1000" height="84" rx="6" fill="#F3F4F6" stroke="#334155" stroke-width="1.6" stroke-dasharray="6,4"/>
+<text x="80" y="142" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#111827" text-anchor="start">POSTE CENTRAL PC1 (Serveur autoritaire : PostgreSQL + HTTPS + Découverte)</text>
+<text x="80" y="166" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#475569" text-anchor="start">Annonce IP LAN + Port HTTPS dynamique · Vérifie rôles, sessions, copies, quotas NVIDIA &amp; SMTP</text>
+<rect x="68" y="220" width="295" height="185" rx="6" fill="#FFFFFF" stroke="#1E293B" stroke-width="2"/>
+<text x="82" y="248" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">E01 · Connexion &amp; Réseau</text>
+<text x="82" y="274" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Découverte PC1 / IP manuelle</text>
+<text x="82" y="296" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">E-mail + Mot de passe</text>
+<text x="82" y="318" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">OTP 6 ch. ou Confiance 48h</text>
+<text x="82" y="340" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Oublier poste / MDP oublié</text>
+<rect x="416" y="220" width="295" height="185" rx="6" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"/>
+<text x="430" y="248" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">E02 · Inscription &amp; PIN (A1)</text>
+<text x="430" y="274" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Créer compte (sans PIN)</text>
+<text x="430" y="296" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">-&gt; EN_ATTENTE + Bot / Admin</text>
+<text x="430" y="318" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">-&gt; PIN 8 chiffres (48h)</text>
+<text x="430" y="340" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">-&gt; Activer mon compte</text>
+<rect x="748" y="220" width="312" height="185" rx="6" fill="#F9FAFB" stroke="#64748B" stroke-width="1.6" stroke-dasharray="6,4"/>
+<text x="762" y="248" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">E11 · Transversal &amp; Accessibilité</text>
+<text x="762" y="274" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Barre titre (&lt; &gt; ≡ Thème Rétro F1)</text>
+<text x="762" y="296" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Barre latérale 244 px &lt;-&gt; 76 px</text>
+<text x="762" y="318" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">F6 régions · F8 relire notification</text>
+<text x="762" y="340" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">États : Chargement / Vide / Erreur</text>
+<rect x="68" y="436" width="992" height="44" rx="6" fill="#E2E8F0" stroke="#1E293B" stroke-width="1.6"/>
+<text x="564" y="464" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#111827" text-anchor="middle">ROUTAGE SERVEUR PAR RÔLE (PC1 vérifie le compte) : Apprenant (PC4) | Enseignant (PC3) | Admin (PC2)</text>
+<rect x="68" y="510" width="445" height="424" rx="6" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<rect x="68" y="510" width="445" height="34" rx="6" fill="#374151" stroke="#1E293B" stroke-width="1.6"/>
+<text x="82" y="533" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#FFFFFF" text-anchor="start">PC4 · PARCOURS APPRENANT (A2 -&gt; A3 -&gt; A4)</text>
+<rect x="82" y="560" width="190" height="68" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="92" y="582" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">E03 · Parcours</text>
+<text x="92" y="602" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">Java | Python | C++</text>
+<text x="92" y="618" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">Niveaux publiés</text>
+<rect x="306" y="560" width="192" height="68" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="316" y="582" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">E04 · Cours (+IA)</text>
+<text x="316" y="602" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">Blocs texte &amp; code</text>
+<text x="316" y="618" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">(lecture seule)</text>
+<rect x="82" y="662" width="190" height="74" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="92" y="684" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">E05 · Entraînement</text>
+<text x="92" y="704" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">Éditeur local + IA</text>
+<text x="92" y="720" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">(sans exécution)</text>
+<rect x="306" y="662" width="192" height="74" rx="6" fill="#E5E7EB" stroke="#111827" stroke-width="2"/>
+<text x="316" y="684" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">E06 · Test final</text>
+<text x="316" y="704" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#374151" text-anchor="start">IA BLOQUÉE (RG-20)</text>
+<text x="316" y="720" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#374151" text-anchor="start">Soumettre / Abandon</text>
+<rect x="82" y="770" width="416" height="74" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="92" y="793" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#111827" text-anchor="start">E07 · Mes copies, décisions &amp; Tableau de bord</text>
+<text x="92" y="813" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">SOUMISE (attente) -&gt; CORRIGEE (note, décision, commentaire</text>
+<text x="92" y="829" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">publiés)</text>
+<rect x="82" y="860" width="416" height="56" rx="6" fill="#F3F4F6" stroke="#475569" stroke-width="1.6" stroke-dasharray="6,4"/>
+<text x="92" y="883" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#111827" text-anchor="start">Si VALIDÉ et note &gt;= seuil -&gt; Débloque niveau N+1 (même</text>
+<text x="92" y="899" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#111827" text-anchor="start">langage)</text>
+<rect x="560" y="510" width="248" height="424" rx="6" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<rect x="560" y="510" width="248" height="34" rx="6" fill="#374151" stroke="#1E293B" stroke-width="1.6"/>
+<text x="572" y="533" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#FFFFFF" text-anchor="start">PC3 · ENSEIGNANT (E1, E2)</text>
+<rect x="574" y="562" width="220" height="134" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="584" y="586" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#111827" text-anchor="start">E08 · Mes niveaux (E1)</text>
+<text x="584" y="608" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">1. Créer brouillon</text>
+<text x="584" y="626" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">2. Cours &amp; Exercice</text>
+<text x="584" y="644" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">3. Sujet du test</text>
+<text x="584" y="662" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">4. Publier (complet)</text>
+<rect x="574" y="726" width="220" height="164" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="584" y="750" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#111827" text-anchor="start">E09 · Corrections (E2)</text>
+<text x="584" y="772" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Copies des affectés</text>
+<text x="584" y="790" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Note /20 + commentaire</text>
+<text x="584" y="808" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Brouillon privé</text>
+<text x="584" y="826" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Publier décision -&gt; A4</text>
+<rect x="826" y="510" width="234" height="424" rx="6" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.8"/>
+<rect x="826" y="510" width="234" height="34" rx="6" fill="#374151" stroke="#1E293B" stroke-width="1.6"/>
+<text x="838" y="533" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#FFFFFF" text-anchor="start">PC2 · ADMIN (AD1)</text>
+<rect x="838" y="562" width="210" height="202" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="848" y="586" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#111827" text-anchor="start">E10 · Comptes &amp; rôles</text>
+<text x="848" y="608" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Filtres SQL + page 50</text>
+<text x="848" y="627" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Avis du Bot de tri</text>
+<text x="848" y="646" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Lots bornés (&lt;= 20)</text>
+<text x="848" y="665" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Créer / Activer / PIN</text>
+<text x="848" y="684" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Journal d’audit</text>
+<rect x="838" y="786" width="210" height="104" rx="6" fill="#F9FAFB" stroke="#475569" stroke-width="1.6"/>
+<text x="848" y="810" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#111827" text-anchor="start">Affectations (BF-A08)</text>
+<text x="848" y="832" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">1 Apprenant -&gt; 1 Ens.</text>
+<text x="848" y="850" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#334155" text-anchor="start">Bloqué si copie ouverte</text>
+<rect x="1105" y="96" width="425" height="860" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.6"/>
+<rect x="1105" y="96" width="425" height="36" rx="6" fill="#1E293B" stroke="#1E293B" stroke-width="1.6"/>
+<text x="1119" y="119" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#FFFFFF" text-anchor="start">LÉGENDE IHM &amp; SPÉCIFICATIONS</text>
+<text x="1145" y="150" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Entrée unique PC1 + Réseau</text>
+<text x="1145" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Chaque client (--role) découvre PC1 sur le LAN sans</text>
+<text x="1145" y="184" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">saisir d’IP (secours manuel possible).</text>
+<line x1="1117" y1="206" x2="1518" y2="206" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="216" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Cycle Compte (A1 -&gt; A0)</text>
+<text x="1145" y="234" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Demande sans PIN -&gt; Décision Bot/Admin -&gt; PIN 8 chiffres</text>
+<text x="1145" y="250" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">-&gt; Activation -&gt; Connexion OTP / Confiance 48h.</text>
+<line x1="1117" y1="272" x2="1518" y2="272" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="282" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Routage strict par rôle serveur</text>
+<text x="1145" y="300" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">PC1 vérifie le compte : Apprenant (Parcours), Enseignant</text>
+<text x="1145" y="316" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">(Résultats/Niveaux), Admin (Comptes).</text>
+<line x1="1117" y1="338" x2="1518" y2="338" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="348" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Chaîne pédagogique (A2-&gt;A3-&gt;A4)</text>
+<text x="1145" y="366" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Cours &amp; Entraînement (+IA) -&gt; Test final (IA bloquée !)</text>
+<text x="1145" y="382" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">-&gt; Soumission -&gt; Correction humaine E2 -&gt; Progression.</text>
+<line x1="1117" y1="404" x2="1518" y2="404" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="414" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Navigation transversale (UX1)</text>
+<text x="1145" y="432" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Barre latérale réductible (244 &lt;-&gt; 76 px), historique &lt;</text>
+<text x="1145" y="448" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">&gt;, raccourcis F1/F6/F8/Échap.</text>
+<line x1="1117" y1="470" x2="1518" y2="470" stroke="#E2E8F0" stroke-width="1"/>
+<rect x="1115" y="728" width="405" height="228" rx="4" fill="#FFFFFF" stroke="#64748B" stroke-width="1.6"/>
+<text x="1127" y="750" font-family="DejaVu Sans, sans-serif" font-size="12.2" font-weight="700" fill="#0F172A" text-anchor="start">Exigences IHM &amp; Règles métier :</text>
+<text x="1127" y="768" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">RG-01/02 (rôle vérifié par PC1) · RG-04 (PIN != OTP) ·</text>
+<text x="1127" y="783.5" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">RG-19/20 (IA bloquée au test)</text>
+<text x="1127" y="815" font-family="DejaVu Sans, sans-serif" font-size="12.2" font-weight="700" fill="#0F172A" text-anchor="start">Cinématique / Transitions :</text>
+<text x="1127" y="833" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">Découverte PC1 -&gt; Connexion/PIN/OTP -&gt; Routage strict par</text>
+<text x="1127" y="848.5" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">rôle serveur</text>
+<circle cx="1044" cy="140" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1044" y="144" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">1</text>
+<circle cx="345" cy="240" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="345" y="244" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">2</text>
+<circle cx="1042" cy="240" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1042" y="244" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">5</text>
+<line x1="363" y1="288" x2="416" y2="288" stroke="#334155" stroke-width="1.8" />
+<polygon points="416,288 408.4010486704819,292.822441154811 408.4010486704819,283.177558845189" fill="#334155"/>
+<rect x="367" y="265" width="45" height="18" rx="4" fill="#FFFFFF" opacity="0.94"/>
+<text x="389.5" y="279" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155">Créer</text>
+<line x1="416" y1="352" x2="363" y2="352" stroke="#334155" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="363,352 370.5989513295181,347.177558845189 370.5989513295181,356.822441154811" fill="#334155"/>
+<rect x="367" y="355" width="45" height="18" rx="4" fill="#FFFFFF" opacity="0.94"/>
+<text x="389.5" y="369" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155">Actif</text>
+<circle cx="86" cy="458" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="86" y="462" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">3</text>
+<line x1="218" y1="405" x2="218" y2="436" stroke="#334155" stroke-width="1.8" />
+<polygon points="218,436 213.17755884518903,428.4010486704819 222.82244115481097,428.4010486704819" fill="#334155"/>
+<rect x="179" y="399.5" width="78" height="18" rx="4" fill="#FFFFFF" opacity="0.94"/>
+<text x="218" y="413.5" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155">Session OK</text>
+<circle cx="495" cy="527" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="495" y="531" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">4</text>
+<line x1="272" y1="594" x2="306" y2="594" stroke="#334155" stroke-width="1.8" />
+<polygon points="306,594 298.4010486704819,598.8224411548109 298.4010486704819,589.1775588451891" fill="#334155"/>
+<line x1="402" y1="628" x2="178" y2="662" stroke="#334155" stroke-width="1.8" />
+<polygon points="178,662 184.78921100817433,656.0918180557396 186.23658830740433,665.6274802624315" fill="#334155"/>
+<line x1="272" y1="699" x2="306" y2="699" stroke="#334155" stroke-width="1.8" />
+<polygon points="306,699 298.4010486704819,703.8224411548109 298.4010486704819,694.1775588451891" fill="#334155"/>
+<line x1="402" y1="736" x2="402" y2="770" stroke="#334155" stroke-width="1.8" />
+<polygon points="402,770 397.177558845189,762.4010486704818 406.822441154811,762.4010486704818" fill="#334155"/>
+<rect x="372.9" y="732" width="58.199999999999996" height="18" rx="4" fill="#FFFFFF" opacity="0.94"/>
+<text x="402" y="746" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155">SOUMISE</text>
+<line x1="684" y1="696" x2="684" y2="726" stroke="#334155" stroke-width="1.8" />
+<polygon points="684,726 679.177558845189,718.4010486704818 688.8224411548109,718.4010486704818" fill="#334155"/>
+<line x1="513" y1="782" x2="560" y2="782" stroke="#334155" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="560,782 552.4010486704818,786.8224411548109 552.4010486704818,777.1775588451891" fill="#334155"/>
+<rect x="514" y="759" width="45" height="18" rx="4" fill="#FFFFFF" opacity="0.94"/>
+<text x="536.5" y="773" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155">Copie</text>
+<line x1="560" y1="835" x2="513" y2="835" stroke="#111827" stroke-width="1.8" />
+<polygon points="513,835 520.5989513295182,830.177558845189 520.5989513295182,839.8224411548109" fill="#111827"/>
+<rect x="507.4" y="838" width="58.199999999999996" height="18" rx="4" fill="#FFFFFF" opacity="0.94"/>
+<text x="536.5" y="852" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#111827">Publiée</text>
+<line x1="218" y1="480" x2="218" y2="510" stroke="#334155" stroke-width="1.8" />
+<polygon points="218,510 213.17755884518903,502.4010486704819 222.82244115481097,502.4010486704819" fill="#334155"/>
+<line x1="684" y1="480" x2="684" y2="510" stroke="#334155" stroke-width="1.8" />
+<polygon points="684,510 679.177558845189,502.4010486704819 688.8224411548109,502.4010486704819" fill="#334155"/>
+<line x1="943" y1="480" x2="943" y2="510" stroke="#334155" stroke-width="1.8" />
+<polygon points="943,510 938.177558845189,502.4010486704819 947.8224411548109,502.4010486704819" fill="#334155"/>
+<circle cx="1125" cy="146" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="150" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">1</text>
+<circle cx="1125" cy="212" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="216" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">2</text>
+<circle cx="1125" cy="278" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="282" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">3</text>
+<circle cx="1125" cy="344" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="348" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">4</text>
+<circle cx="1125" cy="410" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="414" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">5</text>
+</svg>

@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1000" viewBox="0 0 1560 1000">
+<rect width="1560" height="1000" fill="#F4F5F7"/>
+<rect x="18" y="14" width="1524" height="972" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+<rect x="18" y="14" width="1524" height="64" rx="8" fill="#F8FAFC"/>
+<line x1="18" y1="78" x2="1542" y2="78" stroke="#CBD5E1" stroke-width="1.5"/>
+<rect x="34" y="26" width="184" height="38" rx="6" fill="#1E293B"/>
+<text x="126" y="51" font-family="DejaVu Sans, sans-serif" font-size="14.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">WIREFRAME 05/11</text>
+<text x="234" y="43" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#0F172A" text-anchor="start">Apprenant : Entraînement avec éditeur &amp; Assistant IA</text>
+<text x="234" y="65" font-family="DejaVu Sans, sans-serif" font-size="13.5" fill="#475569" text-anchor="start">ContenuNiveauView (entraînement) : brouillon local non exécuté et explication IA bornée</text>
+<rect x="1098" y="20" width="430" height="50" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.2"/>
+<text x="1112" y="40" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#1E293B" text-anchor="start">Rôle : Apprenant (PC4)</text>
+<text x="1112" y="59" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#475569" text-anchor="start">HTA : A2 (S’entraîner) + IA1 (Expliquer le code courant)</text>
+<text x="36" y="978" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#64748B" text-anchor="start">Maquette filaire basse fidélité (niveaux de gris) · Plateforme d'apprentissage v0.14.4 · Planche 05/11</text>
+<rect x="44" y="98" width="1040" height="856" rx="10" fill="#FFFFFF" stroke="#334155" stroke-width="2"/>
+<rect x="44" y="98" width="1040" height="44" rx="8" fill="#F3F4F6" stroke="#4B5563" stroke-width="1.6"/>
+<circle cx="62" cy="120" r="5.5" fill="#FFFFFF" stroke="#475569" stroke-width="1.2"/>
+<circle cx="80" cy="120" r="5.5" fill="#FFFFFF" stroke="#475569" stroke-width="1.2"/>
+<circle cx="98" cy="120" r="5.5" fill="#FFFFFF" stroke="#475569" stroke-width="1.2"/>
+<rect x="122" y="108" width="26" height="24" rx="4" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"/>
+<path d="M128.5 116 h13 M128.5 120 h13 M128.5 124 h13" fill="none" stroke="#334155" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="158" y="108" width="24" height="24" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.6"/>
+<text x="170" y="125" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#475569" text-anchor="middle">&lt;</text>
+<rect x="186" y="108" width="24" height="24" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.6"/>
+<text x="198" y="125" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#94A3B8" text-anchor="middle">&gt;</text>
+<text x="224" y="126" font-family="DejaVu Sans, sans-serif" font-size="14.5" font-weight="700" fill="#111827" text-anchor="start">Exercice</text>
+<rect x="898" y="108" width="28" height="24" rx="4" fill="#FFFFFF" stroke="#64748B" stroke-width="1.6"/>
+<text x="912" y="125" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#475569" text-anchor="middle">R</text>
+<rect x="932" y="108" width="28" height="24" rx="4" fill="#FFFFFF" stroke="#64748B" stroke-width="1.6"/>
+<text x="946" y="125" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#475569" text-anchor="middle">◐</text>
+<rect x="966" y="108" width="104" height="24" rx="4" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"/>
+<text x="1018" y="124" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#334155" text-anchor="middle">Aide (F1)</text>
+<rect x="44" y="142" width="206" height="812" rx="0" fill="#F9FAFB" stroke="#94A3B8" stroke-width="1.6"/>
+<text x="58" y="172" font-family="DejaVu Sans, sans-serif" font-size="11" font-weight="700" fill="#64748B" text-anchor="start">APPRENDRE</text>
+<text x="62" y="203" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#111827" text-anchor="start">Parcours</text>
+<text x="62" y="239" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#111827" text-anchor="start">Cours</text>
+<rect x="53" y="254" width="188" height="32" rx="6" fill="#E5E7EB" stroke="#374151" stroke-width="1.6"/>
+<text x="62" y="275" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#111827" text-anchor="start">Exercice</text>
+<text x="62" y="311" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#111827" text-anchor="start">Mes copies</text>
+<text x="62" y="347" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#111827" text-anchor="start">Tableau de bord</text>
+<text x="58" y="374" font-family="DejaVu Sans, sans-serif" font-size="11" font-weight="700" fill="#64748B" text-anchor="start">PARCOURS</text>
+<text x="62" y="405" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#111827" text-anchor="start">Ja  Java</text>
+<rect x="53" y="420" width="188" height="32" rx="6" fill="#E5E7EB" stroke="#374151" stroke-width="1.6"/>
+<text x="62" y="441" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#111827" text-anchor="start">Py  Python  ✓</text>
+<text x="62" y="477" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#111827" text-anchor="start">C++ C++</text>
+<line x1="52" y1="894" x2="242" y2="894" stroke="#CBD5E1" stroke-width="1"/>
+<circle cx="70" cy="922" r="14" fill="#E2E8F0" stroke="#475569" stroke-width="1.5"/>
+<text x="70" y="927" font-family="DejaVu Sans, sans-serif" font-size="11" font-weight="700" fill="#111827" text-anchor="middle">AP</text>
+<text x="92" y="918" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#111827" text-anchor="start">Utilisateur</text>
+<text x="92" y="935" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#64748B" text-anchor="start">Apprenant</text>
+<path d="M228 916.05 V922 M224.15 918.85 A5.04 5.04 0 1 0 231.85 918.85" fill="none" stroke="#B91C1C" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="268" y="178" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="700" fill="#111827" text-anchor="start">Niveau 2 — Conditions et boucles</text>
+<text x="268" y="200" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#64748B" text-anchor="start">Entraînement libre avec aide IA. Votre travail ici n'est pas une copie d'examen.</text>
+<rect x="268" y="218" width="485" height="110" rx="8" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"/>
+<text x="282" y="242" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#111827" text-anchor="start">Énoncé de l'entraînement</text>
+<text x="282" y="266" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#334155" text-anchor="start">Écrire une fonction est_admis(note) qui renvoie True si note &gt;= 12,</text>
+<text x="282" y="285" font-family="DejaVu Sans, sans-serif" font-size="12.5" fill="#334155" text-anchor="start">sinon False. Tester le cas limite 12.</text>
+<rect x="268" y="342" width="485" height="300" rx="8" fill="#F9FAFB" stroke="#1E293B" stroke-width="1.8"/>
+<text x="282" y="364" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#334155" text-anchor="start">Votre brouillon de code (non sauvegardé sur PC1) :</text>
+<text x="284" y="396" font-family="JetBrains Mono, DejaVu Sans Mono, monospace" font-size="13" fill="#111827" text-anchor="start">def est_admis(note):</text>
+<text x="284" y="418" font-family="JetBrains Mono, DejaVu Sans Mono, monospace" font-size="13" fill="#111827" text-anchor="start">if note &gt; 12:</text>
+<text x="284" y="440" font-family="JetBrains Mono, DejaVu Sans Mono, monospace" font-size="13" fill="#111827" text-anchor="start">return True</text>
+<text x="284" y="462" font-family="JetBrains Mono, DejaVu Sans Mono, monospace" font-size="13" fill="#111827" text-anchor="start">else:</text>
+<text x="284" y="484" font-family="JetBrains Mono, DejaVu Sans Mono, monospace" font-size="13" fill="#111827" text-anchor="start">return False</text>
+<text x="284" y="506" font-family="JetBrains Mono, DejaVu Sans Mono, monospace" font-size="13" fill="#111827" text-anchor="start"></text>
+<text x="284" y="528" font-family="JetBrains Mono, DejaVu Sans Mono, monospace" font-size="13" fill="#111827" text-anchor="start"># Question : le cas note == 12 ?</text>
+<rect x="268" y="656" width="485" height="58" rx="6" fill="#F3F4F6" stroke="#374151" stroke-width="1.6" stroke-dasharray="6,4"/>
+<circle cx="287" cy="685" r="10" fill="#FFFFFF" stroke="#374151" stroke-width="1.4"/>
+<text x="287" y="690" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#374151" text-anchor="middle">⚠</text>
+<text x="304" y="673" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#1F2937" text-anchor="start">Brouillon local : aucune exécution automatique ni note (RG-21). Ne</text>
+<text x="304" y="688.5" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#1F2937" text-anchor="start">collez aucune donnée privée.</text>
+<rect x="769" y="218" width="297" height="640" rx="8" fill="#F9FAFB" stroke="#1E293B" stroke-width="1.8" stroke-dasharray="6,4"/>
+<text x="783" y="244" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#111827" text-anchor="start">Assistant IA (sur code)</text>
+<text x="783" y="264" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">Aide NVIDIA via PC1 · ne note pas, ne</text>
+<text x="783" y="279" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#475569" text-anchor="start">valide pas.</text>
+<rect x="793" y="300" width="259" height="56" rx="8" fill="#E2E8F0" stroke="#475569" stroke-width="1.6"/>
+<text x="803" y="320" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#111827" text-anchor="start">Apprenant : Pourquoi note = 12</text>
+<text x="803" y="336" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#111827" text-anchor="start">échoue ?</text>
+<rect x="783" y="366" width="265" height="145" rx="8" fill="#FFFFFF" stroke="#334155" stroke-width="1.6"/>
+<text x="793" y="386" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#111827" text-anchor="start">IA : L'opérateur &gt; exclut la borne</text>
+<text x="793" y="403" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#111827" text-anchor="start">12. Vérifiez l'opérateur de</text>
+<text x="793" y="420" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#111827" text-anchor="start">comparaison (&gt;=) dans votre</text>
+<text x="793" y="437" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#111827" text-anchor="start">condition.</text>
+<text x="793" y="454" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#111827" text-anchor="start">-&gt; Section Opérateurs (Python)</text>
+<rect x="783" y="520" width="265" height="54" rx="6" fill="#F3F4F6" stroke="#6B7280" stroke-width="1.6" stroke-dasharray="6,4"/>
+<text x="793" y="540" font-family="DejaVu Sans, sans-serif" font-size="11.5" font-weight="700" fill="#374151" text-anchor="start">Garde-fou : refus si demande de note</text>
+<text x="793" y="555" font-family="DejaVu Sans, sans-serif" font-size="11.5" font-weight="700" fill="#374151" text-anchor="start">ou solution complète.</text>
+<rect x="781" y="586" width="87" height="36" rx="6" fill="#FFFFFF" stroke="#4B5563" stroke-width="1.5"/>
+<text x="824.5" y="609" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#111827" text-anchor="middle">Indice</text>
+<rect x="874" y="586" width="87" height="36" rx="6" fill="#FFFFFF" stroke="#4B5563" stroke-width="1.5"/>
+<text x="917.5" y="609" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#111827" text-anchor="middle">Erreur</text>
+<rect x="967" y="586" width="87" height="36" rx="6" fill="#FFFFFF" stroke="#4B5563" stroke-width="1.5"/>
+<text x="1010.5" y="609" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#111827" text-anchor="middle">Cours</text>
+<rect x="781" y="630" width="273" height="34" rx="6" fill="#FFFFFF" stroke="#6B7280" stroke-width="1.6"/>
+<text x="793" y="652" font-family="DejaVu Sans, sans-serif" font-size="13" font-style="italic" fill="#6B7280" text-anchor="start">Poser une question sur mon code…</text>
+<rect x="268" y="866" width="798" height="30" rx="6" fill="#F9FAFB" stroke="#374151" stroke-width="1.6" stroke-dasharray="6,4"/>
+<circle cx="287" cy="881" r="10" fill="#FFFFFF" stroke="#374151" stroke-width="1.4"/>
+<text x="287" y="886" font-family="DejaVu Sans, sans-serif" font-size="12.5" font-weight="700" fill="#374151" text-anchor="middle">ℹ</text>
+<text x="304" y="886" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#1F2937" text-anchor="start">La note et la décision seront publiées par l’enseignant après soumission.</text>
+<rect x="268" y="904" width="175" height="34" rx="6" fill="#FFFFFF" stroke="#4B5563" stroke-width="1.5"/>
+<text x="355.5" y="926" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#111827" text-anchor="middle">Revenir au parcours</text>
+<rect x="456" y="904" width="285" height="34" rx="6" fill="#374151" stroke="#1F2937" stroke-width="2"/>
+<text x="598.5" y="926" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">Passer au test final — sans IA  →</text>
+<rect x="1105" y="96" width="425" height="860" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.6"/>
+<rect x="1105" y="96" width="425" height="36" rx="6" fill="#1E293B" stroke="#1E293B" stroke-width="1.6"/>
+<text x="1119" y="119" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#FFFFFF" text-anchor="start">LÉGENDE IHM &amp; SPÉCIFICATIONS</text>
+<text x="1145" y="150" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Énoncé d’entraînement</text>
+<text x="1145" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Rappelle explicitement que le travail ici n’est pas une</text>
+<text x="1145" y="184" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">copie d’examen.</text>
+<line x1="1117" y1="206" x2="1518" y2="206" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="216" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Éditeur de brouillon local</text>
+<text x="1145" y="234" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Pré-rempli par code_depart ; le rafraîchissement auto 5 s</text>
+<text x="1145" y="250" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">ne l’écrase jamais si modifié.</text>
+<line x1="1117" y1="272" x2="1518" y2="272" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="282" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Aucune exécution fictive (RG-21)</text>
+<text x="1145" y="300" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Pas de faux bouton « Exécuter » : mention explicite de</text>
+<text x="1145" y="316" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">brouillon local non noté.</text>
+<line x1="1117" y1="338" x2="1518" y2="338" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="348" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Aide IA sur le code courant</text>
+<text x="1145" y="366" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Transmet question + code courant à PC1/NVIDIA ; refuse de</text>
+<text x="1145" y="382" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">donner la solution complète.</text>
+<line x1="1117" y1="404" x2="1518" y2="404" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1145" y="414" font-family="DejaVu Sans, sans-serif" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="start">Passage au test final</text>
+<text x="1145" y="432" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">Bouton vers TestServeurView (vérifie que cours,</text>
+<text x="1145" y="448" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#374151" text-anchor="start">entraînement, sujet et période sont prêts).</text>
+<line x1="1117" y1="470" x2="1518" y2="470" stroke="#E2E8F0" stroke-width="1"/>
+<rect x="1115" y="728" width="405" height="228" rx="4" fill="#FFFFFF" stroke="#64748B" stroke-width="1.6"/>
+<text x="1127" y="750" font-family="DejaVu Sans, sans-serif" font-size="12.2" font-weight="700" fill="#0F172A" text-anchor="start">Exigences IHM &amp; Règles métier :</text>
+<text x="1127" y="768" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">BF-P09 (brouillon protégé) · BF-IA05/06 · RG-21 (aucune</text>
+<text x="1127" y="783.5" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">exécution fictive)</text>
+<text x="1127" y="815" font-family="DejaVu Sans, sans-serif" font-size="12.2" font-weight="700" fill="#0F172A" text-anchor="start">Cinématique / Transitions :</text>
+<text x="1127" y="833" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">Revenir au parcours -&gt; E03 | Passer au test final — sans IA</text>
+<text x="1127" y="848.5" font-family="DejaVu Sans, sans-serif" font-size="11.5" fill="#334155" text-anchor="start">-&gt; E06</text>
+<circle cx="737" cy="240" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="737" y="244" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">1</text>
+<circle cx="737" cy="388" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="737" y="392" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">2</text>
+<circle cx="737" cy="686" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="737" y="690" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">3</text>
+<circle cx="1050" cy="240" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1050" y="244" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">4</text>
+<circle cx="754" cy="920" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="754" y="924" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">5</text>
+<circle cx="1125" cy="146" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="150" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">1</text>
+<circle cx="1125" cy="212" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="216" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">2</text>
+<circle cx="1125" cy="278" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="282" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">3</text>
+<circle cx="1125" cy="344" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="348" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">4</text>
+<circle cx="1125" cy="410" r="11.5" fill="#1E293B" stroke="#FFFFFF" stroke-width="1.8"/>
+<text x="1125" y="414" text-anchor="middle" font-family="DejaVu Sans" font-weight="700" font-size="11.5" fill="#FFFFFF">5</text>
+</svg>
