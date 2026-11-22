@@ -41,7 +41,11 @@ final class GestionNiveauxView extends VBox {
         });
         actualiser.setOnAction(e -> charger());
         FlowPane actions=new FlowPane(8,8,creer,contenus,test,publier,actualiser);
-        getChildren().addAll(actions,etat,niveaux);VBox.setVgrow(niveaux,Priority.ALWAYS);charger();
+        // L'offre est ce que les apprenants lisent avant de s'inscrire eux-mêmes ; repliée par
+        // défaut pour laisser la place à la liste des niveaux.
+        TitledPane offre=new TitledPane("Mon offre de formation (catalogue des apprenants)",new OffreEnseignantView());
+        offre.setExpanded(false);
+        getChildren().addAll(actions,offre,etat,niveaux);VBox.setVgrow(niveaux,Priority.ALWAYS);charger();
     }
     private void charger(){
         actualiser.setDisable(true);

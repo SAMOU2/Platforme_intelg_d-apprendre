@@ -37,6 +37,8 @@ public final class SmokeTest {
         TOURNEES.put(Router.LOGIN, null);
         TOURNEES.put(Router.RESEAU, null);
         TOURNEES.put(Router.PARCOURS, Session.Role.APPRENANT);
+        TOURNEES.put(Router.OFFRES, Session.Role.APPRENANT);
+        TOURNEES.put(Router.ATELIER, Session.Role.APPRENANT);
         TOURNEES.put(Router.COURS, Session.Role.APPRENANT);
         TOURNEES.put(Router.EXERCICE, Session.Role.APPRENANT);
         TOURNEES.put(Router.TEST, Session.Role.APPRENANT);

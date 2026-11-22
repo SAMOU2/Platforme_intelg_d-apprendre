@@ -324,17 +324,20 @@ public class ComptesView extends BorderPane {
         Label note = new Label("Les comptes en attente ne peuvent pas se connecter. Le bot ne pré-accepte que des apprenants selon la politique PC1 ; les enseignants et les exceptions restent à valider ici. Toute décision est journalisée.");
         note.getStyleClass().add("texte-secondaire");
 
-        Button affectations = new Button("Affecter un apprenant à un enseignant");
-        affectations.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.affecter(getScene().getWindow()));
-        affectations.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
-        Button preparerTest = new Button("Configurer le sujet d'un test");
-        preparerTest.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
-        preparerTest.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.preparerTest(getScene().getWindow()));
-        Button publierContenus = new Button("Publier le cours et l'entraînement d'un niveau");
-        publierContenus.setDisable(!fr.ihm2026.reseau.Reseau.sessionCompteInstallee());
-        publierContenus.setOnAction(e -> fr.ihm2026.ui.commun.SuiviPedagogique.publierContenus(getScene().getWindow()));
+        // Périmètre administrateur : les comptes, leurs rôles et l'approbation des inscriptions.
+        // Publier un cours, préparer un sujet de test et ouvrir l'accès d'un apprenant sont des
+        // actes d'enseignant : ils ne se font plus ici. L'apprenant choisit son enseignant dans
+        // son propre catalogue, et l'enseignant (ou le bot de son offre) accepte la demande.
+        Label perimetre = new Label("Ce que l'administrateur ne fait plus : affecter un apprenant à un "
+                + "enseignant, publier le cours et l'entraînement d'un niveau, ni configurer le sujet "
+                + "d'un test. Chaque apprenant s'inscrit lui-même auprès d'un enseignant publié dans "
+                + "son catalogue ; l'enseignant accepte la demande (ou active le bot de son offre), "
+                + "et l'accès aux cours s'ouvre alors. Ces décisions apparaissent dans le journal "
+                + "d'audit comme les vôtres.");
+        perimetre.getStyleClass().add("texte-secondaire");
+        perimetre.setWrapText(true);
         VBox contenu = new VBox(12, resumeInscriptions, filtres, bandeauEtatListe, table, pagination, barre,
-                affectations, publierContenus, preparerTest, note);
+                perimetre, note);
         contenu.getStyleClass().add("colonne");
         setCenter(contenu);
         BorderPane.setMargin(contenu, new Insets(4, 0, 0, 0));

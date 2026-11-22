@@ -198,6 +198,7 @@
 /* Couleurs par fonction : un repère supplémentaire, jamais le seul moyen d'identifier
    une entrée (icône, libellé, infobulle et nom accessible restent présents). */
 .nav-parcours { -color-nav-entree: -color-nav-parcours; }
+.nav-offres { -color-nav-entree: -color-nav-offres; }
 .nav-cours { -color-nav-entree: -color-nav-cours; }
 .nav-exercice { -color-nav-entree: -color-nav-exercice; }
 .nav-resultats { -color-nav-entree: -color-nav-resultats; }

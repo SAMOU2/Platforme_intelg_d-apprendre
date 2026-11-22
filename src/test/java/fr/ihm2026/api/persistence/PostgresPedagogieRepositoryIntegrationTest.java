@@ -9,15 +9,20 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.sql.*;
 import java.util.UUID;
 
-/** Nécessite migrations 01,07,08,09,10,11,12. Fixtures isolées et supprimées, pas de données utilisateur modifiées. */
+/** Nécessite migrations 01,07,08,09,10,11,12,16. Fixtures isolées et supprimées, pas de données utilisateur modifiées. */
 @EnabledIfEnvironmentVariable(named="IHM_DB_URL",matches="jdbc:postgresql://.+")
 class PostgresPedagogieRepositoryIntegrationTest {
     private static final ObjectMapper JSON=new ObjectMapper();
     private static ObjectNode d(String action){return JSON.createObjectNode().put("action",action);}
+    /** La carte d'un enseignant dans le catalogue : la base de test peut contenir d'autres offres. */
+    private static JsonNode carteDe(JsonNode offres,long enseignant){
+        for(JsonNode offre:offres) if(offre.path("enseignant_id").asLong()==enseignant) return offre;
+        return null;
+    }
     private static long inserer(Connection c,String sql,Object... valeurs)throws SQLException {
         try(var p=c.prepareStatement(sql)){for(int i=0;i<valeurs.length;i++)p.setObject(i+1,valeurs[i]);try(var r=p.executeQuery()){r.next();return r.getLong(1);}}
     }
-    @Test void affectationSoumissionCorrectionPublicationEtIsolation()throws Exception {
+    @Test void inscriptionOffreSoumissionCorrectionPublicationEtIsolation()throws Exception {
         var config=PostgresConfiguration.depuisEnvironnement();
         var repo=new PostgresPedagogieRepository(config);
         String suffixe=UUID.randomUUID().toString();
@@ -33,7 +38,7 @@ class PostgresPedagogieRepositoryIntegrationTest {
                 parcours=inserer(c,"INSERT INTO parcours(langage_id,libelle) VALUES(?,?) RETURNING id",langage,"fixture-"+suffixe);
                 long niveau=inserer(c,"INSERT INTO niveaux(parcours_id,rang,titre,seuil,statut,cree_par) VALUES(?,1,'Test isolé',12,'PUBLIE',?) RETURNING id",parcours,prof);
                 long niveauSuivant=inserer(c,"INSERT INTO niveaux(parcours_id,rang,titre,seuil,statut) VALUES(?,2,'Niveau suivant isolé',12,'PUBLIE') RETURNING id",parcours);
-                final long responsable=prof,intrus=autre;
+                final long responsable=prof,intrus=autre,administrateur=admin;
                 var contenu=d("publier-contenus").put("niveau",niveau).put("cours","Une variable associe un nom à une valeur.")
                         .put("exercice","Déclare une variable entière.").put("code","nombre = 1");
                 assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(intrus,Session.Role.ENSEIGNANT,contenu));
@@ -46,13 +51,53 @@ class PostgresPedagogieRepositoryIntegrationTest {
                 assertThrows(IllegalStateException.class,() -> repo.traiter(apprenantTest,Session.Role.APPRENANT,
                         d("contenus").put("niveau",niveauSuivant).put("langage","python")));
                 var sujet=d("preparer-test").put("niveau",niveau);sujet.putArray("questions").add("Explique une variable.");
-                repo.traiter(admin,Session.Role.ADMINISTRATEUR,sujet);
+                // Préparer un sujet de test est un acte d'enseignant : l'administrateur est refusé
+                // sur le niveau d'un enseignant (il ne garde la main que sur un niveau sans auteur).
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(administrateur,Session.Role.ADMINISTRATEUR,sujet));
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(administrateur,Session.Role.ADMINISTRATEUR,contenu));
+                repo.traiter(responsable,Session.Role.ENSEIGNANT,sujet);
                 final long e=eleve,p=prof,a=autre;
                 assertThrows(IllegalStateException.class,() -> repo.traiter(e,Session.Role.APPRENANT,d("commencer").put("niveau",niveau).put("langage","python").put("rang",1)));
+                // L'affectation n'est plus un acte d'administration : l'apprenant s'inscrit à
+                // l'offre de l'enseignant, qui accepte (ou dont le bot accepte la demande).
                 var affectation=d("affecter").put("apprenant",eleve).put("enseignant",prof);
                 assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(p,Session.Role.ENSEIGNANT,affectation));
-                repo.traiter(admin,Session.Role.ADMINISTRATEUR,affectation);
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(administrateur,Session.Role.ADMINISTRATEUR,affectation));
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(administrateur,Session.Role.ADMINISTRATEUR,d("affectations")));
+                assertEquals(0,repo.traiter(prof,Session.Role.ENSEIGNANT,d("mes-apprenants")).size());
+                repo.traiter(prof,Session.Role.ENSEIGNANT,d("publier-offre").put("langage","python")
+                        .put("titre","Python pas à pas").put("presentation","Niveaux publiés, correction personnelle de chaque copie.")
+                        .put("auto_acceptation",false).put("ouverte",true));
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(e,Session.Role.APPRENANT,d("publier-offre").put("langage","python")
+                        .put("titre","Offre d'un apprenant").put("presentation","Interdite").put("auto_acceptation",true).put("ouverte",true)));
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(p,Session.Role.ENSEIGNANT,d("offres").put("langage","python")));
+                var catalogue=repo.traiter(eleve,Session.Role.APPRENANT,d("offres").put("langage","python"));
+                var offre=carteDe(catalogue,prof);
+                assertNotNull(offre,"Un enseignant qui publie une offre doit apparaître dans le catalogue de l'apprenant.");
+                assertEquals("Python pas à pas",offre.path("titre").asText());
+                assertFalse(offre.path("acceptation_bot").asBoolean());
+                assertFalse(offre.path("inscrit").asBoolean());
+                // L'apprenant saisit son nom : la demande part à l'enseignant, pas à l'administrateur.
+                var demande=repo.traiter(eleve,Session.Role.APPRENANT,d("inscrire-offre").put("enseignant",prof)
+                        .put("langage","python").put("nom","Élève test").put("message","Je débute en Python."));
+                assertEquals("EN_ATTENTE",demande.path("statut").asText());
+                assertTrue(demande.path("decide_par").isNull());
+                // Une deuxième demande identique ne duplique pas la file de l'enseignant.
+                assertTrue(repo.traiter(eleve,Session.Role.APPRENANT,d("inscrire-offre").put("enseignant",prof)
+                        .put("langage","python").put("nom","Élève test")).path("dejaEnvoyee").asBoolean());
+                var recues=repo.traiter(prof,Session.Role.ENSEIGNANT,d("demandes-recues"));
+                assertEquals(1,recues.size());
+                assertEquals("Élève test",recues.path(0).path("nom_demandeur").asText());
+                assertEquals(0,repo.traiter(autre,Session.Role.ENSEIGNANT,d("demandes-recues")).size());
+                final long demandeId=demande.path("id").asLong();
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(a,Session.Role.ENSEIGNANT,
+                        d("decider-demande").put("demande",demandeId).put("accepter",true)));
+                assertEquals("ACCEPTEE",repo.traiter(prof,Session.Role.ENSEIGNANT,
+                        d("decider-demande").put("demande",demandeId).put("accepter",true)).path("statut").asText());
+                assertThrows(IllegalStateException.class,() -> repo.traiter(prof,Session.Role.ENSEIGNANT,
+                        d("decider-demande").put("demande",demandeId).put("accepter",false)));
                 assertEquals(1,repo.traiter(prof,Session.Role.ENSEIGNANT,d("mes-apprenants")).size());
+                assertTrue(carteDe(repo.traiter(eleve,Session.Role.APPRENANT,d("offres").put("langage","python")),prof).path("inscrit").asBoolean());
                 // Création autonome : brouillons privés, sans intervention de l'administrateur.
                 var creation=d("creer-niveau").put("langage","python").put("titre","Mon niveau").put("seuil",12).put("tentatives",3);
                 assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(e,Session.Role.APPRENANT,creation));
@@ -80,8 +125,7 @@ class PostgresPedagogieRepositoryIntegrationTest {
                 assertThrows(IllegalStateException.class,() -> repo.traiter(p,Session.Role.ENSEIGNANT,d("publier-niveau").put("niveau",premier)));
                 assertFalse(copie.toString().contains("correcte"));
                 assertEquals(id,repo.traiter(eleve,Session.Role.APPRENANT,d("commencer").put("niveau",niveau).put("langage","python").put("rang",1)).path("id").asLong());
-                final long ad=admin;
-                assertThrows(IllegalStateException.class,() -> repo.traiter(ad,Session.Role.ADMINISTRATEUR,d("affecter").put("apprenant",e).put("enseignant",a)));
+                assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(administrateur,Session.Role.ADMINISTRATEUR,d("affecter").put("apprenant",e).put("enseignant",a)));
                 var soumission=d("soumettre").put("id",id).put("code","x = 1");
                 soumission.putObject("reponses").put(copie.path("questions").path(0).path("id").asText(),"Une variable associe un nom à une valeur.");
                 assertThrows(PostgresPedagogieRepository.AccesRefuse.class,() -> repo.traiter(p,Session.Role.ENSEIGNANT,soumission));
@@ -126,6 +170,8 @@ class PostgresPedagogieRepositoryIntegrationTest {
             } finally {
                 // Ordre FK explicite : les fixtures ne touchent aucun compte existant.
                 try(var p=c.prepareStatement("DELETE FROM tentatives WHERE apprenant_id=?")){p.setLong(1,eleve);p.executeUpdate();}
+                try(var p=c.prepareStatement("DELETE FROM demandes_inscription WHERE apprenant_id=?")){p.setLong(1,eleve);p.executeUpdate();}
+                try(var p=c.prepareStatement("DELETE FROM offres_enseignants WHERE enseignant_id IN (?,?)")){p.setLong(1,prof);p.setLong(2,autre);p.executeUpdate();}
                 try(var p=c.prepareStatement("DELETE FROM affectations_pedagogiques WHERE apprenant_id=?")){p.setLong(1,eleve);p.executeUpdate();}
                 try(var p=c.prepareStatement("DELETE FROM parcours WHERE id=?")){p.setLong(1,parcours);p.executeUpdate();}
                 try(var p=c.prepareStatement("DELETE FROM parcours WHERE id IN (SELECT parcours_id FROM parcours_enseignants WHERE enseignant_id IN (?,?))")){p.setLong(1,prof);p.setLong(2,autre);p.executeUpdate();}

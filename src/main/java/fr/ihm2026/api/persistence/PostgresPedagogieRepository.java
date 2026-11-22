@@ -25,8 +25,19 @@ public final class PostgresPedagogieRepository {
                     case "publier-niveau" -> { exiger(role==Session.Role.ENSEIGNANT); droitEdition(c,acteur,role,id(demande,"niveau")); yield publierNiveau(c,acteur,demande); }
                     case "publier-contenus" -> { droitEdition(c,acteur,role,id(demande,"niveau")); yield publierContenus(c,acteur,demande); }
                     case "contenus" -> { exiger(role==Session.Role.APPRENANT); yield contenus(c,acteur,demande); }
-                    case "affectations" -> { exiger(role == Session.Role.ADMINISTRATEUR); yield affectations(c); }
-                    case "affecter" -> { exiger(role == Session.Role.ADMINISTRATEUR); yield affecter(c,acteur,demande); }
+                    // L'affectation d'un apprenant n'est plus un acte d'administration : elle
+                    // résulte de sa demande d'inscription acceptée par l'enseignant (ou par le
+                    // bot de l'offre). Toute demande d'affectation directe est refusée.
+                    case "affectations", "affecter" -> throw new AccesRefuse(
+                            "L'administrateur n'affecte plus les apprenants : l'apprenant choisit un enseignant dans son interface et l'enseignant (ou le bot de son offre) accepte la demande.");
+                    case "offres" -> { exiger(role==Session.Role.APPRENANT); yield offres(c,acteur,demande); }
+                    case "inscrire-offre" -> { exiger(role==Session.Role.APPRENANT); yield inscrireOffre(c,acteur,demande); }
+                    case "mes-demandes" -> { exiger(role==Session.Role.APPRENANT); yield mesDemandes(c,acteur); }
+                    case "annuler-demande" -> { exiger(role==Session.Role.APPRENANT); yield annulerDemande(c,acteur,demande); }
+                    case "mon-offre" -> { exiger(role==Session.Role.ENSEIGNANT); yield monOffre(c,acteur); }
+                    case "publier-offre" -> { exiger(role==Session.Role.ENSEIGNANT); yield publierOffre(c,acteur,demande); }
+                    case "demandes-recues" -> { exiger(role==Session.Role.ENSEIGNANT); yield demandesRecues(c,acteur); }
+                    case "decider-demande" -> { exiger(role==Session.Role.ENSEIGNANT); yield deciderDemande(c,acteur,demande); }
                     case "copies" -> copies(c,acteur,role);
                     case "niveaux" -> { exiger(role == Session.Role.APPRENANT); yield niveaux(c,acteur,demande); }
                     case "commencer" -> { exiger(role == Session.Role.APPRENANT); yield commencer(c,acteur,demande); }
@@ -49,6 +60,7 @@ public final class PostgresPedagogieRepository {
     }
     public static final class AccesRefuse extends RuntimeException {
         public AccesRefuse() { super("Accès pédagogique refusé."); }
+        public AccesRefuse(String motif) { super(motif == null || motif.isBlank() ? "Accès pédagogique refusé." : motif); }
     }
     private static long id(JsonNode j,String champ) {
         if (!j.path(champ).isIntegralNumber() || j.path(champ).asLong() < 1) throw new IllegalArgumentException("Identifiant invalide");
@@ -118,7 +130,7 @@ public final class PostgresPedagogieRepository {
             """)){
             p.setLong(1,niveau);try(var r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Publiez d'abord cours, entraînement, questions du test et niveau précédent.");}
         }
-        // Même verrou apprenant que commencer/affecter : ne pas masquer une copie encore ouverte.
+        // Même verrou apprenant que commencer/inscription : ne pas masquer une copie encore ouverte.
         try(var p=c.prepareStatement("SELECT u.id FROM utilisateurs u JOIN affectations_pedagogiques a ON a.apprenant_id=u.id WHERE a.enseignant_id=? ORDER BY u.id FOR UPDATE OF u")){
             p.setLong(1,acteur);p.executeQuery().close();
         }
@@ -133,10 +145,18 @@ public final class PostgresPedagogieRepository {
         audit(c,acteur,"PUBLICATION_NIVEAU",niveau);return JSON.createObjectNode().put("ok",true).put("rang",rang);
     }
 
+    /**
+     * Droit d'édition d'un niveau : son auteur enseignant, ou l'administrateur pour un niveau
+     * <b>sans auteur</b> (continuité du service sur les contenus créés avant la migration 12).
+     *
+     * <p>Publier un cours, un entraînement ou un sujet de test est un acte d'enseignant :
+     * l'interface administrateur ne le propose plus et le serveur ne l'accepte plus sur le niveau
+     * d'un enseignant. Un client modifié ne peut donc pas rétablir ces actes côté administration.</p>
+     */
     private static void droitEdition(Connection c,long acteur,Session.Role role,long niveau) throws SQLException {
         exiger(role==Session.Role.ADMINISTRATEUR || role==Session.Role.ENSEIGNANT);
-        try(var p=c.prepareStatement("SELECT id FROM niveaux WHERE id=? AND (? OR cree_par=?)")) {
-            p.setLong(1,niveau);p.setBoolean(2,role==Session.Role.ADMINISTRATEUR);p.setLong(3,acteur);
+        try(var p=c.prepareStatement("SELECT id FROM niveaux WHERE id=? AND (cree_par=? OR (cree_par IS NULL AND ?))")) {
+            p.setLong(1,niveau);p.setLong(2,acteur);p.setBoolean(3,role==Session.Role.ADMINISTRATEUR);
             try(var r=p.executeQuery()){exiger(r.next());}
         }
     }
@@ -193,32 +213,227 @@ public final class PostgresPedagogieRepository {
         audit(c,acteur,"PREPARATION_TEST",test);return JSON.createObjectNode().put("ok",true);
     }
 
-    private static JsonNode affectations(Connection c) throws SQLException {
+    // ------------------------------------------------------------------ offres et inscriptions
+    /**
+     * Catalogue lu par l'apprenant : les enseignants actifs qui proposent une formation
+     * dans ce langage, avec les informations réellement publiées (offre, niveaux, accès)
+     * et l'état de sa propre demande. Aucune donnée inventée : un enseignant sans niveau
+     * publié n'apparaît pas.
+     */
+    private static JsonNode offres(Connection c,long acteur,JsonNode d) throws SQLException {
+        String langage=d.path("langage").asText();
+        if(!List.of("java","python","cpp").contains(langage))throw new IllegalArgumentException("Langage invalide");
         return liste(c,"""
-            SELECT u.id,u.nom,u.role::text,a.enseignant_id FROM utilisateurs u
-            LEFT JOIN affectations_pedagogiques a ON a.apprenant_id=u.id
-            WHERE u.actif AND u.statut_inscription='ACCEPTE' AND u.role IN ('APPRENANT','ENSEIGNANT')
-            ORDER BY u.role,u.nom,u.id
-            """);
+            WITH candidats AS (
+              SELECT o.enseignant_id,o.langage_id FROM offres_enseignants o
+              UNION
+              SELECT pe.enseignant_id,pe.langage_id FROM parcours_enseignants pe
+               WHERE EXISTS(SELECT 1 FROM niveaux n WHERE n.parcours_id=pe.parcours_id AND n.statut='PUBLIE')
+            )
+            SELECT e.id AS enseignant_id,e.nom AS enseignant,l.code AS langage,
+             coalesce(o.titre,'Formation '||l.libelle||' — '||e.nom) AS titre,
+             coalesce(o.presentation,'') AS presentation,
+             coalesce(o.auto_acceptation,FALSE) AS acceptation_bot,
+             coalesce(o.ouverte,TRUE) AS ouverte,
+             (SELECT count(*) FROM parcours_enseignants pe JOIN niveaux n ON n.parcours_id=pe.parcours_id
+               WHERE pe.enseignant_id=e.id AND pe.langage_id=l.id AND n.statut='PUBLIE') AS niveaux_publies,
+             (SELECT coalesce(string_agg('Niveau '||n.rang||' — '||n.titre,' · ' ORDER BY n.rang),'')
+                FROM parcours_enseignants pe JOIN niveaux n ON n.parcours_id=pe.parcours_id
+               WHERE pe.enseignant_id=e.id AND pe.langage_id=l.id AND n.statut='PUBLIE') AS niveaux_titres,
+             EXISTS(SELECT 1 FROM affectations_pedagogiques a WHERE a.apprenant_id=? AND a.enseignant_id=e.id) AS inscrit,
+             (SELECT dm.id FROM demandes_inscription dm WHERE dm.apprenant_id=? AND dm.enseignant_id=e.id ORDER BY dm.id DESC LIMIT 1) AS demande_id,
+             (SELECT dm.statut FROM demandes_inscription dm WHERE dm.apprenant_id=? AND dm.enseignant_id=e.id ORDER BY dm.id DESC LIMIT 1) AS statut_demande,
+             (SELECT dm.decide_par FROM demandes_inscription dm WHERE dm.apprenant_id=? AND dm.enseignant_id=e.id ORDER BY dm.id DESC LIMIT 1) AS decide_par,
+             (SELECT dm.motif FROM demandes_inscription dm WHERE dm.apprenant_id=? AND dm.enseignant_id=e.id ORDER BY dm.id DESC LIMIT 1) AS motif_demande
+            FROM candidats k
+            JOIN utilisateurs e ON e.id=k.enseignant_id
+            JOIN langages l ON l.id=k.langage_id
+            LEFT JOIN offres_enseignants o ON o.enseignant_id=e.id AND o.langage_id=l.id
+            WHERE l.code=? AND e.role='ENSEIGNANT' AND e.actif AND e.statut_inscription='ACCEPTE'
+              AND coalesce(o.ouverte,TRUE)
+            ORDER BY e.nom,e.id
+            """,acteur,acteur,acteur,acteur,acteur,langage);
     }
-    private static JsonNode affecter(Connection c,long acteur,JsonNode d) throws SQLException {
-        long apprenant=id(d,"apprenant"), enseignant=id(d,"enseignant");
-        // Verrou commun : sérialise l'affectation avec la création d'une copie.
+    /**
+     * Demande d'inscription envoyée par l'apprenant lui-même. Le nom saisi accompagne la
+     * demande ; l'enseignant la reçoit. Le bot de l'offre peut l'accepter immédiatement
+     * (politique PC1), sinon l'accès attend la décision de l'enseignant.
+     */
+    private static JsonNode inscrireOffre(Connection c,long acteur,JsonNode d) throws SQLException {
+        long enseignant=id(d,"enseignant");
+        String langage=d.path("langage").asText();
+        if(!List.of("java","python","cpp").contains(langage))throw new IllegalArgumentException("Langage invalide");
+        String nom=d.path("nom").asText("").strip();
+        String message=d.path("message").asText("").strip();
+        if(nom.length()<fr.ihm2026.api.service.BotDemandes.NOM_MIN || nom.length()>fr.ihm2026.api.service.BotDemandes.NOM_MAX)
+            throw new IllegalArgumentException("Saisissez votre nom complet (2 à 120 caractères).");
+        if(message.length()>600)throw new IllegalArgumentException("Message trop long : 600 caractères maximum.");
+        long langue;
+        try(var p=c.prepareStatement("SELECT id FROM langages WHERE code=?")){p.setString(1,langage);try(var r=p.executeQuery()){if(!r.next())throw new IllegalArgumentException("Langage non initialisé");langue=r.getLong(1);}}
+        // Verrou commun avec la création d'une copie : l'accès et les tentatives restent cohérents.
         try(var p=c.prepareStatement("SELECT id FROM utilisateurs WHERE id=? AND role='APPRENANT' AND actif AND statut_inscription='ACCEPTE' FOR UPDATE")) {
-            p.setLong(1,apprenant); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalArgumentException("Apprenant actif requis"); }
+            p.setLong(1,acteur); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalStateException("Votre compte apprenant n'est pas encore actif et accepté."); }
         }
         try(var p=c.prepareStatement("SELECT id FROM utilisateurs WHERE id=? AND role='ENSEIGNANT' AND actif AND statut_inscription='ACCEPTE' FOR SHARE")) {
-            p.setLong(1,enseignant); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalArgumentException("Enseignant actif requis"); }
+            p.setLong(1,enseignant); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalStateException("Cet enseignant n'est pas disponible."); }
         }
-        try(var p=c.prepareStatement("SELECT id FROM tentatives WHERE apprenant_id=? AND enseignant_id<>? AND statut IN ('EN_COURS','SOUMISE')")) {
-            p.setLong(1,apprenant);p.setLong(2,enseignant);
-            try(var r=p.executeQuery()) { if(r.next()) throw new IllegalStateException("Une copie reste à terminer/corriger avant réaffectation."); }
+        // L'offre peut être publiée avant les niveaux : ce qui compte est que l'enseignant
+        // propose réellement quelque chose (une offre rédigée ou au moins un niveau publié).
+        boolean ouverte=true,acceptationBot=false,offrePubliee=false;
+        try(var p=c.prepareStatement("""
+            SELECT count(*)>0,coalesce(max(o.ouverte),TRUE),coalesce(max(o.auto_acceptation),FALSE)
+            FROM offres_enseignants o WHERE o.enseignant_id=? AND o.langage_id=?
+            """)) {
+            p.setLong(1,enseignant);p.setLong(2,langue);
+            try(var r=p.executeQuery()) { r.next();offrePubliee=r.getBoolean(1);ouverte=r.getBoolean(2);acceptationBot=r.getBoolean(3); }
         }
+        boolean coursPublies;
+        try(var p=c.prepareStatement("""
+            SELECT EXISTS(SELECT 1 FROM parcours_enseignants pe JOIN niveaux n ON n.parcours_id=pe.parcours_id
+             WHERE pe.enseignant_id=? AND pe.langage_id=? AND n.statut='PUBLIE')
+            """)) {
+            p.setLong(1,enseignant);p.setLong(2,langue);
+            try(var r=p.executeQuery()) { r.next();coursPublies=r.getBoolean(1); }
+        }
+        if(!offrePubliee && !coursPublies)throw new IllegalStateException("Cet enseignant ne propose encore aucune formation dans ce langage.");
+        if(!ouverte)throw new IllegalStateException("Cet enseignant n'accepte pas de nouvelles demandes pour le moment.");
+        try(var p=c.prepareStatement("SELECT id FROM demandes_inscription WHERE apprenant_id=? AND enseignant_id=? AND statut='EN_ATTENTE' FOR UPDATE")) {
+            p.setLong(1,acteur);p.setLong(2,enseignant);
+            try(var r=p.executeQuery()) { if(r.next()) return JSON.createObjectNode().put("id",r.getLong(1)).put("statut","EN_ATTENTE").put("decide_par",(String)null).put("dejaEnvoyee",true)
+                    .put("message","Votre demande est déjà en attente chez cet enseignant."); }
+        }
+        long actuel=0;
+        try(var p=c.prepareStatement("SELECT enseignant_id FROM affectations_pedagogiques WHERE apprenant_id=? FOR UPDATE")) {
+            p.setLong(1,acteur); try(var r=p.executeQuery()) { if(r.next()) actuel=r.getLong(1); }
+        }
+        if(actuel==enseignant) return JSON.createObjectNode().put("statut","ACCEPTEE").put("decide_par","ENSEIGNANT").put("dejaEnvoyee",true)
+                .put("message","Vous êtes déjà inscrit auprès de cet enseignant : vos cours sont accessibles.");
+        if(actuel!=0) verifierCopiesOuvertes(c,acteur,enseignant);
+        var decision=fr.ihm2026.api.service.BotDemandes.depuisEnvironnement().analyser(nom,ouverte,acceptationBot);
+        ObjectNode resultat=JSON.createObjectNode();
+        try(var p=c.prepareStatement("""
+            INSERT INTO demandes_inscription(apprenant_id,enseignant_id,langage_id,nom_demandeur,message,statut,motif,decide_par,decide_le)
+            VALUES(?,?,?,?,?,CASE WHEN ? THEN 'ACCEPTEE' ELSE 'EN_ATTENTE' END,?,CASE WHEN ? THEN 'BOT' ELSE NULL END,CASE WHEN ? THEN now() ELSE NULL END)
+            RETURNING id,statut
+            """)) {
+            p.setLong(1,acteur);p.setLong(2,enseignant);p.setLong(3,langue);p.setString(4,nom);
+            p.setString(5,message.isEmpty()?null:message);p.setBoolean(6,decision.autoAccepter());
+            p.setString(7,decision.autoAccepter()?decision.motif():null);p.setBoolean(8,decision.autoAccepter());p.setBoolean(9,decision.autoAccepter());
+            try(var r=p.executeQuery()) { r.next();resultat.put("id",r.getLong(1)).put("statut",r.getString(2)); }
+        }
+        if(decision.autoAccepter()) accorderAcces(c,acteur,enseignant);
+        audit(c,acteur,decision.autoAccepter()?"DEMANDE_ACCES_ACCEPTEE_PAR_BOT":"DEMANDE_ACCES_TRANSMISE",enseignant);
+        resultat.put("decide_par",decision.autoAccepter()?"BOT":null);
+        resultat.put("motif",decision.motif());
+        resultat.put("message",decision.autoAccepter()
+                ? "Demande acceptée immédiatement par le bot : vos cours, exercices et tests sont accessibles."
+                : "Demande transmise à l'enseignant. L'écran se met à jour dès son acceptation.");
+        return resultat;
+    }
+    private static JsonNode mesDemandes(Connection c,long acteur) throws SQLException {
+        return liste(c,"""
+            SELECT dm.id,e.nom AS enseignant,l.code AS langage,dm.nom_demandeur,dm.statut,dm.decide_par,dm.motif,dm.cree_le,dm.decide_le,
+             EXISTS(SELECT 1 FROM affectations_pedagogiques a WHERE a.apprenant_id=dm.apprenant_id AND a.enseignant_id=dm.enseignant_id) AS inscrit
+            FROM demandes_inscription dm JOIN utilisateurs e ON e.id=dm.enseignant_id JOIN langages l ON l.id=dm.langage_id
+            WHERE dm.apprenant_id=? ORDER BY dm.id DESC LIMIT 100
+            """,acteur);
+    }
+    private static JsonNode annulerDemande(Connection c,long acteur,JsonNode d) throws SQLException {
+        long demande=id(d,"demande");
+        try(var p=c.prepareStatement("""
+            UPDATE demandes_inscription SET statut='ANNULEE',decide_par='APPRENANT',decide_le=now(),
+             motif='Demande retirée par l''apprenant.' WHERE id=? AND apprenant_id=? AND statut='EN_ATTENTE'
+            """)) {
+            p.setLong(1,demande);p.setLong(2,acteur);
+            if(p.executeUpdate()==0)throw new IllegalStateException("Cette demande n'est plus en attente.");
+        }
+        audit(c,acteur,"DEMANDE_ACCES_RETIREE",demande);return JSON.createObjectNode().put("ok",true);
+    }
+    /** L'offre publiée par l'enseignant : ce que les apprenants voient avant de s'inscrire. */
+    private static JsonNode monOffre(Connection c,long acteur) throws SQLException {
+        return liste(c,"""
+            SELECT l.code AS langage,o.titre,o.presentation,o.auto_acceptation,o.ouverte,o.maj_le,
+             (SELECT count(*) FROM parcours_enseignants pe JOIN niveaux n ON n.parcours_id=pe.parcours_id
+               WHERE pe.enseignant_id=? AND pe.langage_id=l.id AND n.statut='PUBLIE') AS niveaux_publies,
+             (SELECT count(*) FROM demandes_inscription dm WHERE dm.enseignant_id=? AND dm.langage_id=l.id AND dm.statut='EN_ATTENTE') AS demandes_attente,
+             (SELECT count(*) FROM affectations_pedagogiques a WHERE a.enseignant_id=?) AS apprenants_inscrits
+            FROM langages l LEFT JOIN offres_enseignants o ON o.enseignant_id=? AND o.langage_id=l.id
+            WHERE l.code IN ('java','python','cpp') ORDER BY l.code
+            """,acteur,acteur,acteur,acteur);
+    }
+    private static JsonNode publierOffre(Connection c,long acteur,JsonNode d) throws SQLException {
+        String langage=d.path("langage").asText();
+        if(!List.of("java","python","cpp").contains(langage))throw new IllegalArgumentException("Langage invalide");
+        String titre=d.path("titre").asText("").strip(),presentation=d.path("presentation").asText("").strip();
+        if(titre.length()<3 || titre.length()>180)throw new IllegalArgumentException("Titre de 3 à 180 caractères requis.");
+        if(presentation.length()<3 || presentation.length()>2000)throw new IllegalArgumentException("Présentation de 3 à 2000 caractères requise.");
+        boolean auto=d.path("auto_acceptation").asBoolean(false),ouverte=d.path("ouverte").asBoolean(true);
+        try(var p=c.prepareStatement("SELECT id FROM utilisateurs WHERE id=? AND role='ENSEIGNANT' AND actif AND statut_inscription='ACCEPTE' FOR UPDATE")) {
+            p.setLong(1,acteur); try(var r=p.executeQuery()) { exiger(r.next()); }
+        }
+        long langue;
+        try(var p=c.prepareStatement("SELECT id FROM langages WHERE code=?")) {
+            p.setString(1,langage);
+            try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalArgumentException("Langage non initialisé"); langue=r.getLong(1); }
+        }
+        try(var p=c.prepareStatement("""
+            INSERT INTO offres_enseignants(enseignant_id,langage_id,titre,presentation,auto_acceptation,ouverte) VALUES(?,?,?,?,?,?)
+            ON CONFLICT(enseignant_id,langage_id) DO UPDATE SET titre=excluded.titre,presentation=excluded.presentation,
+             auto_acceptation=excluded.auto_acceptation,ouverte=excluded.ouverte,maj_le=now()
+            """)) {
+            p.setLong(1,acteur);p.setLong(2,langue);p.setString(3,titre);p.setString(4,presentation);
+            p.setBoolean(5,auto);p.setBoolean(6,ouverte);p.executeUpdate();
+        }
+        audit(c,acteur,"PUBLICATION_OFFRE",langue);return JSON.createObjectNode().put("ok",true).put("langage",langage).put("auto_acceptation",auto).put("ouverte",ouverte);
+    }
+    private static JsonNode demandesRecues(Connection c,long acteur) throws SQLException {
+        return liste(c,"""
+            SELECT dm.id,dm.nom_demandeur,dm.message,dm.statut,dm.decide_par,dm.motif,dm.cree_le,dm.decide_le,
+             u.nom AS apprenant,u.email AS apprenant_email,l.code AS langage,
+             EXISTS(SELECT 1 FROM affectations_pedagogiques a WHERE a.apprenant_id=dm.apprenant_id AND a.enseignant_id=dm.enseignant_id) AS inscrit
+            FROM demandes_inscription dm JOIN utilisateurs u ON u.id=dm.apprenant_id JOIN langages l ON l.id=dm.langage_id
+            WHERE dm.enseignant_id=? ORDER BY (dm.statut='EN_ATTENTE') DESC,dm.id DESC LIMIT 200
+            """,acteur);
+    }
+    /** Décision de l'enseignant : l'acceptation ouvre l'accès aux cours publiés. */
+    private static JsonNode deciderDemande(Connection c,long acteur,JsonNode d) throws SQLException {
+        long demande=id(d,"demande");
+        if(!d.path("accepter").isBoolean())throw new IllegalArgumentException("Décision invalide : accepter est requis.");
+        boolean accepter=d.path("accepter").asBoolean();
+        String motif=d.path("motif").asText("").strip();
+        if(motif.length()>600)throw new IllegalArgumentException("Motif trop long : 600 caractères maximum.");
+        long apprenant=0;String statut=null;
+        try(var p=c.prepareStatement("SELECT apprenant_id,statut FROM demandes_inscription WHERE id=? AND enseignant_id=? FOR UPDATE")) {
+            p.setLong(1,demande);p.setLong(2,acteur);
+            try(var r=p.executeQuery()) { exiger(r.next());apprenant=r.getLong(1);statut=r.getString(2); }
+        }
+        if(!"EN_ATTENTE".equals(statut))throw new IllegalStateException("Cette demande est déjà traitée.");
+        if(accepter) {
+            try(var p=c.prepareStatement("SELECT id FROM utilisateurs WHERE id=? AND role='APPRENANT' AND actif AND statut_inscription='ACCEPTE' FOR SHARE")) {
+                p.setLong(1,apprenant); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalStateException("Ce compte apprenant n'est plus actif et accepté."); }
+            }
+            verifierCopiesOuvertes(c,apprenant,acteur);
+            accorderAcces(c,apprenant,acteur);
+        }
+        try(var p=c.prepareStatement("UPDATE demandes_inscription SET statut=?,motif=?,decide_par='ENSEIGNANT',decide_le=now() WHERE id=?")) {
+            p.setString(1,accepter?"ACCEPTEE":"REFUSEE");p.setString(2,motif.isEmpty()?null:motif);p.setLong(3,demande);p.executeUpdate();
+        }
+        audit(c,acteur,accepter?"ACCORD_ACCES_APPRENANT":"REFUS_ACCES_APPRENANT",demande);
+        return JSON.createObjectNode().put("ok",true).put("statut",accepter?"ACCEPTEE":"REFUSEE").put("demande",demande);
+    }
+    /** Accès aux cours publiés : écrit uniquement sur décision de l'enseignant ou de son bot. */
+    private static void accorderAcces(Connection c,long apprenant,long enseignant) throws SQLException {
         try(var p=c.prepareStatement("""
             INSERT INTO affectations_pedagogiques(apprenant_id,enseignant_id,affecte_par) VALUES(?,?,?)
             ON CONFLICT(apprenant_id) DO UPDATE SET enseignant_id=excluded.enseignant_id,affecte_par=excluded.affecte_par,maj_le=now()
-            """)) { p.setLong(1,apprenant);p.setLong(2,enseignant);p.setLong(3,acteur);p.executeUpdate(); }
-        audit(c,acteur,"AFFECTATION_APPRENANT",apprenant); return JSON.createObjectNode().put("ok",true);
+            """)) { p.setLong(1,apprenant);p.setLong(2,enseignant);p.setLong(3,enseignant);p.executeUpdate(); }
+    }
+    /** Un changement d'enseignant reste interdit tant qu'une copie n'est pas terminée et corrigée. */
+    private static void verifierCopiesOuvertes(Connection c,long apprenant,long enseignant) throws SQLException {
+        try(var p=c.prepareStatement("SELECT id FROM tentatives WHERE apprenant_id=? AND enseignant_id<>? AND statut IN ('EN_COURS','SOUMISE')")) {
+            p.setLong(1,apprenant);p.setLong(2,enseignant);
+            try(var r=p.executeQuery()) { if(r.next()) throw new IllegalStateException("Une copie reste à terminer ou à corriger avec l'enseignant actuel avant de changer d'enseignant."); }
+        }
     }
     private static JsonNode mesApprenants(Connection c,long acteur) throws SQLException {
         return liste(c,"SELECT u.id,u.nom FROM affectations_pedagogiques a JOIN utilisateurs u ON u.id=a.apprenant_id WHERE a.enseignant_id=? ORDER BY u.nom,u.id",acteur);
@@ -285,7 +500,7 @@ public final class PostgresPedagogieRepository {
         if(!infos.path("periode_ouverte").asBoolean())throw new IllegalStateException("Le test est en dehors de sa période d'ouverture.");
         long prof;
         try(var p=c.prepareStatement("SELECT a.enseignant_id FROM affectations_pedagogiques a JOIN utilisateurs u ON u.id=a.enseignant_id WHERE a.apprenant_id=? AND u.actif AND u.statut_inscription='ACCEPTE'")) {
-            p.setLong(1,acteur); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalStateException("L'administrateur doit d'abord vous affecter à un enseignant actif."); prof=r.getLong(1); }
+            p.setLong(1,acteur); try(var r=p.executeQuery()) { if(!r.next()) throw new IllegalStateException("Aucun enseignant ne vous a encore accepté : inscrivez-vous auprès d'un enseignant depuis le catalogue."); prof=r.getLong(1); }
         }
         long test,niveau; int seuil,max;
         try(var p=c.prepareStatement("""

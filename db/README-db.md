@@ -15,7 +15,9 @@ Chaîne de connexion : `jdbc:postgresql://localhost:5433/ihm2026` (utilisateur `
 Le port hôte par défaut est `5433` pour éviter un conflit avec un PostgreSQL déjà installé sur
 Windows. Il peut être remplacé avec la variable `IHM_DB_PORT`.
 Pour une base existante, appliquer aussi `08-auth-sessions.sql` puis
-`09-inscriptions-et-codes.sql` une fois avec `psql`.
+`09-inscriptions-et-codes.sql` une fois avec `psql`. Les migrations 10 à 16 s'appliquent de la
+même façon, dans l'ordre ; voir [docs/inscription-aux-offres.md](../docs/inscription-aux-offres.md)
+pour la migration 16.
 
 ## Réinitialiser
 ```bash
@@ -34,6 +36,7 @@ docker compose down -v && docker compose up -d
 | `07-auth.sql` | Migration idempotente des anciens mots de passe vers bcrypt (pgcrypto) et unicité de l'e-mail sans distinction de casse |
 | `08-auth-sessions.sql` | Empreintes de jetons, expiration des sessions et suivi des échecs de connexion |
 | `09-inscriptions-et-codes.sql` | Statut d'approbation des comptes et stockage des codes temporaires de connexion |
+| `16-offres-et-demandes-inscription.sql` | Offres de formation des enseignants (`offres_enseignants`) et demandes d'inscription des apprenants (`demandes_inscription`) : l'accès aux cours vient de la demande acceptée par l'enseignant ou par son bot, plus d'une affectation par l'administrateur |
 
 Le seed de démonstration utilise le mot de passe `demo` pour les comptes listés, en développement
 uniquement. Le mot de passe est stocké sous forme bcrypt ; ne pas conserver ces identifiants en
@@ -207,7 +210,7 @@ Voir [les étapes par niveau](../docs/parcours-par-niveau.md).
 `12-parcours-enseignants.sql` associe un parcours à chaque enseignant/langage. Ne déplace
 aucun niveau existant et ne modifie aucune copie. Appliquer après 11 sur base sauvegardée.
 La première publication d'un niveau du nouvel enseignant active ce parcours pour ses
-apprenants affectés dans ce langage. Lire [la procédure de bascule](../docs/niveaux-enseignant.md).
+apprenants inscrits dans ce langage. Lire [la procédure de bascule](../docs/niveaux-enseignant.md).
 
 ## Migration 13 — index de la file des comptes
 
@@ -237,6 +240,23 @@ initialise automatiquement les nouveaux volumes, mais ne migre **pas** les volum
 Les clients doivent également être mis à jour (et les MSI reconstruits pour la distribution).
 La migration ne stocke pas de mot de passe en clair et ne supprime pas les comptes.
 Voir [récupération et suppression des comptes](../docs/recuperation-et-suppression-comptes.md).
+
+## Migration 16 — offres des enseignants et demandes d'inscription
+
+`16-offres-et-demandes-inscription.sql` crée `offres_enseignants` (titre, présentation, ouverture,
+acceptation automatique) et `demandes_inscription` (nom saisi par l'apprenant, message, statut,
+décideur `BOT`/`ENSEIGNANT`/`APPRENANT`, motif). Elle ne supprime ni ne réécrit aucune donnée :
+les affectations déjà enregistrées restent valables. Appliquer après 15, sur base sauvegardée,
+service HTTPS arrêté :
+
+```powershell
+Get-Content -Raw -Encoding UTF8 .\db\16-offres-et-demandes-inscription.sql | docker exec -i ihm2026-postgres psql -v ON_ERROR_STOP=1 -U ihm2026 -d ihm2026
+```
+
+L'administrateur n'affecte plus les apprenants : l'accès aux cours vient de la demande acceptée
+par l'enseignant ou par le bot de son offre. Détails, politique du bot
+(`IHM_DEMANDE_BOT_MODE`) et recette :
+[inscription aux offres](../docs/inscription-aux-offres.md).
 
 ## Lanceur automatique Docker / PostgreSQL sous Windows (PC1)
 

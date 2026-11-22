@@ -12,7 +12,13 @@ final class ContenuNiveauView extends BorderPane {
         Label etat=new Label();etat.setWrapText(true);setCenter(new Label("Chargement du niveau…"));
         Button parcours=new Button("Revenir au parcours");parcours.setOnAction(e -> router.go(Router.PARCOURS));
         Button suivant=new Button(entrainement?"Passer au test final — sans IA":"Continuer vers l'entraînement avec IA");
-        suivant.setDisable(true);suivant.setOnAction(e -> router.go(entrainement?Router.TEST:Router.EXERCICE));
+        suivant.setDisable(true);
+        // La suite du niveau s'ouvre dans une seule fenêtre : l'atelier enchaîne
+        // cours → exercices → test final sans changer d'écran.
+        suivant.setOnAction(e -> {
+            Session.setEtapeAtelier(entrainement?Session.EtapeAtelier.TEST:Session.EtapeAtelier.EXERCICES);
+            router.go(Router.ATELIER);
+        });
         setBottom(new VBox(8,etat,new HBox(8,parcours,suivant)));
         TextArea code=new TextArea();code.setAccessibleText("Brouillon de code de l’entraînement, non sauvegardé");code.setPromptText("Votre brouillon d'entraînement (non sauvegardé)");code.setPrefRowCount(12);
         boolean[] modifie={false},remplissage={false};

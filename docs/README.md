@@ -1,6 +1,6 @@
 # Livrables de conception
 
-Référence logicielle : application **0.14.4**, branche `main` après la PR #31 (`2ae972b`), migrations PostgreSQL 01 à 14.
+Référence logicielle : application **0.15.0**, migrations PostgreSQL 01 à 16.
 
 | Fichier | Version | Contenu |
 |---|---|---|

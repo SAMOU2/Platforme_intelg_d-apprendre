@@ -6,7 +6,7 @@
 
   <groupId>fr.ihm2026</groupId>
   <artifactId>apprentissage</artifactId>
-  <version>0.14.4</version>
+  <version>0.15.0</version>
   <name>Plateforme d'apprentissage Java / Python / C++</name>
   <description>Projet d'IHM 2026 — client JavaFX (AtlantaFX + CSS3)</description>
 
