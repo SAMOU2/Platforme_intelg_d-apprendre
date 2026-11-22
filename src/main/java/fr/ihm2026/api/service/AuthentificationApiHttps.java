@@ -107,13 +107,13 @@ public final class AuthentificationApiHttps implements HttpHandler {
                 default -> envoyerJson(exchange, 404, erreur("Route inconnue."));
             }
         } catch (fr.ihm2026.api.persistence.PostgresPedagogieRepository.AccesRefuse ex) {
-            envoyerJson(exchange, 403, erreur("Accès pédagogique refusé."));
+            envoyerJson(exchange, 403, erreur(ex.getMessage()));
         } catch (PostgresAuthentificationService.AuthentificationRefuseeException ex) {
             envoyerJson(exchange, 401, erreur(REFUS));
         } catch (SQLException ex) {
             if (("/api/pedagogie".equals(exchange.getRequestURI().getPath()) || "/api/ia/aide".equals(exchange.getRequestURI().getPath()))
                     && ("42P01".equals(ex.getSQLState()) || "42703".equals(ex.getSQLState()))) {
-                envoyerJson(exchange, 503, erreur("Mise à jour de la base nécessaire : appliquer les migrations 10, 11 et 12 sur PC1."));
+                envoyerJson(exchange, 503, erreur("Mise à jour de la base nécessaire : appliquer les migrations 10, 11, 12 et 16 sur PC1."));
             } else if ("23505".equals(ex.getSQLState())) {
                 envoyerJson(exchange, 409, erreur("Un compte utilise déjà cette adresse e-mail."));
             } else {
@@ -122,7 +122,14 @@ public final class AuthentificationApiHttps implements HttpHandler {
         } catch (IllegalStateException ex) {
             envoyerJson(exchange, 409, erreur(ex.getMessage()));
         } catch (IllegalArgumentException ex) {
-            envoyerJson(exchange, 400, erreur("Requête invalide."));
+            // Les refus de saisie du parcours pédagogique (nom de l'apprenant, titre et
+            // présentation de l'offre, motif de décision, langage) portent une explication écrite
+            // pour la personne qui doit corriger son formulaire : elle est renvoyée telle quelle.
+            // Les routes d'authentification gardent le message générique.
+            String detail = ex.getMessage() == null ? "" : ex.getMessage().strip();
+            envoyerJson(exchange, 400, erreur("/api/pedagogie".equals(chemin) && !detail.isEmpty()
+                    ? detail
+                    : "Requête invalide."));
         } finally {
             long duree = java.time.Duration.ofNanos(System.nanoTime() - debut).toMillis();
             int statut = exchange.getResponseCode();

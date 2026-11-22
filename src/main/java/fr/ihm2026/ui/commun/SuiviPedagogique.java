@@ -80,7 +80,7 @@ public final class SuiviPedagogique extends VBox {
         }, resultat -> {
             table.getItems().clear();resultat[0].forEach(table.getItems()::add);
             StringBuilder noms=new StringBuilder();resultat[1].forEach(u -> noms.append(u.path("nom").asText()).append(" · "));
-            etat.setText(enseignant ? "Apprenants affectés : " + (noms.isEmpty()?"aucun — demander une affectation à l'administrateur":noms)
+            etat.setText(enseignant ? "Apprenants inscrits à vos cours : " + (noms.isEmpty()?"aucun pour l'instant — les apprenants s'inscrivent depuis leur interface, acceptez leurs demandes ci-dessus":noms)
                     : "Les notes ne sont visibles qu'après publication par l'enseignant. Les copies en attente ne sont pas notées automatiquement.");
             detail.clear();occupe(false);
         }, erreur -> {occupe(false);etat.setText(erreur.getMessage());});
@@ -189,34 +189,5 @@ public final class SuiviPedagogique extends VBox {
                         erreur -> Dialogue.erreur(owner,"Sujet non enregistré",erreur.getMessage()));
             });
         },erreur -> Dialogue.erreur(owner,"Catalogue inaccessible",erreur.getMessage()));
-    }
-
-    public static void affecter(javafx.stage.Window owner) {
-        TaskRunner.run(() -> appeler(demande("affectations")), lignes -> {
-            ComboBox<JsonNode> apprenants=new ComboBox<>(),enseignants=new ComboBox<>();
-            javafx.util.StringConverter<JsonNode> convertisseur=new javafx.util.StringConverter<>() {
-                public String toString(JsonNode n){return n==null?"":n.path("nom").asText()+" (#"+n.path("id").asText()+")";}
-                public JsonNode fromString(String s){return null;}
-            };
-            apprenants.setConverter(convertisseur);enseignants.setConverter(convertisseur);
-            lignes.forEach(u -> {if("APPRENANT".equals(u.path("role").asText()))apprenants.getItems().add(u);else enseignants.getItems().add(u);});
-            Dialog<ButtonType> dialog=new Dialog<>();dialog.initOwner(owner);dialog.setTitle("Affecter un apprenant à un enseignant");
-            Label instruction=new Label("Un enseignant responsable par apprenant. Les copies en attente bloquent une réaffectation.");instruction.setWrapText(true);
-            Label responsable=new Label();
-            apprenants.setOnAction(e -> {
-                var a=apprenants.getValue();if(a==null)return;
-                responsable.setText("Enseignant actuel : " + a.path("enseignant_id").asText("aucun"));
-            });
-            dialog.getDialogPane().setContent(new VBox(10,instruction,new Label("Apprenant"),apprenants,responsable,new Label("Enseignant"),enseignants));
-            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
-            Dialogue.appliquerTheme(dialog.getDialogPane(),owner);
-            var ok=dialog.getDialogPane().lookupButton(ButtonType.OK);
-            ok.disableProperty().bind(apprenants.valueProperty().isNull().or(enseignants.valueProperty().isNull()));
-            dialog.showAndWait().filter(b -> b==ButtonType.OK).ifPresent(b -> {
-                var d=demande("affecter").put("apprenant",apprenants.getValue().path("id").asLong()).put("enseignant",enseignants.getValue().path("id").asLong());
-                TaskRunner.run(() -> appeler(d),r -> Notifications.afficher(owner,Notifications.Type.SUCCES,"Affectation enregistrée. Actualisez le suivi enseignant."),
-                        erreur -> Dialogue.erreur(owner,"Affectation impossible",erreur.getMessage()));
-            });
-        },erreur -> Dialogue.erreur(owner,"Chargement impossible",erreur.getMessage()));
     }
 }

@@ -22,31 +22,37 @@ utilisé pour une session connectée).
 
 Le catalogue montre les brouillons et niveaux publiés de l'auteur. Les droits sont aussi
 vérifiés sur le serveur : changer un identifiant dans une requête ne permet pas de préparer
-ni de publier le niveau d'un autre enseignant. L'administrateur conserve ses accès de gestion
-existants ; ils ne sont pas une étape obligatoire de cette procédure.
+ni de publier le niveau d'un autre enseignant. L'administrateur conserve la gestion des comptes,
+mais il ne publie plus ni cours, ni entraînement, ni sujet de test sur le niveau d'un enseignant :
+il ne garde la main que sur un niveau sans auteur (`niveaux.cree_par IS NULL`), pour la continuité
+des contenus créés avant la migration 12. Aucune étape d'administration n'est nécessaire ici.
 
-## Apprenants affectés et parcours historiques
+## Apprenants inscrits et parcours historiques
 
-- L'administrateur continue d'approuver les comptes et d'affecter les apprenants aux enseignants.
+- L'administrateur continue d'approuver les comptes, mais **il n'affecte plus les apprenants** :
+  chaque apprenant s'inscrit lui-même depuis son catalogue, et l'enseignant accepte la demande
+  (ou active le bot de son offre). Voir [inscription-aux-offres.md](inscription-aux-offres.md).
 - Un enseignant possède un parcours distinct par langage. Ses niveaux publiés sont visibles
-  par ses apprenants affectés ; les niveaux privés des autres enseignants ne le sont jamais.
+  par les apprenants qu'il a acceptés ; les niveaux privés des autres enseignants ne le sont
+  jamais.
 - Créer un brouillon ne masque pas le parcours historique. **La première publication dans
-  un langage active le parcours de l'enseignant pour ses apprenants affectés dans ce langage.**
+  un langage active le parcours de l'enseignant pour les apprenants qu'il a acceptés.**
   Une confirmation dans l'interface explique cette bascule.
 - Les copies et notes historiques sont conservées et consultables dans le suivi. Elles ne
   valident pas automatiquement les nouveaux niveaux : le parcours de l'enseignant commence
   au niveau 1. Les autres langages conservent leurs parcours existants.
-- Si un apprenant affecté a encore une copie EN_COURS ou SOUMISE dans un ancien parcours du
+- Si un apprenant accepté a encore une copie EN_COURS ou SOUMISE dans un ancien parcours du
   même langage, le serveur refuse la publication jusqu'à abandon ou correction/publication.
   Les débuts de test et publications utilisent le verrou apprenant pour éviter de masquer
   une tentative lors d'une publication concurrente.
 - Sans niveau publié dans le parcours de l'enseignant pour ce langage, les niveaux historiques
   restent affichés. Ils ne sont pas attribués arbitrairement à l'enseignant et leurs auteurs
   ne sont pas modifiés. Les anciens niveaux partagés restent partagés ; l'isolation par
-  affectation concerne les nouveaux parcours enregistrés dans `parcours_enseignants`.
+  inscription acceptée concerne les nouveaux parcours enregistrés dans `parcours_enseignants`.
 
 Le parcours apprenant reste : **Cours → Entraînement avec IA → Test sans IA → Soumission →
-Correction de l'enseignant → Note et décision publiées → Niveau suivant si validé**.
+Correction de l'enseignant → Note et décision publiées → Niveau suivant si validé**, les trois
+premières étapes s'enchaînant désormais dans la même fenêtre.
 Actualiser le parcours apprenant après publication. Aucun cours ni sujet n'est inventé ou
 publié automatiquement ; l'enseignant choisit les contenus pédagogiques.
 
@@ -76,18 +82,20 @@ montage seul ne suffit pas.
 
 ## Recette et limites
 
-Tester avec deux enseignants et leurs apprenants affectés :
+Tester avec deux enseignants et les apprenants qui se sont inscrits auprès d'eux :
 
 - création niveau 1 et niveau 2, visibilité des brouillons dans le catalogue de l'auteur ;
 - refus publication incomplète et refus publication du niveau 2 avant le niveau 1 ;
 - refus lecture/édition/publication par l'autre enseignant ou par un apprenant ;
 - ancienne copie ouverte : refus bascule ; après publication de sa correction : bascule ;
-- apprenants : seuls niveaux publiés de leur enseignant, niveau 2 verrouillé avant validation ;
+- apprenants : catalogue des enseignants, demande d'inscription acceptée ou refusée, seuls
+  niveaux publiés de leur enseignant après acceptation, niveau 2 verrouillé avant validation ;
 - cours, entraînement IA, test sans IA, soumission, correction humaine, publication et déblocage ;
 - conservation des notes et copies historiques après bascule.
 
 Le test PostgreSQL conditionnel de `PostgresPedagogieRepositoryIntegrationTest` est étendu
-pour ces règles. Nécessite une base de test initialisée jusqu'à 12. Non exécuté dans le sandbox
+pour ces règles, et couvre aussi l'offre, la demande d'inscription et son acceptation.
+Nécessite une base de test initialisée jusqu'à 16. Non exécuté dans le sandbox
 sans JDK/Maven/PostgreSQL : tests Python et analyses syntaxiques ne prouvent pas la compilation
 ni le fonctionnement JavaFX/Windows. Aucune nouvelle capture réelle n'est revendiquée.
 
@@ -101,7 +109,8 @@ entre parcours ; les anciennes copies restent dans le suivi de leurs correcteurs
 
 ## Actualisation automatique côté apprenant
 
-Les vues connectées Parcours, Cours et Exercice interrogent PC1 toutes les cinq secondes
+Les vues connectées Parcours, Cours, Exercice, Enseignants et inscription, atelier du niveau
+et demandes reçues par l'enseignant interrogent PC1 toutes les cinq secondes
 pendant qu'elles sont affichées. L'ouverture de la vue déclenche aussi une lecture immédiate.
 Le bouton manuel du parcours reste disponible mais n'est plus nécessaire pour détecter
 une publication, une affectation ou une validation publiée. Le mécanisme est du polling,

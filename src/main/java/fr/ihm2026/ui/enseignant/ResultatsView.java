@@ -29,8 +29,17 @@ public class ResultatsView extends BorderPane {
     public ResultatsView() {
         if (fr.ihm2026.reseau.Reseau.sessionCompteInstallee()) {
             getStyleClass().add("vue");
-            setTop(new EnteteVue("Mes apprenants et corrections", "Copies réelles reçues sur PC1. La publication est une décision humaine."));
-            ScrollPane scroll = new ScrollPane(new fr.ihm2026.ui.commun.SuiviPedagogique(true));
+            setTop(new EnteteVue("Mes apprenants et corrections",
+                    "Les apprenants s'inscrivent eux-mêmes : acceptez leurs demandes, puis corrigez "
+                            + "leurs copies. Copies réelles reçues sur PC1 ; la publication est une décision humaine."));
+            // Les demandes d'inscription passent avant les copies : c'est elles qui ouvrent l'accès
+            // aux cours publiés (l'administrateur n'affecte plus les apprenants).
+            javafx.scene.control.TitledPane demandes = new javafx.scene.control.TitledPane(
+                    "Demandes d'inscription reçues", new DemandesInscriptionView());
+            demandes.setExpanded(true);
+            VBox contenu = new VBox(14, demandes, new fr.ihm2026.ui.commun.SuiviPedagogique(true));
+            contenu.getStyleClass().add("colonne");
+            ScrollPane scroll = new ScrollPane(contenu);
             scroll.setFitToWidth(true); setCenter(scroll); return;
         }
         getStyleClass().add("vue");

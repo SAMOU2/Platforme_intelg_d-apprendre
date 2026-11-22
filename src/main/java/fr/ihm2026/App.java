@@ -91,6 +91,8 @@ public class App extends Application {
         router.register(Router.RESEAU, () -> new fr.ihm2026.ui.commun.VueConnexionServeur(
                 router, fr.ihm2026.reseau.IdentitePoste.role()));
         router.register(Router.PARCOURS, () -> new ParcoursView(router));
+        router.register(Router.OFFRES, () -> new fr.ihm2026.ui.apprenant.OffresEnseignantsView(router));
+        router.register(Router.ATELIER, () -> new fr.ihm2026.ui.apprenant.AtelierNiveauView(router));
         router.register(Router.COURS, () -> new CoursView(router));
         router.register(Router.EXERCICE, () -> new ExerciceView(router));
         router.register(Router.TEST, () -> new TestView(router));
