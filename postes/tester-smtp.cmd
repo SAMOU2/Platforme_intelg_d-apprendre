@@ -78,9 +78,21 @@ if not defined DEPENDANCES (
     goto :echec
 )
 
+REM Compiler explicitement puis executer : le mode "java Fichier.java" compile avec le
+REM classpath mais n'execute pas avec la meme liste de jars (jakarta.mail manquait au runtime).
+set "CLASSE_TEST=%CD%\target\smtp-test-classes"
+if exist "%CLASSE_TEST%" rd /s /q "%CLASSE_TEST%"
+mkdir "%CLASSE_TEST%" 2>nul
+echo Compilation de l'outil de test...
+"%JAVA_HOME%\bin\javac.exe" -encoding UTF-8 -cp "%CD%\target\classes;%DEPENDANCES%" -d "%CLASSE_TEST%" "%~dp0TesterSmtp.java"
+if errorlevel 1 (
+    echo [ERREUR] Compilation de TesterSmtp.java impossible. Un message javac explique la cause ci-dessus.
+    goto :echec
+)
+
 echo Envoi du message de test a %~1 ...
 echo.
-"%JAVA_HOME%\bin\java.exe" -cp "%CD%\target\classes;%DEPENDANCES%" "%~dp0TesterSmtp.java" "%~1"
+"%JAVA_HOME%\bin\java.exe" -cp "%CLASSE_TEST%;%CD%\target\classes;%DEPENDANCES%" TesterSmtp "%~1"
 set "RESULTAT=%ERRORLEVEL%"
 echo.
 if not "%RESULTAT%"=="0" (
