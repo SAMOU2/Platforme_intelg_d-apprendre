@@ -29,8 +29,9 @@ if not exist "target\sonde-animations-classpath.txt" (
     goto :echec
 )
 
+REM set /p tronque la ligne a 1023 caracteres : lire avec for /f, comme les scripts de poste.
 set "DEPENDENCIES="
-set /p "DEPENDENCIES="<"target\sonde-animations-classpath.txt"
+for /f "usebackq delims=" %%L in ("target\sonde-animations-classpath.txt") do set "DEPENDENCIES=%%L"
 if not defined DEPENDENCIES (
     echo [ERREUR] Le classpath des dependances est vide.
     goto :echec
