@@ -154,3 +154,21 @@ Pour tester sur **un seul ordinateur**, suivre exactement le même ordre : lance
 - **PC1 annonce une configuration absente** : vérifier `postes\configuration-PC1.local.cmd` sur PC1 uniquement.
 - **Le client ne trouve pas la plateforme** : vérifier que les deux fenêtres PC1 sont toujours ouvertes et que tous les postes utilisent le même réseau. Ne pas saisir `127.0.0.1` sur un autre ordinateur.
 - **Une erreur s’affiche** : lire le premier message `[ERREUR]`. Ne pas supprimer le volume Docker ni la configuration privée pour “réessayer”.
+
+### 4.5 Lancer Maven à la main (dépannage)
+
+Les scripts du dossier `postes\` appellent le wrapper à votre place. Pour enchaîner compilation et tests directement dans un terminal, se placer **à la racine du projet**, là où se trouvent `pom.xml` et `mvnw.cmd`.
+
+Dans **cmd.exe** :
+
+```bat
+mvnw.cmd -B clean test
+```
+
+Dans **PowerShell**, le nom seul ne suffit pas : PowerShell ne cherche pas les exécutables dans le dossier courant et répond `The term 'mvnw.cmd' is not recognized as the name of a cmdlet...`. Il faut préfixer par `.\` :
+
+```powershell
+.\mvnw.cmd -B clean test
+```
+
+Formes équivalentes depuis PowerShell : `cmd /c mvnw.cmd -B clean test`, ou `cmd /c mvn -B clean test` si Maven est installé sur le poste. Pour ouvrir l’interface : `.\mvnw.cmd -B javafx:run` ; les scripts de poste restent la voie recommandée, car ils vérifient d’abord le JDK 25 et le dossier du projet.
