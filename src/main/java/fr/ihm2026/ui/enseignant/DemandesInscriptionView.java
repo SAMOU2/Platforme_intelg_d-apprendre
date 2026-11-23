@@ -173,7 +173,7 @@ final class DemandesInscriptionView extends VBox {
         dialogue.setHeaderText("Refus de la demande de « " + nom + " »");
         dialogue.getDialogPane().setContent(new VBox(10, new Label("Motif transmis à l'apprenant"), motif));
         dialogue.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        Button confirmer = dialogue.getDialogPane().lookupButton(ButtonType.OK);
+        Button confirmer = Dialogue.bouton(dialogue.getDialogPane(), ButtonType.OK);
         confirmer.setText("Refuser la demande");
         Dialogue.appliquerTheme(dialogue.getDialogPane(), getScene().getWindow());
         dialogue.showAndWait().filter(b -> b == ButtonType.OK)
