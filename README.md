@@ -12,9 +12,9 @@ Cours → Entraînement avec aide IA → Test final sans IA   (les trois dans la
       → Correction par l’enseignant → Niveau suivant si le test est validé
 ```
 
-- **L’administrateur** gère les comptes et leurs rôles : approbation des inscriptions, PIN d’activation, activation, désactivation, suppression et journal d’audit. Il n’affecte plus les apprenants aux enseignants et ne publie ni cours ni sujet de test.
-- **L’enseignant** publie l’offre que les apprenants voient, crée et publie les niveaux, les cours, les exercices et les tests, accepte les demandes d’inscription (ou laisse son bot les accepter) et corrige les tests finaux.
-- **L’apprenant** choisit un enseignant dans son catalogue, clique sur « S’inscrire » et saisit son nom : la demande part à l’enseignant. Dès l’acceptation, il suit les niveaux dans l’ordre — cours, exercices puis test final dans la même fenêtre — et consulte le résultat publié par son enseignant.
+- **L’administrateur** gère les comptes et leurs rôles : approbation des inscriptions, PIN d’activation, activation, désactivation, suppression et journal d’audit. Il n’affecte plus les apprenants aux enseignants et ne publie ni cours ni test.
+- **L’enseignant** publie son offre, crée et publie niveaux, cours, exercices et tests, accepte les demandes d’inscription (ou laisse son bot le faire) et corrige les tests finaux.
+- **L’apprenant** choisit un enseignant dans le catalogue, clique sur « S’inscrire » et saisit son nom. Dès l’acceptation, il suit les niveaux dans l’ordre — cours, exercices, test final dans la même fenêtre — et consulte le résultat publié.
 - **L’IA** aide uniquement pendant l’entraînement. Elle ne corrige pas le test final, ne donne pas la note et ne débloque pas le niveau suivant.
 
 ## 2. Architecture
@@ -35,8 +35,8 @@ PC1 → NVIDIA : aide IA pendant l’entraînement uniquement
 
 À retenir :
 
-- **PC1 est le seul serveur.** Il contient la base PostgreSQL, vérifie les comptes et les rôles, conserve les niveaux, les copies et les progressions.
-- **PC2, PC3 et PC4 sont des clients JavaFX.** Ils n’installent ni Docker ni PostgreSQL et ne reçoivent aucun secret du serveur.
+- **PC1 est le seul serveur** : base PostgreSQL, vérification des comptes et rôles, niveaux, copies et progressions.
+- **PC2, PC3 et PC4 sont des clients JavaFX** : ni Docker, ni PostgreSQL, aucun secret du serveur.
 - Le script lancé sur un client fixe l’interface attendue, mais **PC1 revérifie toujours le compte et son rôle**.
 - Les clients recherchent automatiquement PC1 sur le même Wi-Fi ou réseau local. Le port HTTPS peut changer à chaque démarrage : il est annoncé par PC1.
 - PC1, PC2, PC3 et PC4 sont des **rôles logiques**. Pour un test, un même ordinateur peut ouvrir les deux services PC1 et les trois interfaces clientes.
@@ -54,7 +54,7 @@ Technologies du projet : Java 25, JavaFX, Maven Wrapper, PostgreSQL 16 avec pgve
 | JDK 25 LTS complet | Oui | Oui | Compiler et lancer l’application. Définir `JAVA_HOME` ou ajouter son dossier `bin` au `PATH`. |
 | Docker Desktop | Oui | Non | Démarre PostgreSQL uniquement sur PC1. |
 | Git | Facultatif | Facultatif | Récupérer et mettre à jour le projet ; un ZIP complet convient aussi. |
-| VS Code | Facultatif | Facultatif | Lire ou modifier le code et la configuration ; il n’est pas nécessaire pour lancer l’application. |
+| VS Code | Facultatif | Facultatif | Lire ou modifier le code ; inutile pour lancer l’application. |
 
 Il faut aussi :
 
@@ -106,10 +106,7 @@ Cette préparation se fait **une seule fois sur le poste choisi comme PC1**. Si 
    set "IHM_AUTH_PORT=0"
    ```
 
-7. Approuver le certificat public créé dans `postes\secrets\autorite-ihm.crt` :
-   - sur PC1 et sur chaque client, lancer `postes\approuver-autorite-client.bat` ;
-   - fournir uniquement le fichier `.crt` et vérifier l’empreinte SHA256 affichée avec celle de PC1 ;
-   - si `keytool` refuse l’écriture, relancer le script avec les droits administrateur ; il peut demander le mot de passe du magasin Java (`changeit` par défaut s’il n’a jamais été modifié).
+7. Approuver le certificat public `postes\secrets\autorite-ihm.crt` : lancer `postes\approuver-autorite-client.bat` sur PC1 et sur chaque client, fournir uniquement le `.crt` et vérifier l’empreinte SHA256 affichée. Si `keytool` refuse l’écriture, relancer en administrateur (mot de passe du magasin Java : `changeit` par défaut).
 
 > Ne jamais copier `configuration-PC1.local.cmd` ni un fichier `.p12` sur un client. Seul le certificat public `.crt` peut être transmis.
 
@@ -155,20 +152,10 @@ Pour tester sur **un seul ordinateur**, suivre exactement le même ordre : lance
 - **Le client ne trouve pas la plateforme** : vérifier que les deux fenêtres PC1 sont toujours ouvertes et que tous les postes utilisent le même réseau. Ne pas saisir `127.0.0.1` sur un autre ordinateur.
 - **Une erreur s’affiche** : lire le premier message `[ERREUR]`. Ne pas supprimer le volume Docker ni la configuration privée pour “réessayer”.
 
-### 4.5 Lancer Maven à la main (dépannage)
+### 4.5 Maven à la main (dépannage)
 
-Les scripts du dossier `postes\` appellent le wrapper à votre place. Pour enchaîner compilation et tests directement dans un terminal, se placer **à la racine du projet**, là où se trouvent `pom.xml` et `mvnw.cmd`.
+À la racine du projet : `mvnw.cmd -B clean test` (cmd.exe) ou `.\mvnw.cmd -B clean test` sous **PowerShell**, qui ne cherche pas dans le dossier courant (`mvnw.cmd` seul répond `not recognized`). Interface : `.\mvnw.cmd -B javafx:run` ; les scripts de `postes\` restent recommandés, ils vérifient le JDK 25.
 
-Dans **cmd.exe** :
+### 4.6 Aucun code reçu par e-mail
 
-```bat
-mvnw.cmd -B clean test
-```
-
-Dans **PowerShell**, le nom seul ne suffit pas : PowerShell ne cherche pas les exécutables dans le dossier courant et répond `The term 'mvnw.cmd' is not recognized as the name of a cmdlet...`. Il faut préfixer par `.\` :
-
-```powershell
-.\mvnw.cmd -B clean test
-```
-
-Formes équivalentes depuis PowerShell : `cmd /c mvnw.cmd -B clean test`, ou `cmd /c mvn -B clean test` si Maven est installé sur le poste. Pour ouvrir l’interface : `.\mvnw.cmd -B javafx:run` ; les scripts de poste restent la voie recommandée, car ils vérifient d’abord le JDK 25 et le dossier du projet.
+Lancer `postes\tester-smtp.cmd votre-adresse@example.org` sur PC1 : il donne la cause exacte (configuration absente, authentification refusée, réseau injoignable). Le service affiche aussi une ligne `[smtp]` au démarrage. Détail : `docs/recuperation-et-suppression-comptes.md`.

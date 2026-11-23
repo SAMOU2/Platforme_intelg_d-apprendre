@@ -15,6 +15,43 @@ indésirables et les journaux du service si aucun code n'arrive. Après succès,
 connexion et appareils de confiance de ce compte sont révoqués ; il faut se reconnecter. Le code de
 réinitialisation n'est pas un code de connexion ni un PIN d'activation.
 
+### Aucun code ne part : diagnostic
+
+L'interface répond volontairement la même phrase dans tous les cas (« Si le compte est éligible, un
+code sera envoyé par e-mail ») : elle ne révèle jamais si le compte existe. C'est donc la console du
+service d'authentification de PC1 qui porte la cause.
+
+1. **Lancer `postes\tester-smtp.cmd votre-adresse@example.org` sur PC1.** Le script relit
+   `postes\configuration-PC1.local.cmd`, envoie un vrai message et affiche la cause exacte de
+   l'échec. Il ne remplace pas l'étape 2 : il confirme d'abord que le SMTP fonctionne.
+
+2. **Lire la ligne `[smtp]` affichée au démarrage** de `postes\authentification-PC1.bat` :
+
+   - « non configuré (IHM_SMTP_HOST ou IHM_SMTP_FROM absent) » : renseigner les deux variables dans
+     `postes\configuration-PC1.local.cmd`, puis redémarrer le service. Aucun code ne peut partir
+     sans elles.
+   - « STARTTLS obligatoire » avec un fournisseur qui impose le port 465 : ajouter
+     `set "IHM_SMTP_SSL=1"`, ou passer `IHM_SMTP_PORT` à 465 (le mode SMTPS est alors déduit).
+   - « authentification activée » : le couple `IHM_SMTP_USER` / `IHM_SMTP_PASSWORD` doit être
+     exact. Un identifiant défini sans mot de passe fait refuser le démarrage.
+
+3. **Relancer une demande** puis relire la console :
+
+   - `envoi du courriel impossible : ... 535 Authentication failed` → identifiant ou mot de passe
+     SMTP refusé (beaucoup de fournisseurs exigent un « mot de passe d'application »).
+   - `Connection refused`, `timed out`, `UnknownHostException` → hôte, port, pare-feu, réseau ou
+     proxy : tester `Test-NetConnection smtp.fournisseur.example -Port 587` dans PowerShell.
+   - `Table ou fonction absente ... 15-reinitialisation-mot-de-passe.sql` → la migration 15 n'est
+     pas appliquée. Un volume Docker déjà créé ne rejoue pas `db/*.sql` ; appliquer le fichier
+     manuellement :
+     `docker exec -i ihm2026-postgres psql -U ihm2026 -d ihm2026 < db/15-reinitialisation-mot-de-passe.sql`
+     puis redémarrer le service d'authentification.
+   - `file de réinitialisation pleine` → plus de 100 demandes en attente : réessayer plus tard.
+
+4. **Rien du tout dans la console, et aucun code reçu** : le compte n'est pas éligible (inconnu,
+   inactif, inscription non acceptée, ou quota de trois demandes/heure atteint). Vérifier dans
+   `Comptes et rôles` que le compte est actif et son inscription acceptée.
+
 Avant usage, sauvegarder la base, appliquer la migration 15 aux bases existantes selon
 [README-db](../db/README-db.md#migration-15--mot-de-passe-oublié), redémarrer PC1 et mettre à jour
 les clients. Un serveur non migré ne peut pas envoyer le code. Ne pas désactiver TLS ni partager

@@ -20,12 +20,16 @@ REM set "IHM_TLS_PASSWORD=REMPLACER_PAR_VOTRE_SECRET"
 REM 0 laisse Windows choisir un port HTTPS libre, annonce aux clients via la decouverte.
 set "IHM_AUTH_PORT=0"
 
-REM Serveur SMTP reel : STARTTLS obligatoire, port 587 par defaut.
+REM Serveur SMTP reel : sans ces lignes, aucun code (PIN, connexion, mot de passe oublie)
+REM ne peut partir. Le service affiche au demarrage une ligne [smtp] avec la configuration lue.
+REM Port 587 : STARTTLS obligatoire. Port 465 : TLS implicite (SMTPS) choisi automatiquement.
 REM set "IHM_SMTP_HOST=smtp.votre-fournisseur.example"
 REM set "IHM_SMTP_FROM=adresse-expeditrice@example.org"
 REM set "IHM_SMTP_USER=utilisateur-smtp"
 REM set "IHM_SMTP_PASSWORD=REMPLACER_PAR_VOTRE_SECRET"
 set "IHM_SMTP_PORT=587"
+REM Forcer le mode TLS si le fournisseur sort des conventions de port : 1 = SMTPS, 0 = STARTTLS.
+REM set "IHM_SMTP_SSL=0"
 
 REM Scalabilite des inscriptions : bot de tri des apprenants uniquement.
 REM Sans ces lignes, le mode MANUEL historique reste actif. Les enseignants restent toujours

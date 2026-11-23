@@ -67,6 +67,9 @@ public final class AuthentificationApiHttps implements HttpHandler {
         this.email = java.util.Objects.requireNonNull(email, "email");
         System.out.println("[inscription-bot] Mode du bot de tri des apprenants : "
                 + botInscription.mode());
+        // Au démarrage, dire si les codes pourront partir : sans SMTP, inscription, connexion
+        // et réinitialisation échouent et l'utilisateur ne voit qu'un silence côté interface.
+        System.out.println("[smtp] Configuration d'envoi des codes : " + this.email.resume());
     }
 
     @Override
@@ -280,8 +283,22 @@ public final class AuthentificationApiHttps implements HttpHandler {
                                 + "\nIl expire dans 10 minutes. Ne le communiquez à personne."
                                 + "\nSi vous n'avez pas demandé ce code, ignorez ce message.");
                     }
-                } catch (SQLException | RuntimeException ex) {
-                    System.err.println("[auth-https] réinitialisation : envoi ou stockage indisponible.");
+                } catch (SQLException ex) {
+                    // Cause la plus fréquente : migration 15 non appliquée au volume existant
+                    // (les scripts de db/ ne sont rejoués que sur un volume neuf).
+                    String etat = ex.getSQLState();
+                    boolean migration = "42P01".equals(etat) || "42703".equals(etat) || "42883".equals(etat);
+                    System.err.println("[auth-https] réinitialisation : stockage indisponible."
+                            + (migration
+                                    ? " Table ou fonction absente : appliquer db/15-reinitialisation-mot-de-passe.sql"
+                                            + " sur ce volume (voir db/README-db.md), puis redémarrer le service."
+                                    : " Vérifier PostgreSQL et les migrations (db/README-db.md).")
+                            + " SQLState=" + etat);
+                } catch (RuntimeException ex) {
+                    // Aucun secret ni adresse ici : seulement la cause SMTP, pour comprendre
+                    // pourquoi aucun code n'est parti.
+                    System.err.println("[auth-https] réinitialisation : envoi du courriel impossible : "
+                            + messageExplicite(ex));
                 }
             });
         } catch (java.util.concurrent.RejectedExecutionException ex) {
@@ -894,6 +911,23 @@ public final class AuthentificationApiHttps implements HttpHandler {
             }
             return MAPPER.readTree(donnees);
         }
+    }
+
+    /**
+     * Message court et affichable d'une erreur d'envoi. La cause profonde de Jakarta Mail
+     * (« Connection refused », « 535 Authentication failed »…) est celle qui aide l'administrateur ;
+     * les messages génériques du type « Impossible d'envoyer l'e-mail » n'apprennent rien.
+     */
+    static String messageExplicite(Throwable erreur) {
+        StringBuilder message = new StringBuilder();
+        for (Throwable cause = erreur; cause != null; cause = cause.getCause()) {
+            if (cause.getMessage() != null && !cause.getMessage().isBlank()) {
+                if (message.length() > 0) message.append(" / ");
+                message.append(cause.getMessage());
+            }
+            if (cause.getCause() == cause) break;
+        }
+        return message.length() == 0 ? erreur.getClass().getSimpleName() : message.toString();
     }
 
     private static ObjectNode erreur(String message) {
