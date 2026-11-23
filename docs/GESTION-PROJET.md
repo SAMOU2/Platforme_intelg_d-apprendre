@@ -4,7 +4,7 @@ Ce fichier est le registre central des demandes, du découpage, des responsables
 et des preuves de validation. Toute nouvelle demande y est inscrite avant de commencer le travail.
 Les responsables sont pour le moment des rôles : l'équipe peut remplacer ces rôles par des noms.
 
-**Dernière mise à jour :** 2026-10-28.
+**Dernière mise à jour :** 2026-11-22.
 
 ## État de référence du projet
 
@@ -35,6 +35,7 @@ fonctions de production :
 | IHM-011 | Fiabiliser et vérifier les lanceurs Windows | P1 | Terminé | Responsable livraison | — |
 | IHM-012 | Vérifier les scénarios d'échec et le lancement complet des postes Windows | P1 | À faire | Qualité / livraison | IHM-011 |
 | IHM-013 | Enrichir et valider le modèle local sur des questions inédites | P1 | En cours | Données IA / qualité | — |
+| IHM-014 | Inscrire l'apprenant auprès d'un enseignant et retirer l'affectation de l'administration | P0 | En cours | Développement interface / serveur | — |
 
 **Tâche en cours : IHM-004.** Sur décision de l'utilisateur, l'authentification sécurisée côté
 serveur précède IHM-003. La gestion persistante des comptes dépend maintenant de cette API
@@ -254,6 +255,48 @@ certificat approuvé par chaque poste a été confirmé par l'utilisateur.
   les résultats sont consignés ici.
 - **Validation / limites :** à consigner à la clôture.
 
+### IHM-014 — Inscrire l'apprenant auprès d'un enseignant et retirer l'affectation de l'administration
+
+- **Objectif :** l'administrateur ne publie plus de cours, ne prépare plus de test et n'affecte plus
+  d'apprenant ; l'apprenant voit dans son interface les enseignants qui proposent réellement une
+  formation, clique sur « S'inscrire », saisit son nom, et la demande est transmise à l'enseignant,
+  qui l'accepte — le bot de l'offre pouvant l'accepter immédiatement. Après acceptation, cours,
+  exercices et test final s'enchaînent dans la même fenêtre.
+- **Priorité / état :** P0 / En cours.
+- **Responsable :** développement interface / serveur.
+- **Découpage :**
+  1. Migration 16 : tables `offres_enseignants` (titre, présentation, acceptation automatique,
+     ouverture) et `demandes_inscription` (nom saisi, message, statut, décideur, motif), idempotente
+     et non destructive.
+  2. Serveur : actions apprenant `offres`, `inscrire-offre`, `mes-demandes`, `annuler-demande` ;
+     actions enseignant `mon-offre`, `publier-offre`, `demandes-recues`, `decider-demande` ;
+     `affectations` et `affecter` refusées pour tous les rôles, administration comprise ;
+     `publier-contenus`, `preparer-test` et `publier-niveau` refusées à l'administrateur sur le
+     niveau d'un enseignant (main conservée seulement sur un niveau sans auteur).
+  3. Bot d'acceptation explicable (`BotDemandes`) : modes MANUEL, OFFRES (défaut) et AUTO, piloté
+     par `IHM_DEMANDE_BOT_MODE`, décision motivée par `decide_par = 'BOT'` et un motif lisible.
+  4. Interfaces : catalogue apprenant « Enseignants et inscriptions », atelier unique
+     « Cours, exercices et test », file de demandes et réglage de l'offre côté enseignant,
+     périmètre réduit côté administrateur.
+- **Critères d'acceptation :** aucun écran d'administration ne propose d'affecter un apprenant ni de
+  publier un cours ou un test, et le serveur refuse ces actions à un administrateur sur le niveau
+  d'un enseignant ; une demande envoyée par l'apprenant apparaît chez l'enseignant
+  uniquement ; une acceptation (humaine ou bot) ouvre les niveaux publiés ; une décision déjà
+  enregistrée ne peut pas être rejouée ; cours, exercices puis test s'utilisent sans ouvrir d'autre
+  fenêtre.
+- **Validation :** `python3 -m unittest discover -s outils/tests -p "test_*.py"` — 97 tests,
+  7 échecs, tous identiques à l'état de référence antérieur au changement (écran de connexion,
+  déploiement central, visuel de connexion) et sans rapport avec les fichiers modifiés ici ;
+  garde dédié
+  [test_inscription_aux_offres.py](../outils/tests/test_inscription_aux_offres.py) — 12 tests
+  réussis. Structure lexicale des 146 fichiers Java vérifiée (accolades et parenthèses équilibrées,
+  aucune chaîne ni commentaire non terminé). Documentation : [inscription-aux-offres.md](inscription-aux-offres.md).
+- **Limites :** la compilation Maven et les tests d'intégration PostgreSQL n'ont pas pu être exécutés
+  dans l'environnement de développement de ce changement (ni JDK ni serveur de base disponible) ;
+  `mvnw.cmd -B clean test` et l'application de la migration 16 sur PC1 restent à faire avant clôture.
+  Un apprenant conserve un seul enseignant à la fois (contrainte déjà existante) et ne peut pas en
+  changer tant qu'une copie est en cours ou à corriger.
+
 ## Règles d'utilisation
 
 - **Priorités :** P0 = sécurité ou blocage majeur ; P1 = nécessaire à une livraison fiable ;
@@ -315,6 +358,14 @@ Validation exécutée / limites connues :
   que la suite complète (155 tests) sous v1 et sous v2. Pour clôturer IHM-013, collecter des
   questions réelles anonymisées, les annoter, puis réévaluer sur un jeu indépendant avant toute
   promotion.
+
+- **2026-11-22 :** IHM-014 créée et implémentée : suppression des champs enseignants et de
+  l'affectation des apprenants dans l'administration, inscription choisie par l'apprenant depuis le
+  catalogue des enseignants, décision de l'enseignant ou de son bot, puis cours, exercices et test
+  dans une seule fenêtre. Migration 16 ajoutée, version portée à 0.15.0, documentation publiée dans
+  [inscription-aux-offres.md](inscription-aux-offres.md). Les gardes Python passent (97 tests, les
+  7 échecs préexistants inchangés, 12 nouveaux tests réussis) ; la suite Maven et l'application de la
+  migration 16 sur PC1 restent à exécuter avant de passer IHM-014 à Terminé.
 
 ## Définition de terminé
 

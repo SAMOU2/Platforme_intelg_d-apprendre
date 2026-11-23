@@ -1,15 +1,19 @@
-# Affectation et correction humaine centralisées
+# Inscription auprès de l'enseignant et correction humaine centralisées
 
 ## Portée
 
 Pour les postes connectés avec une vraie session HTTPS :
 
-1. Administrateur : **Comptes et rôles → Affecter un apprenant à un enseignant**.
+1. Apprenant : **Enseignants et inscription → S'inscrire**, puis saisie de son nom.
+   L'administrateur n'affecte plus personne : la demande part à l'enseignant.
+2. Enseignant : **Mes apprenants et copies → Demandes d'inscription reçues → Accepter**.
    Un responsable par apprenant ; les deux comptes doivent être actifs et acceptés.
-2. L'enseignant ouvre **Résultats** : ses apprenants sont listés, même sans copie.
-   Les copies reçues, sélectionnables, montrent sujet, réponses et code non exécuté.
+   Le bot de l'offre peut accepter à sa place si l'enseignant l'a activé (décideur « BOT »).
+   Ses apprenants sont ensuite listés, même sans copie. Les copies reçues, sélectionnables,
+   montrent sujet, réponses et code non exécuté.
 3. L'apprenant ouvre **Parcours** : niveaux publiés lus dans PostgreSQL et progression
-   basée sur les décisions publiées. Il passe/reprend le test disponible, saisit ses
+   basée sur les décisions publiées. Cours, exercices et test final s'enchaînent dans une
+   seule fenêtre (**atelier du niveau**). Il passe/reprend le test disponible, saisit ses
    réponses puis les soumet. Aucun score ni corrigé automatique n'est envoyé au client.
 4. Copie **SOUMISE** : l'apprenant voit « en attente », sans note, commentaire ou décision.
 5. L'enseignant affecté enregistre un brouillon, puis confirme sa publication :
@@ -21,15 +25,17 @@ Pour les postes connectés avec une vraie session HTTPS :
 Les brouillons sont privés au correcteur, la publication est définitive dans cette
 version. Un autre enseignant ne voit ni ne corrige cette copie. L'identité de l'élève
 et celle du correcteur ne viennent jamais d'un nom fourni par le client, mais de la
-session HTTPS et de l'affectation enregistrée sur PC1. Audit transactionnel des opérations.
+session HTTPS et de l'accès ouvert sur PC1 par la demande acceptée. Audit transactionnel des
+opérations, y compris les demandes d'inscription et leurs décisions.
 
 ## Sujets de test existants
 
 Le seed historique ne contient un test que pour Python niveau 3 : il ne suffit pas
 pour un nouveau compte au niveau 1. Aucun résultat ou sujet réel n'est inventé ici.
-L'administrateur peut utiliser **Configurer le sujet d'un test** pour un niveau publié :
-une question à réponse libre par ligne (1 à 20), sans corrigé automatique. Commencer
-par le niveau 1 du langage utilisé. Les anciens sujets/réponses ne sont pas supprimés :
+L'enseignant prépare le sujet dans **Mes niveaux et contenus → 3 · Préparer le test
+final** pour un niveau dont il est l'auteur : une question à réponse libre par ligne
+(1 à 20), sans corrigé automatique. Commencer par le niveau 1 du langage utilisé.
+L'administrateur ne prépare plus les sujets : ce n'est pas son rôle. Les anciens sujets/réponses ne sont pas supprimés :
 les questions précédentes sont désactivées pour les nouvelles copies, et chaque copie
 conserve un snapshot de son sujet. Le changement de sujet est interdit si quelqu'un
 passe le test. Les QCM déjà présents en base restent lisibles/soumettables.
@@ -49,13 +55,15 @@ code reçu, pas de notation par IA. La note et le commentaire portent sur la cop
 - Nombre maximal de tentatives non annulées, niveau précédent validé, période et publication
   du niveau contrôlés côté serveur. Durée/chronomètre et expiration automatique ne sont
   pas encore implémentés dans ce parcours.
-- Réaffectation à un autre enseignant interdite tant qu'une copie reste en cours/à corriger.
-  Les copies déjà publiées conservent leur correcteur historique.
+- Changement d'enseignant (nouvelle demande acceptée ailleurs) interdit tant qu'une copie
+  reste en cours/à corriger. Les copies déjà publiées conservent leur correcteur historique.
 - Les appels NVIDIA sont refusés côté serveur si une tentative réelle est `EN_COURS`.
   La fermeture de l'écran ou un client modifié ne supprime donc pas ce verrou.
-- Les vues sont actualisées manuellement, pas par notification push ou email automatique.
+- Le catalogue des enseignants, les demandes reçues et le parcours se relisent toutes les
+  5 secondes tant que l'écran est affiché ; pas de notification push ni d'e-mail automatique.
 - Les listes de copies sont limitées aux 200 dernières du compte ; pagination à ajouter
-  avant usage à grande échelle. Les affectations n'ont pas encore de groupes multiples.
+  avant usage à grande échelle. Les accès n'ont pas encore de groupes multiples : un seul
+enseignant responsable par apprenant.
 
 ## Mise à jour Windows (après publication et fusion)
 
@@ -84,17 +92,21 @@ sur un volume existant.
 
 ## Recette à trois rôles
 
-1. Admin affecte Samou (APPRENANT) à Sam (ENSEIGNANT).
-2. Sam ouvre Résultats : Samou doit apparaître dans le résumé des apprenants affectés.
-3. Admin configure le test du niveau 1 ; Samou le passe puis soumet ses vraies réponses.
+1. Sam publie son offre (Mes niveaux et contenus → Mon offre de formation) ; Samou ouvre
+   **Enseignants et inscription**, clique sur **S'inscrire** et saisit son nom.
+2. Sam ouvre **Mes apprenants et copies** : la demande est là, il l'accepte (ou active le bot
+   de son offre pour une acceptation immédiate). Samou apparaît alors dans ses apprenants.
+3. Sam prépare le test du niveau 1 ; Samou le passe — cours, exercices puis test dans la même
+   fenêtre — et soumet ses vraies réponses.
 4. Samou voit SOUMISE sans note. Sam sélectionne la copie, consulte les réponses/code.
 5. Sam enregistre un brouillon : Samou ne voit toujours aucune note ni commentaire.
 6. Sam publie (confirmation) : Samou actualise et voit la note, le commentaire, la décision.
 7. Une validation autorisée débloque le niveau suivant ; un refus ne le débloque pas.
-8. Vérifier qu'un autre enseignant/élève n'accède pas aux copies de Samou, que la
-   resoumission/republication est refusée et qu'une réaffectation en cours est bloquée.
+8. Vérifier qu'un autre enseignant/élève n'accède pas aux copies de Samou ni à la demande,
+   que la resoumission/republication est refusée, qu'un changement d'enseignant en cours de
+   copie est bloqué, et que l'administrateur ne peut plus affecter (refus 403).
 9. Pendant EN_COURS, tenter un appel IA depuis une autre interface de même compte : refus.
-10. Redémarrer HTTPS et vérifier la persistance des affectations et résultats.
+10. Redémarrer HTTPS et vérifier la persistance des offres, demandes, accès et résultats.
 
 Tests PostgreSQL conditionnels : `PostgresPedagogieRepositoryIntegrationTest`, avec
 IHM_DB_URL/IHM_DB_USER/IHM_DB_PASSWORD et migrations appliquées. Le test crée des

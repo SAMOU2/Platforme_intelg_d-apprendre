@@ -8,6 +8,44 @@ public final class Session {
     public static long niveauServeurId() { return niveauServeurId; }
     public static void setNiveauServeurId(long id) { niveauServeurId = id; }
 
+    /**
+     * Étape ouverte dans l'atelier d'un niveau : le cours, l'entraînement puis le test final
+     * se suivent <b>dans la même fenêtre</b> (route {@code ATELIER}). L'étape demandée est
+     * gardée ici le temps d'ouvrir la vue ; elle ne remplace aucun contrôle serveur.
+     */
+    public enum EtapeAtelier {
+        COURS("Cours et explications"),
+        EXERCICES("Entraînement avec IA"),
+        TEST("Test final sans IA");
+
+        private final String label;
+
+        EtapeAtelier(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public EtapeAtelier suivante() {
+            return switch (this) {
+                case COURS -> EXERCICES;
+                case EXERCICES -> TEST;
+                case TEST -> TEST;
+            };
+        }
+    }
+
+    private static EtapeAtelier etapeAtelier = EtapeAtelier.COURS;
+
+    public static EtapeAtelier etapeAtelier() {
+        return etapeAtelier;
+    }
+
+    public static void setEtapeAtelier(EtapeAtelier etape) {
+        etapeAtelier = etape == null ? EtapeAtelier.COURS : etape;
+    }
 
     private Session() {
     }
@@ -73,7 +111,10 @@ public final class Session {
     }
 
     public static void setLangage(Langage l) {
-        if (langage != l) niveauServeurId = 0;
+        if (langage != l) {
+            niveauServeurId = 0;
+            etapeAtelier = EtapeAtelier.COURS;
+        }
         langage = l;
     }
 

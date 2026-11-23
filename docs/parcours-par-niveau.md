@@ -1,12 +1,15 @@
 # Cours → entraînement avec IA → test → correction → progression
 
 > Complété par la migration 12 : l’enseignant peut maintenant créer ses niveaux et les
-> publier pour ses apprenants affectés. Voir [la procédure actuelle](niveaux-enseignant.md).
+> publier pour les apprenants qui se sont inscrits auprès de lui. Voir
+> [la procédure actuelle](niveaux-enseignant.md) et
+> [l’inscription aux offres](inscription-aux-offres.md).
 > Les limites ci-dessous sur l’absence de création de niveaux décrivent la migration 11 seule.
 
 ## Expérience apprenant connectée
 
-Chaque carte de niveau expose trois actions numérotées :
+Chaque carte de niveau expose trois actions numérotées, qui enchaînent **dans la même
+fenêtre** (atelier du niveau) :
 
 1. **Cours et explications** : blocs publiés du niveau choisi, chargés depuis PC1.
 2. **Entraînement avec IA** : énoncé publié pour ce niveau et brouillon de code local.
@@ -14,8 +17,8 @@ Chaque carte de niveau expose trois actions numérotées :
 3. **Test final sans IA** : sujet réel, soumission à l'enseignant, pas de note automatique.
 
 Un bouton est désactivé si le contenu manque ; les libellés indiquent « en préparation ».
-Le test exige cours, entraînement et questions disponibles, période ouverte, affectation
-active et niveau débloqué. Ces contrôles ne sont pas seulement visuels : le serveur
+Le test exige cours, entraînement et questions disponibles, période ouverte, accès ouvert
+par une demande d'inscription acceptée et niveau débloqué. Ces contrôles ne sont pas seulement visuels : le serveur
 vérifie l'accès au niveau et les prérequis avant de créer une tentative.
 
 Après soumission, consulter **Mes copies et décisions**. Les brouillons de correction
@@ -27,26 +30,28 @@ lecture effective et la réalisation de l'exercice ne sont pas tracées comme un
 obligatoire ; il ne s'agit pas d'un chronométrage ni d'un contrôle d'assiduité.
 
 Les accès Cours/Exercice de la barre latérale demandent une sélection préalable dans
-Parcours. Changer de langage efface cette sélection pour éviter un sujet d'un autre langage.
+Parcours ; l'entrée **Enseignants et inscription** ouvre le catalogue des offres. Changer de langage efface cette sélection pour éviter un sujet d'un autre langage.
 Les anciens cours/exercices fixes du niveau 3 ne sont plus utilisés dans les sessions connectées.
 
 ## Préparer un niveau utilisable
 
 Pas de questions ni de cours fictifs générés automatiquement. Pour chaque niveau publié :
 
-- Administrateur : **Publier le cours et l'entraînement d'un niveau**, renseigner cours,
-  énoncé et code de départ facultatif, puis confirmer.
-- Administrateur : **Configurer le sujet d'un test**, renseigner les questions finales.
-- Enseignant : mêmes éditeurs accessibles dans **Mes apprenants et copies**, mais
-  uniquement sur les niveaux dont il est l'auteur (`niveaux.cree_par`). Affecter un élève
-  ne donne pas le droit de réécrire les contenus partagés des autres enseignants.
-- Affecter l'apprenant à son correcteur, puis Actualiser le parcours apprenant.
+- Enseignant : **Mes niveaux et contenus → 2 · Publier cours et entraînement**, renseigner
+  cours, énoncé et code de départ facultatif, puis confirmer.
+- Enseignant : **3 · Préparer le test final**, renseigner les questions finales.
+- Ces éditeurs ne portent que sur les niveaux dont il est l'auteur (`niveaux.cree_par`).
+  L'acceptation d'un apprenant ne donne pas le droit de réécrire les contenus des autres
+  enseignants. L'administrateur ne publie plus ni cours ni sujet de test.
+- L'apprenant s'inscrit lui-même depuis son catalogue et l'enseignant accepte sa demande :
+  le parcours apprenant s'actualise alors tout seul.
 
 Les contenus de ces niveaux sont partagés, pas privés à un groupe. Republier archive
 les anciennes versions du cours (BROUILLON) et de l'entraînement, sans les supprimer.
 Les copies gardent leur sujet photographié. L'éditeur simple remplace le cours actif
 par un texte et un entraînement ; ce n'est pas encore un éditeur riche multi-blocs.
-Les niveaux sans auteur ou appartenant à un autre enseignant restent gérables par l'admin.
+Les niveaux sans auteur restent gérables par l'administrateur pour la continuité du service ;
+ceux d'un autre enseignant ne le sont pas.
 
 ## Migration et déploiement (après publication/fusion)
 

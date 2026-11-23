@@ -31,6 +31,8 @@ public final class Router {
     public static final String LOGIN = "login";
     public static final String RESEAU = "reseau";
     public static final String PARCOURS = "parcours";
+    public static final String OFFRES = "offres";
+    public static final String ATELIER = "atelier";
     public static final String COURS = "cours";
     public static final String EXERCICE = "exercice";
     public static final String TEST = "test";
@@ -45,6 +47,8 @@ public final class Router {
             Map.entry(LOGIN, "Connexion"),
             Map.entry(RESEAU, "Connexion au serveur"),
             Map.entry(PARCOURS, "Parcours"),
+            Map.entry(OFFRES, "Enseignants et inscriptions"),
+            Map.entry(ATELIER, "Cours, exercices et test"),
             Map.entry(COURS, "Cours"),
             Map.entry(EXERCICE, "Exercice"),
             Map.entry(TEST, "Test de validation"),
@@ -291,7 +295,7 @@ public final class Router {
         }
         return switch (role) {
             case APPRENANT -> switch (route) {
-                case PARCOURS, COURS, EXERCICE, TEST, RESULTAT, TABLEAU_BORD -> true;
+                case PARCOURS, OFFRES, ATELIER, COURS, EXERCICE, TEST, RESULTAT, TABLEAU_BORD -> true;
                 default -> false;
             };
             case ENSEIGNANT -> CONDITIONS.equals(route) || RESULTATS.equals(route);

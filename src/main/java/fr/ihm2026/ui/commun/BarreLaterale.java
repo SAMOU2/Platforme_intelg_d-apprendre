@@ -49,6 +49,10 @@ public class BarreLaterale extends VBox {
     private static final String ICONE_RESULTATS = "M2 2.4 L6.4 2.4 L6.4 7.2 L2 7.2 Z "
             + "M9.6 2.4 L14 2.4 L14 7.2 L9.6 7.2 Z M2 9.6 L6.4 9.6 L6.4 14.2 L2 14.2 Z "
             + "M9.6 9.6 L14 9.6 L14 14.2 L9.6 14.2 Z";
+    /** Enseignants disponibles : une personne qui propose une formation, et sa coche d'accès. */
+    private static final String ICONE_OFFRES = "M5.4 2.4 A2.4 2.4 0 1 1 5.4 7.2 A2.4 2.4 0 1 1 5.4 2.4 Z "
+            + "M1.2 13.4 C1.2 10.8 3.2 9.4 5.4 9.4 C7.6 9.4 9.6 10.8 9.6 13.4 Z "
+            + "M10.4 5.2 L11.8 6.8 L14.6 3.4";
     private static final String ICONE_COMPTES = "M6 2.2 A2.6 2.6 0 1 1 6 7.4 A2.6 2.6 0 1 1 6 2.2 Z "
             + "M1.4 13.8 C1.4 11 3.6 9.4 6 9.4 C8.4 9.4 10.6 11 10.6 13.8 Z "
             + "M11.6 2.6 A2.2 2.2 0 1 1 11.6 7 A2.2 2.2 0 1 1 11.6 2.6 Z "
@@ -88,6 +92,8 @@ public class BarreLaterale extends VBox {
             case APPRENANT -> {
                 getChildren().add(entete("Apprendre"));
                 getChildren().add(entree("Parcours", Router.PARCOURS, ICONE_PARCOURS, "nav-parcours"));
+                getChildren().add(entree("Enseignants et inscription", Router.OFFRES, ICONE_OFFRES,
+                        "nav-offres"));
                 getChildren().add(entree("Cours", Router.COURS, ICONE_COURS, "nav-cours"));
                 getChildren().add(entree("Exercice", Router.EXERCICE, ICONE_EXERCICE, "nav-exercice"));
                 getChildren().add(entree("Mes copies et décisions", Router.RESULTAT, ICONE_RESULTATS,

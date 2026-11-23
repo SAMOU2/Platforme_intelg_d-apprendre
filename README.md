@@ -7,13 +7,14 @@ Application de bureau pour apprendre **Java, Python et C++ par niveaux**, avec u
 La plateforme organise l’apprentissage comme une progression :
 
 ```text
-Cours → Entraînement avec aide IA → Test final sans IA
+Choix d’un enseignant → Demande d’inscription (nom saisi) → Acceptation par l’enseignant ou par son bot
+Cours → Entraînement avec aide IA → Test final sans IA   (les trois dans la même fenêtre)
       → Correction par l’enseignant → Niveau suivant si le test est validé
 ```
 
-- **L’administrateur** gère les comptes et affecte chaque apprenant à un enseignant.
-- **L’enseignant** crée et publie les niveaux, les cours, les exercices et les tests. Il corrige ensuite les tests finaux.
-- **L’apprenant** suit les niveaux dans l’ordre, s’entraîne, passe le test final puis consulte le résultat publié par son enseignant.
+- **L’administrateur** gère les comptes et leurs rôles : approbation des inscriptions, PIN d’activation, activation, désactivation, suppression et journal d’audit. Il n’affecte plus les apprenants aux enseignants et ne publie ni cours ni sujet de test.
+- **L’enseignant** publie l’offre que les apprenants voient, crée et publie les niveaux, les cours, les exercices et les tests, accepte les demandes d’inscription (ou laisse son bot les accepter) et corrige les tests finaux.
+- **L’apprenant** choisit un enseignant dans son catalogue, clique sur « S’inscrire » et saisit son nom : la demande part à l’enseignant. Dès l’acceptation, il suit les niveaux dans l’ordre — cours, exercices puis test final dans la même fenêtre — et consulte le résultat publié par son enseignant.
 - **L’IA** aide uniquement pendant l’entraînement. Elle ne corrige pas le test final, ne donne pas la note et ne débloque pas le niveau suivant.
 
 ## 2. Architecture
