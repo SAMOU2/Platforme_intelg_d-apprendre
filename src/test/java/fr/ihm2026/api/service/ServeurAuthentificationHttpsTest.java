@@ -53,4 +53,21 @@ class ServeurAuthentificationHttpsTest {
         assertTrue(message.contains("IHM_TLS_PASSWORD"));
         assertFalse(message.contains("secret-interdit"));
     }
+
+    @Test
+    void expliqueLaCauseProfondeDunEchecSmtp() {
+        // Jakarta Mail enveloppe la vraie cause : c'est elle qui dit pourquoi aucun code n'est parti.
+        var racine = new java.net.ConnectException("Connection refused");
+        var enveloppe = new IllegalStateException("Impossible d'envoyer l'e-mail de notification", racine);
+        String message = AuthentificationApiHttps.messageExplicite(enveloppe);
+        assertTrue(message.contains("Impossible d'envoyer"), message);
+        assertTrue(message.contains("Connection refused"), message);
+    }
+
+    @Test
+    void expliqueLeRefusDauthentificationSmtp() {
+        String message = AuthentificationApiHttps.messageExplicite(
+                new IllegalStateException("535 Authentication failed"));
+        assertTrue(message.contains("535"), message);
+    }
 }
