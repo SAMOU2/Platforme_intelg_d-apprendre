@@ -41,6 +41,13 @@ class SmtpTest(unittest.TestCase):
         self.assertIn('Class.forName("jakarta.mail.MessagingException")', java,
                       "signaler explicitement une dependance runtime absente")
 
+    def test_script_ateste_sa_propre_version(self):
+        cmd = lire('postes/tester-smtp.cmd')
+        # Sans banniere, une ancienne version du script est indiscernable d'un echec reel.
+        self.assertIn('tester-smtp version', cmd)
+        self.assertIn('dossier execute', cmd)
+        self.assertIn('findstr', cmd, "le script doit verifier qu'il est bien a jour")
+
     def test_aucun_script_ne_lit_un_classpath_avec_set_p(self):
         for chemin in ('postes/tester-smtp.cmd', 'outils/sonde-animations.cmd'):
             with self.subTest(script=chemin):

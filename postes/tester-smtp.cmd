@@ -59,6 +59,7 @@ if defined IHM_SMTP_USER (
 )
 
 echo.
+echo tester-smtp version 3 - dossier execute : %~dp0..
 echo Serveur SMTP : %IHM_SMTP_HOST% port %IHM_SMTP_PORT%
 if defined IHM_SMTP_SSL echo Mode TLS force : IHM_SMTP_SSL=%IHM_SMTP_SSL%
 if defined IHM_SMTP_USER (echo Authentification : activee) else (echo Authentification : desactivee)
@@ -102,6 +103,18 @@ REM sont pas tous disponibles a l'execution (NoClassDefFoundError jakarta/mail c
 set "CLASSE_TEST=%CD%\target\smtp-test-classes"
 if exist "%CLASSE_TEST%" rd /s /q "%CLASSE_TEST%"
 mkdir "%CLASSE_TEST%" 2>nul
+REM Garde-fou : si le .java n'est pas la version 3, c'est que le dossier n'a pas ete mis a jour.
+findstr /c:"Class.forName(\"jakarta.mail.MessagingException\")" "%~dp0TesterSmtp.java" >nul
+if errorlevel 1 (
+    echo [ERREUR] postes\TesterSmtp.java n'est pas a jour ^(version anterieure au correctif^).
+    echo          Mettre le projet a jour : git pull, puis relancer ce script.
+    goto :echec
+)
+findstr /c:"usebackq delims=" "%~dp0tester-smtp.cmd" >nul
+if errorlevel 1 (
+    echo [ERREUR] postes\tester-smtp.cmd n'est pas a jour : git pull, puis relancer.
+    goto :echec
+)
 echo Compilation de l'outil de test...
 "%JAVA_HOME%\bin\javac.exe" -encoding UTF-8 -cp "%CD%\target\classes;%DEPENDANCES%" -d "%CLASSE_TEST%" "%~dp0TesterSmtp.java"
 if errorlevel 1 (
