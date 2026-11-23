@@ -239,7 +239,7 @@ public class OffresEnseignantsView extends BorderPane {
         dialogue.getDialogPane().setContent(new VBox(10, aide, new Label("Votre nom"), nom,
                 new Label("Message (facultatif)"), message));
         dialogue.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        Button envoyer = dialogue.getDialogPane().lookupButton(ButtonType.OK);
+        Button envoyer = Dialogue.bouton(dialogue.getDialogPane(), ButtonType.OK);
         envoyer.setText("Envoyer ma demande");
         envoyer.disableProperty().bind(nom.textProperty().isEmpty());
         Dialogue.appliquerTheme(dialogue.getDialogPane(), owner);

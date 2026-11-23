@@ -1,9 +1,12 @@
 package fr.ihm2026.ui.commun;
 
 import java.util.Optional;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
 import javafx.stage.Window;
 
 /** Dialogues de confirmation explicites (IHM-06, IHM-JFX8). */
@@ -12,7 +15,21 @@ public final class Dialogue {
     private Dialogue() {
     }
 
-    public static void appliquerTheme(javafx.scene.control.DialogPane pane, Window owner) {
+    /**
+     * Retourne le bouton portant ce type dans le dialogue.
+     *
+     * <p>{@code DialogPane.lookupButton} est declare {@code Node} : la classe n'impose pas le
+     * type concret, qui n'est un {@code Button} que si {@code createButton} n'a pas ete
+     * surcharge. On verifie donc le type plutot que de convertir a l'aveugle.</p>
+     */
+    public static Button bouton(DialogPane pane, ButtonType type) {
+        Node noeud = pane.lookupButton(type);
+        if (noeud instanceof Button bouton)
+            return bouton;
+        throw new IllegalStateException("Le bouton " + type + " n'est pas un Button : " + noeud);
+    }
+
+    public static void appliquerTheme(DialogPane pane, Window owner) {
         pane.getStyleClass().add("dialogue");
         if (owner != null && owner.getScene() != null)
             pane.getStylesheets().setAll(owner.getScene().getStylesheets());
