@@ -71,15 +71,34 @@ if errorlevel 1 (
     goto :echec
 )
 
+REM set /p tronque la ligne lue a 1023 caracteres : avec un .m2 sous C:\Users\..., le
+REM classpath Maven depasse cette limite et les derniers jars (dont angus-mail) disparaissent
+REM en silence -> NoClassDefFoundError jakarta/mail/MessagingException. On lit donc le fichier
+REM avec for /f, comme postes\authentification-PC1.bat, puis on verifie les jars indispensables.
 set "DEPENDANCES="
-set /p "DEPENDANCES="<"target\smtp-classpath.txt"
+for /f "usebackq delims=" %%L in ("target\smtp-classpath.txt") do set "DEPENDANCES=%%L"
 if not defined DEPENDANCES (
     echo [ERREUR] Le classpath des dependances est vide.
     goto :echec
 )
+for %%J in ("%DEPENDANCES:;=" "%") do if not exist "%%~J" (
+    echo [ERREUR] Jar introuvable dans le classpath : %%~J
+    echo          Relancer Maven : call "%MVN%" -B -DskipTests compile dependency:build-classpath "-Dmdep.outputFile=target\smtp-classpath.txt"
+    goto :echec
+)
+REM Le test envoie un courriel : angus-mail et jakarta.mail doivent etre presents au runtime.
+echo %DEPENDANCES% | find /i "mail" >nul
+if errorlevel 1 (
+    echo [ERREUR] Le classpath ne contient aucune bibliotheque mail : envoi impossible.
+    echo          Verifier target\smtp-classpath.txt puis relancer ce script.
+    goto :echec
+)
+set "NBJAR=0"
+for %%J in ("%DEPENDANCES:;=" "%") do set /a NBJAR+=1
+echo Dependances : %NBJAR% jar(s) sur le classpath.
 
-REM Compiler explicitement puis executer : le mode "java Fichier.java" compile avec le
-REM classpath mais n'execute pas avec la meme liste de jars (jakarta.mail manquait au runtime).
+REM Compiler explicitement puis executer : en mode "java Fichier.java", les jars du -cp ne
+REM sont pas tous disponibles a l'execution (NoClassDefFoundError jakarta/mail constate).
 set "CLASSE_TEST=%CD%\target\smtp-test-classes"
 if exist "%CLASSE_TEST%" rd /s /q "%CLASSE_TEST%"
 mkdir "%CLASSE_TEST%" 2>nul

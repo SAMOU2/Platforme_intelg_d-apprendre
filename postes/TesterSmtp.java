@@ -11,6 +11,17 @@ import fr.ihm2026.api.service.ServiceEmail;
 public class TesterSmtp {
 
     public static void main(String[] arguments) {
+        // Sans angus-mail/jakarta.mail sur le classpath, la JVM echoue en NoClassDefFoundError
+        // sans explication : on precede l'envoi d'un controle explicite.
+        try {
+            Class.forName("jakarta.mail.MessagingException");
+        } catch (ClassNotFoundException ex) {
+            System.err.println("[ERREUR] La bibliotheque jakarta.mail est absente du classpath : "
+                    + "le script n'a pas charge les dependances Maven.");
+            System.err.println("         Relancer postes\\tester-smtp.cmd depuis la racine du projet.");
+            System.exit(1);
+            return;
+        }
         if (arguments.length != 1 || arguments[0].isBlank()) {
             System.err.println("[ERREUR] Usage : TesterSmtp.java destinataire@exemple.org");
             System.exit(2);

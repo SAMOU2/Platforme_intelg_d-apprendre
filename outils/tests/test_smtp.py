@@ -33,6 +33,18 @@ class SmtpTest(unittest.TestCase):
         self.assertNotIn('"%~dp0TesterSmtp.java" "%~1"', cmd,
                          "le mode source-file de java n'apporte pas les dépendances au runtime")
         self.assertIn('TesterSmtp "%~1"', cmd, "exécuter la classe compilée, pas le fichier source")
+        # set /p tronque la ligne a 1023 caracteres : le classpath Maven le depasse et les
+        # derniers jars (angus-mail) disparaissent -> NoClassDefFoundError jakarta/mail.
+        self.assertNotIn('set /p "DEPENDANCES="', cmd,
+                         "lire le classpath avec for /f, jamais avec set /p (troncature a 1023)")
+        self.assertIn('for /f "usebackq delims=" %%L in ("target\\smtp-classpath.txt")', cmd)
+        self.assertIn('Class.forName("jakarta.mail.MessagingException")', java,
+                      "signaler explicitement une dependance runtime absente")
+
+    def test_aucun_script_ne_lit_un_classpath_avec_set_p(self):
+        for chemin in ('postes/tester-smtp.cmd', 'outils/sonde-animations.cmd'):
+            with self.subTest(script=chemin):
+                self.assertNotIn('set /p "DEPENDENCIES="', lire(chemin))
 
     def test_service_email_ne_perd_pas_la_cause(self):
         service = lire('src/main/java/fr/ihm2026/api/service/ServiceEmail.java')
