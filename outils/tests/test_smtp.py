@@ -26,6 +26,13 @@ class SmtpTest(unittest.TestCase):
         self.assertIn('environnement.cmd', cmd)
         self.assertIn('ServiceEmail', java)
         self.assertIn('System.exit(1)', java, "un échec d'envoi doit sortir en erreur")
+        # La compilation doit être explicite : « java Fichier.java » n'exécute pas avec les
+        # jars du classpath (NoClassDefFoundError jakarta/mail/MessagingException constaté).
+        self.assertIn('javac.exe', cmd, "compiler avec javac, puis exécuter avec le classpath complet")
+        self.assertIn('target\\smtp-test-classes', cmd)
+        self.assertNotIn('"%~dp0TesterSmtp.java" "%~1"', cmd,
+                         "le mode source-file de java n'apporte pas les dépendances au runtime")
+        self.assertIn('TesterSmtp "%~1"', cmd, "exécuter la classe compilée, pas le fichier source")
 
     def test_service_email_ne_perd_pas_la_cause(self):
         service = lire('src/main/java/fr/ihm2026/api/service/ServiceEmail.java')
