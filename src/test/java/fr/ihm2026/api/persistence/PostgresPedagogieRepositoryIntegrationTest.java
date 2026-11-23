@@ -94,7 +94,9 @@ class PostgresPedagogieRepositoryIntegrationTest {
                         d("decider-demande").put("demande",demandeId).put("accepter",true)));
                 assertEquals("ACCEPTEE",repo.traiter(prof,Session.Role.ENSEIGNANT,
                         d("decider-demande").put("demande",demandeId).put("accepter",true)).path("statut").asText());
-                assertThrows(IllegalStateException.class,() -> repo.traiter(prof,Session.Role.ENSEIGNANT,
+                // p est l'alias final de prof (ligne « final long e=eleve,p=prof,a=autre ») : une
+                // lambda ne peut pas capturer prof, qui est réaffecté lors de l'insertion.
+                assertThrows(IllegalStateException.class,() -> repo.traiter(p,Session.Role.ENSEIGNANT,
                         d("decider-demande").put("demande",demandeId).put("accepter",false)));
                 assertEquals(1,repo.traiter(prof,Session.Role.ENSEIGNANT,d("mes-apprenants")).size());
                 assertTrue(carteDe(repo.traiter(eleve,Session.Role.APPRENANT,d("offres").put("langage","python")),prof).path("inscrit").asBoolean());
