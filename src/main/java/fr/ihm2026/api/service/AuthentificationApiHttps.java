@@ -114,8 +114,8 @@ public final class AuthentificationApiHttps implements HttpHandler {
         } catch (SQLException ex) {
             if (("/api/pedagogie".equals(exchange.getRequestURI().getPath()) || "/api/ia/aide".equals(exchange.getRequestURI().getPath()))
                     && ("42P01".equals(ex.getSQLState()) || "42703".equals(ex.getSQLState()))) {
-                envoyerJson(exchange, 503, erreur("Mise à jour de la base nécessaire : sur PC1, lancer postes\appliquer-migrations-PC1.cmd "
-                            + "puis redémarrer postes\authentification-PC1.bat."));
+                envoyerJson(exchange, 503, erreur("Mise à jour de la base nécessaire : sur PC1, lancer postes\\appliquer-migrations-PC1.cmd "
+                            + "puis redémarrer postes\\authentification-PC1.bat."));
             } else if ("23505".equals(ex.getSQLState())) {
                 envoyerJson(exchange, 409, erreur("Un compte utilise déjà cette adresse e-mail."));
             } else {
