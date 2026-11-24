@@ -56,12 +56,10 @@ Technologies du projet : Java 25, JavaFX, Maven Wrapper, PostgreSQL 16 avec pgve
 | Git | Facultatif | Facultatif | Récupérer et mettre à jour le projet ; un ZIP complet convient aussi. |
 | VS Code | Facultatif | Facultatif | Lire ou modifier le code ; inutile pour lancer l’application. |
 
-Il faut aussi :
-
-- une connexion Internet au premier lancement pour télécharger Maven et les dépendances ;
-- le même Wi-Fi ou réseau local pour PC1 et les clients lorsqu’on utilise plusieurs ordinateurs ;
-- sur PC1, un accès SMTP pour envoyer les codes par e-mail ;
-- sur PC1, une clé NVIDIA uniquement si l’aide IA doit être activée.
+Il faut aussi une connexion Internet au premier lancement (téléchargement de Maven et des dépendances), et :
+- le même réseau local pour PC1 et les clients ;
+- sur PC1, un accès SMTP pour les codes par e-mail ;
+- sur PC1, une clé NVIDIA seulement pour l’aide IA.
 
 ### À ne pas installer séparément
 
@@ -126,7 +124,7 @@ Cette préparation se fait **une seule fois sur le poste choisi comme PC1**. Si 
 
 #### Sur chaque client
 
-Lors de la première utilisation d’un nouveau client, approuver d’abord le certificat public de PC1 comme à l’étape 7 ci-dessus. Ensuite, lancer uniquement le script du rôle du poste :
+Sur un nouveau client, approuver d’abord le certificat public de PC1 (étape 7), puis lancer uniquement le script du rôle :
 
 | Rôle | Script à lancer |
 |---|---|
@@ -134,9 +132,9 @@ Lors de la première utilisation d’un nouveau client, approuver d’abord le c
 | Enseignant | `postes\3-enseignant-PC3.bat` |
 | Apprenant | `postes\4-apprenant-PC4.bat` |
 
-La plateforme de PC1 doit être découverte automatiquement dans l’écran de connexion. Au premier lancement, Maven et les dépendances se téléchargent : l’ouverture peut prendre quelques minutes.
+PC1 est découvert automatiquement dans l’écran de connexion ; au premier lancement, Maven et les dépendances se téléchargent (quelques minutes).
 
-Pour tester sur **un seul ordinateur**, suivre exactement le même ordre : lancer les deux services PC1, puis ouvrir les scripts administrateur, enseignant et apprenant dont on a besoin.
+Pour tester sur **un seul ordinateur** : mêmes étapes dans le même ordre — les deux services PC1, puis les scripts des rôles voulus.
 
 > `DEMARRER.cmd` affiche seulement la liste des scripts. Il ne lance pas l’application.
 
@@ -151,6 +149,7 @@ Pour tester sur **un seul ordinateur**, suivre exactement le même ordre : lance
 - **PC1 annonce une configuration absente** : vérifier `postes\configuration-PC1.local.cmd` sur PC1 uniquement.
 - **Le client ne trouve pas la plateforme** : vérifier que les deux fenêtres PC1 sont toujours ouvertes et que tous les postes utilisent le même réseau. Ne pas saisir `127.0.0.1` sur un autre ordinateur.
 - **Une erreur s’affiche** : lire le premier message `[ERREUR]`. Ne pas supprimer le volume Docker ni la configuration privée pour “réessayer”.
+- **« Mise à jour de la base nécessaire »** : sur PC1, `postes\appliquer-migrations-PC1.cmd` (sauvegarde, applique seulement les migrations absentes, ne supprime rien), puis redémarrer `postes\authentification-PC1.bat`. `-AvecDemonstration` ajoute des offres d’exemple.
 
 ### 4.5 Maven à la main (dépannage)
 
