@@ -27,7 +27,7 @@ class ApplicationMigrationsTest(unittest.TestCase):
     def test_verifie_les_migrations_citees_par_le_message_d_erreur(self):
         api = lire('src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java')
         # Le message renvoie vers la commande a lancer, pas vers des numeros de migration.
-        self.assertIn('postes\\appliquer-migrations-PC1.cmd', api)
+        self.assertIn('appliquer-migrations-PC1.cmd', api)
         self.assertNotIn('migrations 10, 11, 12 et 16', api,
                          "un numero de migration fige devient faux a la migration suivante")
         ps = lire('postes/appliquer-migrations-PC1.ps1')
@@ -57,6 +57,33 @@ class ApplicationMigrationsTest(unittest.TestCase):
             with self.subTest(interdit=interdit):
                 self.assertNotIn(interdit, ps)
         self.assertNotIn('down -v', auth)
+
+    def test_aucun_echappement_java_invalide_dans_les_messages(self):
+        """postes\\appliquer... : une seule barre oblique dans le source ne compile pas."""
+        api = lire('src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java')
+        valides = set('btnfr"\'\\')
+        problemes = []
+        i = 0
+        while i < len(api):
+            if api[i] == '"':
+                i += 1
+                while i < len(api) and api[i] != '"':
+                    if api[i] == '\\':
+                        if i + 1 < len(api) and api[i + 1] not in valides:
+                            problemes.append((api[:i].count('\n') + 1, api[i:i + 2]))
+                        i += 2
+                        continue
+                    i += 1
+            i += 1
+        self.assertEqual(problemes, [], "echappements Java invalides : %s" % problemes)
+        # Un chemin Windows affiche s'ecrit avec deux barres obliques dans le source :
+        # une seule barre devant a (postes\appliquer) est refusee par javac.
+        # Deux barres obliques consecutives : dans le source comme a l'affichage.
+        motif = 'postes' + chr(92) * 2
+        self.assertIn(motif + 'appliquer-migrations-PC1.cmd', api)
+        self.assertIn(motif + 'authentification-PC1.bat', api)
+        self.assertNotIn('postes' + chr(92) + 'appliquer', api)
+
 
     def test_sonde_impossible_ne_bloque_pas_les_migrations(self):
         """« relation offres_enseignants does not exist » ne doit pas arreter le script."""

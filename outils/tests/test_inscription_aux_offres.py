@@ -184,7 +184,10 @@ class InscriptionAuxOffresTest(unittest.TestCase):
         # Le refus d'affectation et les saisies invalides sont expliqués à la personne concernée.
         self.assertIn('envoyerJson(exchange, 403, erreur(ex.getMessage()))', api)
         self.assertIn('"/api/pedagogie".equals(chemin) && !detail.isEmpty()', api)
-        self.assertIn('postes\\appliquer-migrations-PC1.cmd', api,
+        # Le message nomme la commande a lancer. Le nombre de barres obliques est verifie
+        # dans test_migrations_offres : dans le source Java, deux barres obliques donnent
+        # une seule barre affichee, et une seule barre est un echappement illégal.
+        self.assertIn('appliquer-migrations-PC1.cmd', api,
                       "le message d'erreur doit nommer la commande a lancer sur PC1")
         client = lire('src/main/java/fr/ihm2026/api/service/ClientAuthentificationHttps.java')
         self.assertIn('throw new ErreurAuthentification(message)', client)
