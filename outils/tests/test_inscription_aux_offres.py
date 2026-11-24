@@ -86,6 +86,48 @@ class InscriptionAuxOffresTest(unittest.TestCase):
         self.assertIn('defautLaisseLaDecisionALEnseignant', test)
         self.assertIn('offreFermeeBloqueLeBot', test)
 
+    def test_erreurs_sql_expliquees_au_lieu_du_message_generique(self):
+        """« Service d'authentification indisponible » sans détail ne permet aucune correction."""
+        api = lire('src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java')
+        self.assertIn('static String resumeErreurSql(SQLException erreur)', api)
+        self.assertIn("Service d'authentification indisponible : ", api)
+        # L'état SQL et le message PostgreSQL sont joints ; jamais la chaîne de connexion.
+        self.assertIn('erreur.getSQLState()', api)
+        self.assertIn('erreur.getMessage()', api)
+        self.assertIn('jdbc:postgresql:(masque)', api)
+        self.assertIn('password=(masque)', api)
+        # Le client ne renvoie plus « Service pédagogique inaccessible » sans piste.
+        client = lire('src/main/java/fr/ihm2026/api/service/ClientAuthentificationHttps.java')
+        self.assertNotIn('"Service pédagogique inaccessible."', client)
+        self.assertIn('throw inaccessible(base.getHost(), base.getPort(), ex);', client)
+
+    def test_synchronisation_du_catalogue_visible_et_honnete(self):
+        vue = lire('src/main/java/fr/ihm2026/ui/apprenant/OffresEnseignantsView.java')
+        # L'utilisateur voit que la liste se relit toute seule et depuis quand.
+        self.assertIn('Catalogue synchronisé', vue)
+        self.assertIn('relecture automatique toutes les 5 s', vue)
+        self.assertIn('rafraichirSynchronisation()', vue)
+        # Un clic sur Actualiser ne peut plus rester sans effet visible : l'état de chargement
+        # se termine dans tous les cas (succès, échec, ou lecture non démarrée).
+        self.assertIn('private void marquerChargement()', vue)
+        self.assertIn('private void finChargement()', vue)
+        self.assertIn('boolean demarree = suivi != null && suivi.actualiser();', vue)
+        self.assertIn('if (!demarree) {', vue)
+        # La minuterie de synchronisation s'arrête quand la vue quitte la scène.
+        self.assertIn('minuterieSynchronisation.stop()', vue)
+        # ActualisationVue dit si la lecture a réellement démarré.
+        moteur = lire('src/main/java/fr/ihm2026/ui/commun/ActualisationVue.java')
+        self.assertIn('public boolean actualiser()', moteur)
+        self.assertIn('if(!active || occupe)return false;', moteur)
+
+    def test_acceptation_immediate_propose_douvrir_les_cours(self):
+        vue = lire('src/main/java/fr/ihm2026/ui/apprenant/OffresEnseignantsView.java')
+        self.assertIn('"Accès accordé"', vue)
+        self.assertIn('Ouvrir mes cours', vue)
+        # Le parcours d'inscription est annoncé en trois temps dans l'en-tête.
+        self.assertIn("1 · S'inscrire", vue)
+        self.assertIn('3 · vos cours s\'ouvrent', vue)
+
     def test_catalogue_apprenant_inscription_par_le_nom(self):
         vue = lire('src/main/java/fr/ihm2026/ui/apprenant/OffresEnseignantsView.java')
         for attendu in ['"offres"', '"inscrire-offre"', '"mes-demandes"', '"annuler-demande"',

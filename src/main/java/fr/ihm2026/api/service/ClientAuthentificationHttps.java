@@ -347,7 +347,11 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
                     .POST(HttpRequest.BodyPublishers.ofString(demande.toString())).build());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt(); throw new ErreurAuthentification("Opération interrompue.", ex);
-        } catch (IOException ex) { throw new ErreurAuthentification("Service pédagogique inaccessible.", ex); }
+        } catch (IOException ex) {
+            // Meme diagnostic que pour la connexion : adresse, port et cause reelle, pas un
+            // « service indisponible » qui laisse l'utilisateur sans piste.
+            throw inaccessible(base.getHost(), base.getPort(), ex);
+        }
     }
 
     /** Seul le serveur PC1 possède la clé du fournisseur. */

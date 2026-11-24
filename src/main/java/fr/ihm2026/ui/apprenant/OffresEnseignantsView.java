@@ -53,15 +53,21 @@ public class OffresEnseignantsView extends BorderPane {
     private final VBox cartes = new VBox(10);
     private final Button actualiser = new Button("Actualiser le catalogue");
     private final Button historique = new Button("Historique de mes demandes");
+    private final Label synchronisation = new Label();
+    private final javafx.animation.Timeline minuterieSynchronisation =
+            new javafx.animation.Timeline(new javafx.animation.KeyFrame(
+                    javafx.util.Duration.seconds(1), e -> rafraichirSynchronisation()));
+    private java.time.Instant derniereLecture;
+    private boolean chargement;
     private ActualisationVue<JsonNode> suivi;
 
     public OffresEnseignantsView(Router router) {
         this.router = router;
         getStyleClass().add("vue");
         setTop(new EnteteVue("Enseignants disponibles — " + Session.langage().label(),
-                "Choisissez un enseignant, cliquez sur « S'inscrire » et saisissez votre nom. "
-                        + "La demande lui est transmise ; son bot peut l'accepter immédiatement. "
-                        + "Dès l'acceptation, ses cours publiés vous sont ouverts."));
+                "1 · S'inscrire en donnant votre nom · 2 · l'enseignant (ou son bot) accepte · "
+                        + "3 · vos cours s'ouvrent. La liste se synchronise toute seule : "
+                        + "une acceptation apparaît sans rien faire."));
 
         if (!Reseau.sessionCompteInstallee()) {
             EtatVide vide = new EtatVide("Le catalogue des enseignants est publié par le serveur "
@@ -85,30 +91,99 @@ public class OffresEnseignantsView extends BorderPane {
         scroll.setFitToWidth(true);
         scroll.getStyleClass().add("scroll-vue");
 
-        actualiser.setOnAction(e -> {
-            if (suivi != null) {
-                suivi.actualiser();
-            }
-        });
         historique.setOnAction(e -> afficherHistorique());
+        synchronisation.getStyleClass().add("texte-secondaire");
+        synchronisation.setWrapText(true);
+        synchronisation.setVisible(false);
+        synchronisation.setManaged(false);
         HBox barre = new HBox(10, actualiser, historique);
         barre.getStyleClass().add("barre-actions");
 
-        VBox bas = new VBox(8, etat, barre);
+        VBox bas = new VBox(8, etat, synchronisation, barre);
         setCenter(scroll);
         setBottom(bas);
+        minuterieSynchronisation.setCycleCount(javafx.animation.Timeline.INDEFINITE);
+        // Hors de la scene (vue remplacee par une autre), la minuterie s'arrete : aucun travail
+        // inutile et aucune reference gardee sur une vue qui n'est plus affichee.
+        sceneProperty().addListener((o, avant, apres) -> {
+            if (apres == null) {
+                minuterieSynchronisation.stop();
+            } else {
+                minuterieSynchronisation.play();
+                rafraichirSynchronisation();
+            }
+        });
+        if (getScene() != null) {
+            minuterieSynchronisation.play();
+        }
         BorderPane.setMargin(scroll, new javafx.geometry.Insets(4, 0, 0, 0));
 
         String langage = Session.langage().code();
         suivi = new ActualisationVue<>(this,
-                () -> SuiviPedagogique.appeler(SuiviPedagogique.demande("offres").put("langage", langage)),
-                this::afficherOffres,
-                erreur -> etat.setText("Catalogue indisponible pour le moment : "
-                        + message(erreur) + " Nouvelle tentative automatique…"));
+                () -> SuiviPedagogique.appeler(
+                        SuiviPedagogique.demande("offres").put("langage", langage)),
+                offres -> {
+                    derniereLecture = java.time.Instant.now();
+                    afficherOffres(offres);
+                },
+                erreur -> {
+                    finChargement();
+                    etat.setText("Catalogue indisponible pour le moment : "
+                            + message(erreur) + " Nouvelle tentative automatique dans quelques secondes." +
+                            " Vérifiez que le service PC1 est ouvert et que le réseau répond.");
+                });
+        actualiser.setOnAction(e -> marquerChargement());
+    }
+
+    // ------------------------------------------------------------------ synchronisation
+    /** Un clic sur « Actualiser » doit se voir : le bouton annonce le chargement, puis revient. */
+    private void marquerChargement() {
+        if (chargement) {
+            return;
+        }
+        chargement = true;
+        actualiser.setDisable(true);
+        actualiser.setText("Actualisation en cours…");
+        etat.setText("Lecture du catalogue sur PC1…");
+        rafraichirSynchronisation();
+        boolean demarree = suivi != null && suivi.actualiser();
+        if (!demarree) {
+            // Rien n'a ete envoye (vue pas encore affichee, ou lecture deja en cours) :
+            // on rend le bouton tout de suite plutot que d'attendre une reponse qui n'arrivera pas.
+            finChargement();
+        }
+    }
+
+    private void finChargement() {
+        chargement = false;
+        actualiser.setDisable(false);
+        actualiser.setText("Actualiser le catalogue");
+        rafraichirSynchronisation();
+    }
+
+    /** « Synchronisé il y a 3 s » : l'utilisateur voit que la liste se relit toute seule. */
+    private void rafraichirSynchronisation() {
+        if (derniereLecture == null) {
+            synchronisation.setVisible(true);
+            synchronisation.setManaged(true);
+            synchronisation.setText(chargement
+                    ? "Synchronisation en cours…"
+                    : "En attente d'une première lecture réussie du catalogue.");
+            return;
+        }
+        long secondes = java.time.Duration.between(derniereLecture, java.time.Instant.now()).toSeconds();
+        String age = secondes < 5 ? "à l'instant"
+                : secondes < 60 ? "il y a " + secondes + " s"
+                : "il y a " + (secondes / 60) + " min";
+        synchronisation.setVisible(true);
+        synchronisation.setManaged(true);
+        synchronisation.setText("Catalogue synchronisé " + age
+                + " · relecture automatique toutes les 5 s.");
     }
 
     // ------------------------------------------------------------------ affichage
     private void afficherOffres(JsonNode offres) {
+        finChargement();
         cartes.getChildren().clear();
         if (offres == null || offres.isEmpty()) {
             EtatVide vide = new EtatVide("Aucun enseignant ne propose encore de cours publié en "
@@ -254,10 +329,13 @@ public class OffresEnseignantsView extends BorderPane {
     }
 
     private void envoyerDemande(ObjectNode demande) {
+        chargement = true;
         actualiser.setDisable(true);
+        actualiser.setText("Envoi en cours…");
         etat.setText("Envoi de la demande à l'enseignant…");
+        rafraichirSynchronisation();
         TaskRunner.run(() -> SuiviPedagogique.appeler(demande), resultat -> {
-            actualiser.setDisable(false);
+            finChargement();
             String texte = resultat.path("message").asText("Demande enregistrée.");
             boolean acceptee = "ACCEPTEE".equals(resultat.path("statut").asText(""));
             Notifications.afficher(fenetre(),
@@ -266,8 +344,17 @@ public class OffresEnseignantsView extends BorderPane {
             if (suivi != null) {
                 suivi.actualiser();
             }
+            // Acceptation immediate par le bot : on enchaine sans faire chercher le bouton.
+            if (acceptee) {
+                String langage = resultat.path("langage").asText(Session.langage().code());
+                if (Dialogue.confirmer(fenetre(), "Accès accordé",
+                        "Votre demande a été acceptée : vos cours sont ouverts. Ouvrir votre "
+                                + "parcours maintenant ?", "Ouvrir mes cours")) {
+                    ouvrirParcours(langage);
+                }
+            }
         }, erreur -> {
-            actualiser.setDisable(false);
+            finChargement();
             etat.setText("Demande non transmise : " + message(erreur));
         });
     }
@@ -283,18 +370,21 @@ public class OffresEnseignantsView extends BorderPane {
                 "Retirer")) {
             return;
         }
+        chargement = true;
         actualiser.setDisable(true);
+        actualiser.setText("Retrait en cours…");
+        rafraichirSynchronisation();
         TaskRunner.run(() -> SuiviPedagogique.appeler(
                         SuiviPedagogique.demande("annuler-demande").put("demande", demandeId)),
                 ok -> {
-                    actualiser.setDisable(false);
+                    finChargement();
                     etat.setText("Demande retirée.");
                     if (suivi != null) {
                         suivi.actualiser();
                     }
                 },
                 erreur -> {
-                    actualiser.setDisable(false);
+                    finChargement();
                     etat.setText("Retrait impossible : " + message(erreur));
                 });
     }

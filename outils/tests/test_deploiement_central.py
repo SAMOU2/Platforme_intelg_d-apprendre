@@ -18,7 +18,7 @@ class DeploiementCentralTest(unittest.TestCase):
     def test_actualisation_automatique_des_vues_apprenantes(self):
         base = ROOT / 'src/main/java/fr/ihm2026/ui'
         suivi = (base / 'commun/ActualisationVue.java').read_text()
-        for garde in ['Duration.seconds(5)', 'if(!active || occupe)return;',
+        for garde in ['Duration.seconds(5)', 'if(!active || occupe)return false;',
                       'requete!=generation', 'minuterie.stop()', 'windowProperty().removeListener',
                       'showingProperty().removeListener', 'Objects.equals(precedent,resultat)']:
             self.assertIn(garde, suivi)
