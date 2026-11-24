@@ -25,6 +25,8 @@ postes/secrets/
 !.env.*.sample
 
 # Sauvegardes locales de bases : ne jamais publier des donnees de comptes.
+# sauvegardes/ recoit les pg_dump ecrits par postesppliquer-migrations-PC1.ps1.
+sauvegardes/
 *.dump
 *.backup
 *.sql.gz

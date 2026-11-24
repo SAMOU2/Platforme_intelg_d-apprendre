@@ -52,6 +52,9 @@ exit /b 0
 REM Base locale : demarrage automatique Docker/PostgreSQL avant HTTPS.
 REM Pour gerer Docker vous-meme, ajouter dans configuration-PC1.local.cmd :
 REM set "IHM_DB_DEMARRAGE_AUTO=0"
+REM Mise a niveau automatique de la base (migrations absentes) au demarrage du service.
+REM Les fichiers deja appliques ne sont jamais rejoues et une sauvegarde est ecrite.
+REM set "IHM_MIGRATIONS_AUTO=0"
 
 REM Facultatif : adaptation des certificats aux adresses IPv4 actives (preparation initiale requise).
 REM Lire docs/wifi-identite-https.md AVANT activation. Ne recree pas la CA a chaque reseau.

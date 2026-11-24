@@ -26,12 +26,41 @@ class ApplicationMigrationsTest(unittest.TestCase):
 
     def test_verifie_les_migrations_citees_par_le_message_d_erreur(self):
         api = lire('src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java')
-        self.assertIn('migrations 10, 11, 12 et 16', api)
+        # Le message renvoie vers la commande a lancer, pas vers des numeros de migration.
+        self.assertIn('postes\\appliquer-migrations-PC1.cmd', api)
+        self.assertNotIn('migrations 10, 11, 12 et 16', api,
+                         "un numero de migration fige devient faux a la migration suivante")
         ps = lire('postes/appliquer-migrations-PC1.ps1')
         for migration in ('10-correction-enseignant.sql', '11-contenus-niveaux.sql',
                           '12-parcours-enseignants.sql', '16-offres-et-demandes-inscription.sql'):
             with self.subTest(migration=migration):
                 self.assertIn(migration, ps)
+
+    def test_mise_a_niveau_automatique_au_demarrage_du_service(self):
+        """Le service applique seul les migrations absentes : plus de 503 au premier lancement."""
+        auth = lire('postes/authentification-PC1.bat')
+        ps = lire('postes/appliquer-migrations-PC1.ps1')
+        self.assertIn('appliquer-migrations-PC1.ps1" -Auto', auth.replace("'", '"'))
+        # Le controle a lieu apres le demarrage de Docker et avant la compilation.
+        self.assertLess(auth.index('demarrer-docker-PC1.bat'), auth.index('appliquer-migrations-PC1.ps1'))
+        self.assertLess(auth.index('appliquer-migrations-PC1.ps1'), auth.index('"%MVN%"'))
+        # Desactivable, et une base injoignable ne bloque pas le demarrage.
+        self.assertIn('IHM_MIGRATIONS_AUTO', auth)
+        self.assertIn('[switch]$Auto', ps)
+        self.assertIn('exit $CodeBaseInjoignable', ps)
+        self.assertIn('$CodeBaseInjoignable = 2', ps)
+        # Le mode silencieux n'applique jamais les offres de demonstration.
+        self.assertIn("$Auto -and $migration -eq '17-offres-demonstration.sql'", ps)
+        # Aucune destruction, y compris dans le nouveau mode.
+        for interdit in ('down -v', 'volume rm', 'DROP TABLE', 'TRUNCATE', 'DELETE FROM'):
+            with self.subTest(interdit=interdit):
+                self.assertNotIn(interdit, ps)
+        self.assertNotIn('down -v', auth)
+
+    def test_sauvegardes_locales_jamais_committees(self):
+        """Le pg_dump contient des donnees de comptes : il ne doit jamais partir dans Git."""
+        self.assertIn('sauvegardes/', lire('.gitignore'))
+        self.assertIn("'sauvegardes'", lire('postes/appliquer-migrations-PC1.ps1'))
 
     def test_documentation_cite_le_script(self):
         for chemin in ('README.md', 'db/README-db.md'):

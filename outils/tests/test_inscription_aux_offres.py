@@ -184,7 +184,8 @@ class InscriptionAuxOffresTest(unittest.TestCase):
         # Le refus d'affectation et les saisies invalides sont expliqués à la personne concernée.
         self.assertIn('envoyerJson(exchange, 403, erreur(ex.getMessage()))', api)
         self.assertIn('"/api/pedagogie".equals(chemin) && !detail.isEmpty()', api)
-        self.assertIn('migrations 10, 11, 12 et 16 sur PC1', api)
+        self.assertIn('postes\\appliquer-migrations-PC1.cmd', api,
+                      "le message d'erreur doit nommer la commande a lancer sur PC1")
         client = lire('src/main/java/fr/ihm2026/api/service/ClientAuthentificationHttps.java')
         self.assertIn('throw new ErreurAuthentification(message)', client)
 
