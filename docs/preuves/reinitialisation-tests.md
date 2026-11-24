@@ -35,3 +35,17 @@ Les rapports Surefire sont joints à cette exécution GitHub Actions (rétention
 
 Le diagnostic SMTP de PC1 est indispensable pour identifier la cause concrète du problème de
 livraison : ces tests n'utilisent ni les identifiants SMTP privés de PC1, ni la boîte mail de l'utilisateur.
+
+## Recette réelle sur PC1 — 24 novembre 2026
+
+La réinitialisation a été **exécutée avec succès sur la plateforme déployée** : code demandé depuis
+l'écran de connexion, courriel reçu, code saisi, nouveau mot de passe accepté, puis connexion avec
+le nouveau mot de passe.
+
+Ce résultat valide la chaîne complète (interface → service HTTPS → SMTP réel → PostgreSQL →
+révocation des sessions), ce que les 26 tests automatisés ci-dessus ne pouvaient pas couvrir : ils
+n'utilisent ni les identifiants SMTP privés de PC1, ni une boîte mail réelle. Les étapes 1 à 5 de la
+section précédente sont donc considérées comme vérifiées, à l'exception de la vérification des
+courriers indésirables qui dépend du fournisseur.
+
+Aucun code, mot de passe ni secret de configuration ne doit être joint à cette note.
