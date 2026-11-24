@@ -86,6 +86,17 @@ class InscriptionAuxOffresTest(unittest.TestCase):
         self.assertIn('defautLaisseLaDecisionALEnseignant', test)
         self.assertIn('offreFermeeBloqueLeBot', test)
 
+    def test_agregats_sql_valides_pour_postgresql(self):
+        """max(boolean) n'existe pas : erreur 42883 au moment de s'inscrire a une offre."""
+        repo = lire('src/main/java/fr/ihm2026/api/persistence/PostgresPedagogieRepository.java')
+        self.assertNotIn('max(o.ouverte)', repo)
+        self.assertNotIn('max(o.auto_acceptation)', repo)
+        self.assertIn('bool_or(o.ouverte)', repo)
+        self.assertIn('bool_or(o.auto_acceptation)', repo)
+        # L'agregat doit rester coherent : au moins une offre ouverte, au moins une auto.
+        self.assertIn('coalesce(bool_or(o.ouverte),TRUE)', repo)
+        self.assertIn('coalesce(bool_or(o.auto_acceptation),FALSE)', repo)
+
     def test_erreurs_sql_expliquees_au_lieu_du_message_generique(self):
         """« Service d'authentification indisponible » sans détail ne permet aucune correction."""
         api = lire('src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java')
