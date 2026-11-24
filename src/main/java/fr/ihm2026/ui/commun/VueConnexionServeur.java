@@ -1017,14 +1017,14 @@ public class VueConnexionServeur extends StackPane {
         if (choix.isEmpty() || choix.get() == javafx.scene.control.ButtonType.CANCEL) return;
         if (choix.get() == saisir) { saisirCodeReinitialisation(adresse, identifiant); return; }
         definirChampsActifs(false);
-        etat.setText("Demande de réinitialisation…");
+        etat.setText("Envoi du code par PC1… Veuillez patienter (jusqu’à 90 secondes).");
         TaskRunner.run(() -> {
             String hote = ClientReseau.choisirHote(adresse, IdentitePoste.port());
             ClientAuthentificationHttps.demanderReinitialisation(hote, portHttpsPour(hote), identifiant);
             return true;
         }, ok -> {
             definirChampsActifs(true);
-            etat.setText("Si le compte est éligible, un code sera envoyé par e-mail. Vérifiez aussi les courriers indésirables.");
+            etat.setText("Si le compte est éligible, le code a été transmis au serveur e-mail. Vérifiez aussi les courriers indésirables.");
             saisirCodeReinitialisation(adresse, identifiant);
         }, erreur -> {
             definirChampsActifs(true);
@@ -1040,7 +1040,8 @@ public class VueConnexionServeur extends StackPane {
         TextField code = new TextField(); code.setPromptText("Code à 8 chiffres");
         PasswordField secret = new PasswordField(); secret.setPromptText("Nouveau mot de passe");
         PasswordField confirmation = new PasswordField(); confirmation.setPromptText("Confirmer le mot de passe");
-        var contenu = new VBox(8, new Label("Code (valable 10 minutes)"), code,
+        var contenu = new VBox(8, new Label("Vérifiez aussi les indésirables. Aucun code ? Vérifiez le SMTP sur PC1."),
+                new Label("Code (valable 10 minutes)"), code,
                 new Label("Nouveau mot de passe (12 caractères minimum)"), secret,
                 new Label("Confirmation"), confirmation);
         dialogue.getDialogPane().setContent(contenu);

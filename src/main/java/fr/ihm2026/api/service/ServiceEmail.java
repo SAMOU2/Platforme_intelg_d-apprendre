@@ -108,14 +108,19 @@ public final class ServiceEmail {
         return proprietes;
     }
 
-    public void envoyer(String destinataire, String sujet, String contenu) {
-        Objects.requireNonNull(destinataire, "destinataire");
-        Objects.requireNonNull(sujet, "sujet");
-        Objects.requireNonNull(contenu, "contenu");
+    /** Validation locale, sans réseau et sans rechercher un compte. */
+    void verifierConfiguration() {
         if (hote.isBlank() || expediteur.isBlank()) {
             throw new IllegalStateException(
                     "L'envoi d'e-mails est indisponible : configurer IHM_SMTP_HOST et IHM_SMTP_FROM.");
         }
+    }
+
+    public void envoyer(String destinataire, String sujet, String contenu) {
+        Objects.requireNonNull(destinataire, "destinataire");
+        Objects.requireNonNull(sujet, "sujet");
+        Objects.requireNonNull(contenu, "contenu");
+        verifierConfiguration();
 
         Authenticator authentificateur = utilisateur.isBlank() ? null : new Authenticator() {
             @Override
