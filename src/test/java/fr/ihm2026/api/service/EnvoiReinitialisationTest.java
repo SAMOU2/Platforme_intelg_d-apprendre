@@ -50,6 +50,32 @@ class EnvoiReinitialisationTest {
     }
 
     @Test
+    void refusDunVraiServeurSmtpLocalRemonteAuDemandeur() throws Exception {
+        try (var smtp = new java.net.ServerSocket(0, 1, java.net.InetAddress.getLoopbackAddress());
+             var serveur = Executors.newSingleThreadExecutor();
+             var envoi = new EnvoiReinitialisation()) {
+            smtp.setSoTimeout(3000);
+            var reception = serveur.submit(() -> {
+                try (var connexion = smtp.accept()) {
+                    connexion.getOutputStream().write("554 SMTP unavailable for test\r\n"
+                            .getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+                    connexion.getOutputStream().flush();
+                }
+                return null;
+            });
+            var email = new ServiceEmail(Map.of("IHM_SMTP_HOST", smtp.getInetAddress().getHostAddress(),
+                    "IHM_SMTP_PORT", Integer.toString(smtp.getLocalPort()),
+                    "IHM_SMTP_FROM", "test@example.org"));
+            var erreur = assertThrows(IllegalStateException.class, () -> envoi.attendre(() -> {
+                email.envoyer("destinataire@example.org", "Test", "Code de test");
+                return null;
+            }));
+            assertTrue(AuthentificationApiHttps.messageExplicite(erreur).contains("554"));
+            reception.get(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     void migrationAbsenteRemonteAvecSonSqlState() {
         try (var envoi = new EnvoiReinitialisation()) {
             var cause = new SQLException("table absente", "42P01");
