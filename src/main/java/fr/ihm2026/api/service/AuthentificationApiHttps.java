@@ -36,10 +36,8 @@ public final class AuthentificationApiHttps implements HttpHandler {
     private static final String REFUS = "Identifiants invalides ou compte indisponible.";
     private static final int LOT_DECISIONS_MAX = 20;
 
-    // File bornée : la réponse publique ne révèle jamais l'existence du compte.
-    private final java.util.concurrent.ThreadPoolExecutor reinitialisations = new java.util.concurrent.ThreadPoolExecutor(
-            2, 2, 0L, TimeUnit.SECONDS, new java.util.concurrent.ArrayBlockingQueue<>(100),
-            r -> { Thread t = new Thread(r, "reinitialisation-email"); t.setDaemon(true); return t; });
+    // Attendre le résultat SMTP tout en bornant le nombre d'envois simultanés.
+    private final EnvoiReinitialisation reinitialisations = new EnvoiReinitialisation();
     private final PostgresAuthentificationService authentification;
     private final PostgresCompteRepository comptes;
     private final ServiceEmail email;
@@ -270,41 +268,49 @@ public final class AuthentificationApiHttps implements HttpHandler {
         if (corps == null || !texte(corps, "email") || corps.path("email").asText().length() > 254) {
             envoyerJson(exchange, 400, erreur("Requête invalide.")); return;
         }
-        String adresse = corps.path("email").asText();
+        String adresse = PostgresCompteRepository.normaliserEmail(corps.path("email").asText());
         String source = exchange.getRemoteAddress().getAddress().getHostAddress();
         try {
-            reinitialisations.execute(() -> {
-                try {
-                    var challenge = authentification.demanderReinitialisation(adresse, source);
-                    if (challenge.isPresent()) {
-                        var c = challenge.get();
-                        email.envoyer(c.email(), "Réinitialisation du mot de passe",
-                                "Bonjour,\n\nVotre code de réinitialisation est : " + c.code()
-                                + "\nIl expire dans 10 minutes. Ne le communiquez à personne."
-                                + "\nSi vous n'avez pas demandé ce code, ignorez ce message.");
-                    }
-                } catch (SQLException ex) {
-                    // Cause la plus fréquente : migration 15 non appliquée au volume existant
-                    // (les scripts de db/ ne sont rejoués que sur un volume neuf).
-                    String etat = ex.getSQLState();
-                    boolean migration = "42P01".equals(etat) || "42703".equals(etat) || "42883".equals(etat);
-                    System.err.println("[auth-https] réinitialisation : stockage indisponible."
-                            + (migration
-                                    ? " Table ou fonction absente : appliquer db/15-reinitialisation-mot-de-passe.sql"
-                                            + " sur ce volume (voir db/README-db.md), puis redémarrer le service."
-                                    : " Vérifier PostgreSQL et les migrations (db/README-db.md).")
-                            + " SQLState=" + etat);
-                } catch (RuntimeException ex) {
-                    // Aucun secret ni adresse ici : seulement la cause SMTP, pour comprendre
-                    // pourquoi aucun code n'est parti.
-                    System.err.println("[auth-https] réinitialisation : envoi du courriel impossible : "
-                            + messageExplicite(ex));
+            // Erreur de configuration commune à tous les comptes, avant leur recherche.
+            email.verifierConfiguration();
+            reinitialisations.attendre(() -> {
+                var challenge = authentification.demanderReinitialisation(adresse, source);
+                if (challenge.isPresent()) {
+                    var c = challenge.get();
+                    email.envoyer(c.email(), "Réinitialisation du mot de passe",
+                            "Bonjour,\n\nVotre code de réinitialisation est : " + c.code()
+                            + "\nIl expire dans 10 minutes. Ne le communiquez à personne."
+                            + "\nSi vous n'avez pas demandé ce code, ignorez ce message.");
                 }
+                return null;
             });
+        } catch (SQLException ex) {
+            String etat = ex.getSQLState();
+            boolean migration = "42P01".equals(etat) || "42703".equals(etat) || "42883".equals(etat);
+            String diagnostic = migration
+                    ? "Mise à jour de PC1 nécessaire : appliquer db/15-reinitialisation-mot-de-passe.sql sur la base existante, puis redémarrer le service."
+                    : "Réinitialisation indisponible : vérifier PostgreSQL sur PC1.";
+            System.err.println("[auth-https] réinitialisation : stockage indisponible. "
+                    + diagnostic + " SQLState=" + etat);
+            envoyerJson(exchange, 503, erreur(diagnostic));
+            return;
         } catch (java.util.concurrent.RejectedExecutionException ex) {
             System.err.println("[auth-https] file de réinitialisation pleine.");
+            envoyerJson(exchange, 503, erreur("Trop de demandes en cours sur PC1. Réessayez plus tard."));
+            return;
+        } catch (RuntimeException ex) {
+            // La cause SMTP reste sur PC1 : un fournisseur peut y inclure une adresse
+            // ou des détails internes qu'il ne faut pas publier sans authentification.
+            System.err.println("[auth-https] réinitialisation : envoi du courriel impossible : "
+                    + messageExplicite(ex));
+            envoyerJson(exchange, 503, erreur("Envoi du code non confirmé. Vérifiez les courriers indésirables. "
+                    + "Sur PC1, lancer postes\\tester-smtp.cmd et vérifier la configuration SMTP. "
+                    + "Si un code arrive malgré ce message, utilisez « J’ai déjà un code »."));
+            return;
         }
-        envoyerJson(exchange, 202, Map.of("message", "Si le compte est éligible, un code sera envoyé par e-mail."));
+        // Même réponse pour compte inconnu, inactif ou limité par les quotas.
+        // Pour un compte éligible, Transport.send a terminé avant cette réponse.
+        envoyerJson(exchange, 202, Map.of("message", "Si le compte est éligible, le code a été transmis au serveur e-mail. Vérifiez aussi les courriers indésirables."));
     }
 
     private void confirmerReinitialisation(HttpExchange exchange) throws IOException, SQLException {

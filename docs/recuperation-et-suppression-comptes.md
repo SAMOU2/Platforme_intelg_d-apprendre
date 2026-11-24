@@ -17,9 +17,21 @@ réinitialisation n'est pas un code de connexion ni un PIN d'activation.
 
 ### Aucun code ne part : diagnostic
 
-L'interface répond volontairement la même phrase dans tous les cas (« Si le compte est éligible, un
-code sera envoyé par e-mail ») : elle ne révèle jamais si le compte existe. C'est donc la console du
-service d'authentification de PC1 qui porte la cause.
+Le serveur attend désormais la fin du traitement DB + SMTP avant d'accepter la demande
+(90 secondes maximum, client configuré à 120 secondes). Auparavant, il répondait immédiatement
+202 même si l'envoi échouait ensuite en arrière-plan : la boîte de saisie du PIN s'ouvrait sans
+qu'aucun message ne soit parti.
+
+Un échec SMTP, une migration manquante ou une file saturée renvoie maintenant une erreur 503
+visible dans l'interface ; la saisie du code ne s'ouvre pas automatiquement. La cause SMTP détaillée
+reste uniquement dans la console de PC1 (elle peut contenir des données internes du fournisseur).
+Le succès signifie **accepté par le serveur SMTP**, pas « arrivé dans la boîte de réception » :
+un fournisseur peut encore retarder, filtrer ou rejeter le message ensuite.
+
+Les comptes inconnus, inactifs, non acceptés ou limités par les quotas gardent la même réponse
+neutre que les comptes éligibles ; aucun code ni état du compte n'est renvoyé dans le JSON.
+Après un délai dépassé, un message peut malgré tout arriver : choisir **J’ai déjà un code** plutôt
+que multiplier les demandes (trois par heure maximum).
 
 1. **Lancer `postes\tester-smtp.cmd votre-adresse@example.org` sur PC1.** Le script relit
    `postes\configuration-PC1.local.cmd`, envoie un vrai message et affiche la cause exacte de
@@ -48,7 +60,8 @@ service d'authentification de PC1 qui porte la cause.
      puis redémarrer le service d'authentification.
    - `file de réinitialisation pleine` → plus de 100 demandes en attente : réessayer plus tard.
 
-4. **Rien du tout dans la console, et aucun code reçu** : le compte n'est pas éligible (inconnu,
+4. **Demande acceptée sans erreur, mais aucun code reçu** : vérifier les indésirables et les journaux
+   de livraison du fournisseur. Le compte peut aussi ne pas être éligible (inconnu,
    inactif, inscription non acceptée, ou quota de trois demandes/heure atteint). Vérifier dans
    `Comptes et rôles` que le compte est actif et son inscription acceptée.
 
