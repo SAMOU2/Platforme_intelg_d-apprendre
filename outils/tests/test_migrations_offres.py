@@ -50,12 +50,29 @@ class ApplicationMigrationsTest(unittest.TestCase):
         self.assertIn('exit $CodeBaseInjoignable', ps)
         self.assertIn('$CodeBaseInjoignable = 2', ps)
         # Le mode silencieux n'applique jamais les offres de demonstration.
-        self.assertIn("$Auto -and $migration -eq '17-offres-demonstration.sql'", ps)
+        self.assertIn("$estDemonstration = ($migration -eq '17-offres-demonstration.sql')", ps)
+        self.assertIn("if (-not $estDemonstration -or $AvecDemonstration)", ps)
         # Aucune destruction, y compris dans le nouveau mode.
         for interdit in ('down -v', 'volume rm', 'DROP TABLE', 'TRUNCATE', 'DELETE FROM'):
             with self.subTest(interdit=interdit):
                 self.assertNotIn(interdit, ps)
         self.assertNotIn('down -v', auth)
+
+    def test_sonde_impossible_ne_bloque_pas_les_migrations(self):
+        """« relation offres_enseignants does not exist » ne doit pas arreter le script."""
+        ps = lire('postes/appliquer-migrations-PC1.ps1')
+        # Les commandes natives sont capturees avec leur sortie d'erreur, jamais laissees
+        # remonter comme erreur bloquante de PowerShell.
+        self.assertIn('function Invoke-CommandeNative', ps)
+        self.assertIn('function Invoke-PsqlFichier', ps)
+        self.assertIn("2>&1", ps)
+        self.assertIn("$ErrorActionPreference = 'Continue'", ps)
+        # Une seule question distingue « base injoignable » d'une sonde impossible.
+        self.assertIn("'SELECT 1;'", ps)
+        # Une sonde en echec sur une table absente vaut « migration absente », pas « echec ».
+        self.assertIn("$appliquee = ($sonde.Code -eq 0 -and $sonde.Sortie -eq 't')", ps)
+        # Le message de PostgreSQL est repris tel quel en cas d'echec reel d'application.
+        self.assertIn('$application.Sortie', ps)
 
     def test_sauvegardes_locales_jamais_committees(self):
         """Le pg_dump contient des donnees de comptes : il ne doit jamais partir dans Git."""
@@ -74,6 +91,10 @@ class OffresDemonstrationTest(unittest.TestCase):
         self.assertIn('INSERT INTO offres_enseignants', sql)
         self.assertIn('INSERT INTO parcours_enseignants', sql)
         self.assertIn('ON CONFLICT', sql, "relancer le script ne doit pas créer de doublon")
+        # parcours_id est UNIQUE : un ON CONFLICT (enseignant_id, langage_id) seul
+        # laisserait echouer l'insertion si un autre enseignant tient deja le parcours.
+        self.assertIn('WHERE NOT EXISTS (SELECT 1 FROM parcours_enseignants pe WHERE pe.parcours_id = p.id)', sql)
+        self.assertIn('ON CONFLICT DO NOTHING', sql)
         self.assertIn('BEGIN;', sql)
         self.assertIn('COMMIT;', sql)
         for interdit in ('DROP TABLE', 'TRUNCATE', 'DELETE FROM', 'UPDATE '):
