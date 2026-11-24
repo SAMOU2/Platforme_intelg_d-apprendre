@@ -57,7 +57,7 @@ try {
         throw 'PostgreSQL non pret. Verifiez Docker Desktop et docker compose -f db/docker-compose.yml logs --tail 50 postgres. Si --wait est inconnu, mettez Compose a jour. Ne supprimez aucun volume.'
     }
     Write-Host '[OK] PostgreSQL est pret dans Docker. Les donnees existantes sont conservees.'
-    Write-Host '[INFO] Les migrations manquantes sur une base existante restent a appliquer manuellement apres sauvegarde.'
+    Write-Host '[INFO] Les migrations manquantes sont appliquees automatiquement par postes\authentification-PC1.bat (sauvegarde puis fichiers absents seulement).'
     exit 0
 } catch {
     Write-Host ('[ERREUR] ' + $_.Exception.Message) -ForegroundColor Red

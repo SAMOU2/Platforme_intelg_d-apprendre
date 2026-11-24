@@ -25,7 +25,11 @@ FROM (VALUES ('sofia.meziane@univ.dz', 'python')) AS v(email, langage)
 JOIN utilisateurs u ON u.email = v.email AND u.role = 'ENSEIGNANT'
 JOIN langages l ON l.code = v.langage
 JOIN parcours p ON p.langage_id = l.id
-ON CONFLICT (enseignant_id, langage_id) DO NOTHING;
+-- parcours_id est UNIQUE : sur une base ou un autre enseignant tient deja ce
+-- parcours, on ne fait rien. ON CONFLICT (enseignant_id, langage_id) ne suffirait
+-- pas : l'erreur porterait sur la contrainte d'unicite de parcours_id.
+WHERE NOT EXISTS (SELECT 1 FROM parcours_enseignants pe WHERE pe.parcours_id = p.id)
+ON CONFLICT DO NOTHING;
 
 -- 2) Les offres visibles par les apprenants.
 INSERT INTO offres_enseignants
