@@ -258,6 +258,30 @@ par l'enseignant ou par le bot de son offre. Détails, politique du bot
 (`IHM_DEMANDE_BOT_MODE`) et recette :
 [inscription aux offres](../docs/inscription-aux-offres.md).
 
+## Migration 17 — offres de démonstration (facultative)
+
+`17-offres-demonstration.sql` publie des offres de formation pour les comptes de démonstration
+(`sofia.meziane@univ.dz`) en Python, Java et C++, et rattache l'enseignante à son parcours
+(migration 12). Sans cette étape, le catalogue de l'apprenant est vide au premier lancement.
+Le script est **idempotent** (`ON CONFLICT DO NOTHING`) : il ne réécrit jamais une offre déjà
+rédigée sur PC1 et ne supprime rien. Ne pas l'appliquer en production.
+
+## Appliquer les migrations manquantes en une commande
+
+Un volume Docker existant ne rejoue jamais `db/*.sql`. Le message
+« Mise à jour de la base nécessaire : appliquer les migrations 10, 11, 12 et 16 sur PC1 »
+signifie que la base est plus ancienne que le code. Sur PC1, Docker Desktop démarré :
+
+```powershell
+postes\appliquer-migrations-PC1.cmd -Simulation          # lit l'état, n'écrit rien
+postes\appliquer-migrations-PC1.cmd                      # sauvegarde puis applique
+postes\appliquer-migrations-PC1.cmd -AvecDemonstration   # + offres de démonstration
+```
+
+Le script vérifie chaque migration avec `to_regclass`, affiche celles qui manquent, écrit une
+sauvegarde `pg_dump` dans `sauvegardes\`, puis n'applique que les fichiers absents. Il ne
+supprime ni table, ni donnée, ni volume. Redémarrer `postes\authentification-PC1.bat` ensuite.
+
 ## Lanceur automatique Docker / PostgreSQL sous Windows (PC1)
 
 Double-cliquer `postes\demarrer-docker-PC1.bat` ou lancer depuis PowerShell :
