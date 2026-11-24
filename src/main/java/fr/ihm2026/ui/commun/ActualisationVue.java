@@ -51,8 +51,15 @@ public final class ActualisationVue<T> {
         active=visible;generation++;precedent=null;
         if(active){minuterie.playFromStart();actualiser();}else minuterie.stop();
     }
-    public void actualiser() {
-        if(!active || occupe)return;
+    /**
+     * Relit la source tout de suite.
+     *
+     * @return {@code true} si la requete a demarre, {@code false} si elle a ete ignoree
+     *         (vue non affichee ou lecture deja en cours). L'appelant peut ainsi eviter
+     *         d'afficher un etat de chargement qui ne se terminerait jamais.
+     */
+    public boolean actualiser() {
+        if(!active || occupe)return false;
         occupe=true;long requete=generation;
         Task<T> travail=new Task<>() { @Override protected T call() throws Exception {return lire.call();} };
         travail.setOnSucceeded(e -> {
@@ -67,5 +74,6 @@ public final class ActualisationVue<T> {
             precedent=null;erreur.accept(travail.getException());
         });
         Thread thread=new Thread(travail,"actualisation-pedagogique");thread.setDaemon(true);thread.start();
+        return true;
     }
 }

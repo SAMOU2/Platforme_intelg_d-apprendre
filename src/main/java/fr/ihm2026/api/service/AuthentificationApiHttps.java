@@ -119,7 +119,11 @@ public final class AuthentificationApiHttps implements HttpHandler {
             } else if ("23505".equals(ex.getSQLState())) {
                 envoyerJson(exchange, 409, erreur("Un compte utilise déjà cette adresse e-mail."));
             } else {
-                envoyerJson(exchange, 503, erreur("Service d'authentification indisponible."));
+                // Un 503 sans detail n'apprend rien : on joint l'etat SQL, le message de PostgreSQL
+                // et le type de l'erreur. Aucun secret n'y figure (ni mot de passe, ni chaine de
+                // connexion, masquee par resumeErreurSql).
+                envoyerJson(exchange, 503, erreur("Service d'authentification indisponible : "
+                        + resumeErreurSql(ex)));
             }
         } catch (IllegalStateException ex) {
             envoyerJson(exchange, 409, erreur(ex.getMessage()));
@@ -935,6 +939,27 @@ public final class AuthentificationApiHttps implements HttpHandler {
             if (cause.getCause() == cause) break;
         }
         return message.length() == 0 ? erreur.getClass().getSimpleName() : message.toString();
+    }
+
+    /**
+     * Resume affichable d'une erreur SQL : etat SQL, message de PostgreSQL et type Java. Ce texte
+     * part vers l'interface, il ne doit donc jamais contenir d'identifiant ni de mot de passe.
+     */
+    static String resumeErreurSql(SQLException erreur) {
+        StringBuilder resume = new StringBuilder();
+        if (erreur.getSQLState() != null && !erreur.getSQLState().isBlank()) {
+            resume.append("etat SQL ").append(erreur.getSQLState());
+        }
+        String message = erreur.getMessage() == null ? "" : erreur.getMessage().strip();
+        // Certains pilotes recopient la chaine de connexion dans le message : on la retire.
+        message = message.replaceAll("(?i)jdbc:postgresql:[^\\s]*", "jdbc:postgresql:(masque)")
+                .replaceAll("(?i)password=[^\\s&;]*", "password=(masque)");
+        if (!message.isBlank()) {
+            if (resume.length() > 0) resume.append(" — ");
+            resume.append(message.length() > 200 ? message.substring(0, 200) + "…" : message);
+        }
+        if (resume.length() == 0) resume.append(erreur.getClass().getSimpleName());
+        return resume.toString();
     }
 
     private static ObjectNode erreur(String message) {
