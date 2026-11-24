@@ -79,6 +79,12 @@ class SmtpTest(unittest.TestCase):
         readme = lire('README.md')
         self.assertIn('tester-smtp.cmd', readme)
 
+    def test_recette_reelle_de_reinitialisation_consignee(self):
+        """La chaine complete a fonctionne sur PC1 : la preuve doit rester tracee."""
+        doc = lire('docs/preuves/reinitialisation-tests.md')
+        self.assertIn('Recette réelle sur PC1', doc)
+        self.assertIn('exécutée avec succès', doc)
+
     def test_script_poste_existe_avec_fins_de_ligne_windows(self):
         binaire = (ROOT / 'postes/tester-smtp.cmd').read_bytes()
         self.assertIn(b'\r\n', binaire,

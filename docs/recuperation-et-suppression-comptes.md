@@ -54,10 +54,10 @@ que multiplier les demandes (trois par heure maximum).
    - `Connection refused`, `timed out`, `UnknownHostException` → hôte, port, pare-feu, réseau ou
      proxy : tester `Test-NetConnection smtp.fournisseur.example -Port 587` dans PowerShell.
    - `Table ou fonction absente ... 15-reinitialisation-mot-de-passe.sql` → la migration 15 n'est
-     pas appliquée. Un volume Docker déjà créé ne rejoue pas `db/*.sql` ; appliquer le fichier
-     manuellement :
-     `docker exec -i ihm2026-postgres psql -U ihm2026 -d ihm2026 < db/15-reinitialisation-mot-de-passe.sql`
-     puis redémarrer le service d'authentification.
+     pas appliquée. Un volume Docker déjà créé ne rejoue pas `db/*.sql`. Redémarrer
+     `postes\authentification-PC1.bat` suffit : il applique seul les migrations absentes, après une
+     sauvegarde dans `sauvegardes\`. Pour le faire à la main :
+     `postes\appliquer-migrations-PC1.cmd -Simulation` puis `postes\appliquer-migrations-PC1.cmd`.
    - `file de réinitialisation pleine` → plus de 100 demandes en attente : réessayer plus tard.
 
 4. **Demande acceptée sans erreur, mais aucun code reçu** : vérifier les indésirables et les journaux
