@@ -76,8 +76,32 @@ if errorlevel 1 (
     echo [ERREUR] Maven n'a pas pu compiler le service ou preparer ses dependances.
     goto :echec
 )
+REM Un fichier .class ecrit par un IDE (Eclipse/ECJ, IntelliJ) au lieu de Maven contient des
+REM erreurs differees : au demarrage, la console affiche « Unresolved compilation problems »
+REM au lieu du vrai probleme. On refuse ces classes et on repart d'une compilation propre.
+set "CLASSE_DOUTEUSE="
+setlocal EnableDelayedExpansion
+for /r "target\classes" %%F in (*.class) do (
+    findstr /m /c:"Unresolved compilation" "%%F" >nul 2>nul && set "CLASSE_DOUTEUSE=%%F"
+)
+if defined CLASSE_DOUTEUSE (
+    echo [ATTENTION] Une classe compilee par un IDE contient des erreurs differees :
+    echo             !CLASSE_DOUTEUSE!
+    echo             Nettoyage de target\classes puis recompilation complete par Maven...
+    rmdir /s /q "target\classes"
+    endlocal
+    call "%MVN%" -B -DskipTests compile
+    if errorlevel 1 (
+        echo [ERREUR] La recompilation propre a echoue. Lire les lignes ci-dessus.
+        goto :echec
+    )
+) else (
+    endlocal
+)
+
 if not exist "target\classes\fr\ihm2026\api\service\ServeurAuthentificationHttps.class" (
     echo [ERREUR] La classe du service HTTPS est absente apres compilation.
+    echo          Lancer : mvnw.cmd -B clean compile
     goto :echec
 )
 if not exist "target\authentification-classpath.txt" (
