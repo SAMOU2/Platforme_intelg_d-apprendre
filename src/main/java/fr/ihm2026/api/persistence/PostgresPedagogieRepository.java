@@ -280,8 +280,11 @@ public final class PostgresPedagogieRepository {
         // L'offre peut être publiée avant les niveaux : ce qui compte est que l'enseignant
         // propose réellement quelque chose (une offre rédigée ou au moins un niveau publié).
         boolean ouverte=true,acceptationBot=false,offrePubliee=false;
+        // En PostgreSQL, max() n'existe pas pour le type boolean (erreur 42883 « function
+        // max(boolean) does not exist »). bool_or() agrege des booleens : « au moins une offre
+        // ouverte / avec acceptation automatique », comme le voulait le max() initial.
         try(var p=c.prepareStatement("""
-            SELECT count(*)>0,coalesce(max(o.ouverte),TRUE),coalesce(max(o.auto_acceptation),FALSE)
+            SELECT count(*)>0,coalesce(bool_or(o.ouverte),TRUE),coalesce(bool_or(o.auto_acceptation),FALSE)
             FROM offres_enseignants o WHERE o.enseignant_id=? AND o.langage_id=?
             """)) {
             p.setLong(1,enseignant);p.setLong(2,langue);
