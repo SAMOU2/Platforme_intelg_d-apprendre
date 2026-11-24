@@ -136,7 +136,7 @@ public final class ClientAuthentificationHttps implements AutoCloseable {
     private static void envoyerReinitialisation(String hote, int port, String chemin, Map<String, String> valeurs) {
         try {
             String corps = MAPPER.writeValueAsString(valeurs);
-            envoyer(HttpRequest.newBuilder(base(hote, port).resolve(chemin)).timeout(DELAI_REQUETE_AUTH)
+            envoyer(HttpRequest.newBuilder(base(hote, port).resolve(chemin)).timeout(DELAI_ENVOI_EMAIL)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .POST(HttpRequest.BodyPublishers.ofString(corps)).build());
         } catch (InterruptedException ex) {

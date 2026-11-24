@@ -106,3 +106,9 @@ v2.0, les modèles de tâches v2.0 et le cahier des charges v1.0. Ce sont des
 constituent ni des captures JavaFX, ni une preuve d’exécution Windows, Docker,
 PostgreSQL, SMTP, NVIDIA ou NVDA. Les scénarios à exécuter réellement sont
 REC-01 à REC-16 dans `docs/Cahier-des-charges.pdf`.
+
+## Récupération du mot de passe — 24 novembre 2026
+
+Voir le [rapport de vérification de la réinitialisation](reinitialisation-tests.md) :
+26 tests ciblés réussis dans GitHub Actions, avec une capture du rapport et les limites
+de cette validation (livraison réelle sur PC1 restant à vérifier).

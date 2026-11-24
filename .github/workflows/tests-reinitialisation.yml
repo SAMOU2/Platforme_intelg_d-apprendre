@@ -1,0 +1,91 @@
+name: Tests reinitialisation
+
+on:
+  push:
+    branches: ['arena/**']
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - 'db/**'
+      - '.github/workflows/tests-reinitialisation.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - 'db/**'
+      - '.github/workflows/tests-reinitialisation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: ihm2026
+          POSTGRES_USER: ihm2026
+          POSTGRES_PASSWORD: test-ci-uniquement
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ihm2026"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      IHM_DB_URL: jdbc:postgresql://localhost:5432/ihm2026
+      IHM_DB_USER: ihm2026
+      IHM_DB_PASSWORD: test-ci-uniquement
+      PGPASSWORD: test-ci-uniquement
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Migrer la base de test jetable
+        run: |
+          for fichier in db/*.sql; do
+            if ! psql -h localhost -U ihm2026 -d ihm2026 -v ON_ERROR_STOP=1 -f "$fichier" > migration.log 2>&1; then
+              cat migration.log
+              echo "::error::Migration $fichier : $(tail -1 migration.log)"
+              exit 1
+            fi
+          done
+      - name: Tester les envois et la recuperation en base
+        run: |
+          set -o pipefail
+          mvn -B -ntp -Dtest=EnvoiReinitialisationTest,ServiceEmailTest,ServeurAuthentificationHttpsTest,GestionComptesIntegrationTest test 2>&1 | tee maven.log
+      - name: Resumer les resultats verifies
+        if: always()
+        shell: python
+        run: |
+          import glob, os, xml.etree.ElementTree as ET
+          for path in glob.glob('target/surefire-reports/TEST-*.xml'):
+              suite = ET.parse(path).getroot()
+              attrs = suite.attrib
+              message = f"{attrs['name']}: {attrs['tests']} tests, {attrs['failures']} echecs, {attrs['errors']} erreurs, {attrs['skipped']} ignores"
+              print(f'::notice::{message}')
+              for case in suite.findall('testcase'):
+                  for tag in ('failure', 'error'):
+                      for failure in case.findall(tag):
+                          detail = failure.get('message', '')[:1500].replace('\n', '%0A').replace('\r', '%0D')
+                          print(f"::error::{case.get('name')}: {detail}")
+          if os.path.exists('maven.log'):
+              for line in open('maven.log'):
+                  if '[ERROR]' in line:
+                      print('::error::' + line.strip().replace('\n', '%0A'))
+      - name: Conserver les preuves de test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-tests-reinitialisation
+          path: target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 14
