@@ -1,37 +1,114 @@
-# Vérification de la récupération du mot de passe
+# Vérification du déploiement centralisé — 31 octobre 2026
 
-![Rapport des tests automatisés](reinitialisation-tests.png)
+## Résultats réellement obtenus
 
-Cette capture représente un **rapport généré depuis les annotations réelles de GitHub Actions**,
-provenant de l'exécution [45379029009](https://github.com/SAMOU2/Platforme_intelg_d-apprendre/actions/runs/45379029009),
-sur le code `b638f8d`. Ce n'est ni une capture de l'application JavaFX, ni une preuve de réception
-dans une boîte mail réelle.
+`python3 outils/tests/test_deploiement_central.py` : **15 contrôles réussis**.
+Le journal brut est `tests-deploiement.txt` et son rendu PNG est `tests-deploiement.png`.
+Ces contrôles portent sur la syntaxe Bash, les contrats de configuration dans les fichiers,
+et le refus réel du lanceur HTTPS Linux lorsque sa configuration est absente.
+Ce ne sont PAS des tests de connexion Java/HTTPS ni une validation de Windows.
 
-Résultat : **26 tests exécutés, aucun échec, aucune erreur, aucun test ignoré**.
+`architecture-serveur-central.png` est un **schéma explicatif**, pas une capture de l'application.
+Les PNG sont générés par `outils/preuves_deploiement.py` (Pillow requis).
 
-| Suite | Tests |
-| --- | ---: |
-| EnvoiReinitialisationTest | 9 |
-| ServiceEmailTest | 7 |
-| ServeurAuthentificationHttpsTest | 6 |
-| GestionComptesIntegrationTest | 4 |
+## Correction de la configuration PC1 et affichage des IP
 
-La vérification utilise Java 25 et une base PostgreSQL 16 + pgvector jetable, avec les migrations
-appliquées. Elle couvre notamment l'attente du résultat avant succès, un refus SMTP réel sur un
-serveur local de test, la configuration manquante, les exceptions SQL, les délais dépassés,
-l'interruption et la réinitialisation/révocation des sessions dans PostgreSQL.
-Les rapports Surefire sont joints à cette exécution GitHub Actions (rétention : 14 jours).
+Le lanceur HTTPS accepte maintenant `postes/configuration-PC1.local.cmd` (facultatif),
+charge avant ses controles. Copier `postes/configuration-PC1.exemple.cmd` vers ce nom,
+puis le renseigner localement : le fichier local et `postes/secrets/` sont exclus de Git.
+Les variables d'environnement restent utilisables sans fichier local. Le modele ne contient
+aucun mot de passe actif et ne fabrique pas de certificat ni de configuration SMTP.
+Ne pas partager le fichier local : c'est un script CMD executable de confiance.
 
-## Vérification restant à effectuer sur PC1
+Le serveur de salle appelle `afficher-ip-PC1.cmd` avant Java/Maven. Le script PowerShell
+liste les IPv4 des interfaces actives, en priorite celles avec passerelle et sans loopback/APIPA.
+S'il y en a plusieurs (VPN, Ethernet, Wi-Fi), choisir celle du reseau des clients.
+En cas d'echec, il invite a utiliser `ipconfig`. Une IP affichee n'est pas une preuve
+que le serveur est deja en ecoute. Les scripts Windows/PowerShell restent a tester sous Windows.
 
-1. Mettre à jour le code de la branche `arena/bdd4a78c-platforme-intelg-d-apprendre` sur les postes.
-2. Redémarrer le service d'authentification PC1 et les clients avec le code recompilé.
-3. Sur PC1, lancer `postes\tester-smtp.cmd votre-adresse@example.org` avec l'adresse de réception
-   réelle. Ne jamais publier les secrets de `configuration-PC1.local.cmd`.
-4. Vérifier la réception, les indésirables et la console PC1. Si l'interface signale une migration
-   manquante, sauvegarder la base et appliquer la migration 15 selon [le guide](../recuperation-et-suppression-comptes.md).
-5. Depuis un compte de test actif et accepté, demander un code, vérifier sa réception puis modifier
-   le mot de passe. Ne pas partager le code ni le nouveau mot de passe dans une capture.
+## Mise à jour interface et Windows
 
-Le diagnostic SMTP de PC1 est indispensable pour identifier la cause concrète du problème de
-livraison : ces tests n'utilisent ni les identifiants SMTP privés de PC1, ni la boîte mail de l'utilisateur.
+- Formulaire dans un ScrollPane : l'inscription reste défilable sur petit écran.
+- Actions placées après les champs, libellés associés et identifiants de contrôle stables.
+- Fichiers `1-serveur-PC1.bat`, `2-administrateur-PC2.bat`,
+  `3-enseignant-PC3.bat`, `4-apprenant-PC4.bat` : délégation aux `.cmd` du rôle fixé,
+  avec propagation du code retour. Les `.cmd` clients retournent 1 sur échec Maven.
+- `authentification-PC1.bat` : affiche chaque nom de variable absent (pas sa valeur),
+  vérifie la présence du magasin TLS avant compilation et conserve les logs Maven visibles.
+- `DEMARRER.cmd` explique les deux services nécessaires sur PC1 et l'absence de Docker côté client.
+- `syntaxe-java.txt` : analyse Tree-sitter de 104 fichiers, sans erreur syntaxique détectée.
+  Ce n'est pas une compilation. Reproduction : installer `tree-sitter` et `tree-sitter-java`,
+  parser tous les fichiers `src/**/*.java` avec `tree_sitter_java.language()` et vérifier
+  `root_node.has_error` pour chacun.
+
+Les assertions sur `.bat`/`.cmd` sont des contrôles de contenu : ces fichiers n'ont
+pas été exécutés sous Windows dans cet environnement Linux. Pour valider sur PC :
+1. Double-cliquer le `.bat` du rôle et vérifier l'ouverture de la bonne interface.
+2. Avec un mauvais JDK, vérifier que l'erreur reste affichée.
+3. Sur PC1, sans configuration SMTP/TLS, vérifier les noms manquants.
+4. Avec Maven en échec, vérifier `echo %errorlevel%` après `call postes\4-apprenant-PC4.bat` : 1 attendu.
+5. Tester l'inscription avec une fenêtre de 720 × 520 et vérifier le défilement jusqu'au bouton.
+
+## Ce qui n'a pas pu être exécuté ici
+
+- Compilation et tests JUnit : aucun JDK installé ; récupération du JDK GitHub bloquée
+  au téléchargement de l'archive ; dépôt Maven également inaccessible.
+- Docker/PostgreSQL : Docker absent.
+- Captures JavaFX, e-mails SMTP et essai réel entre plusieurs PC : non réalisés.
+
+Des tests JUnit ont été ajoutés pour la sélection de l'hôte, les diagnostics du service
+et les codes de connexion ; leur succès n'est pas affirmé dans ce rapport.
+
+## Utilisation dans la salle
+
+1. Sur **PC1 uniquement**, lancer Docker puis `docker compose -f db/docker-compose.yml up -d`.
+   PostgreSQL est publié sur `127.0.0.1:5433`, pas sur le réseau des clients.
+2. Configurer les variables PostgreSQL/TLS/SMTP sur PC1, puis ouvrir
+   `postes\authentification-PC1.bat` et `postes\1-serveur-PC1.cmd`.
+   Sous Linux : `bash postes/authentification-PC1.sh` et
+   `bash postes/1-serveur-PC1.sh`, dans deux terminaux.
+3. Sur les clients : ne pas installer ni lancer Docker ou PostgreSQL.
+   Installer un JDK 25, puis ouvrir le lanceur du rôle concerné.
+4. Saisir l'IP de PC1 (exemple `192.168.1.10`) dans le nouveau champ serveur.
+   Laisser vide pour la découverte UDP. Ne pas inclure `http://` ni le port.
+   Pour préremplir le champ, définir `IHM_SERVEUR` avant de lancer le script :
+   Windows CMD : `set "IHM_SERVEUR=192.168.1.10"` ; Linux :
+   `export IHM_SERVEUR=192.168.1.10`.
+5. Autoriser 7777 TCP/UDP et 8443 TCP sur PC1 ; faire approuver le certificat
+   par les JDK clients, avec SAN correspondant à l'IP/nom utilisé.
+   Ne jamais distribuer la clé privée TLS ni les secrets PostgreSQL/SMTP aux clients.
+
+Sur une base Docker existante, appliquer les migrations 07, 08 et 09 manuellement
+après sauvegarde. Ne pas supprimer le volume de données.
+
+## Validation à effectuer avec JDK 25 et base de test dédiée
+
+- `mvnw.cmd test` (Windows) ou `bash mvnw test` (Linux).
+- Pour les tests PostgreSQL, définir IHM_DB_URL, IHM_DB_USER, IHM_DB_PASSWORD vers
+  une base de test migrée (01, 02, 07, 08, 09). Sans URL ils sont ignorés.
+- Vérifier la connexion des trois rôles au même PC1 avec Docker arrêté sur les clients.
+- Vérifier un serveur absent, un mauvais certificat et un mauvais code.
+- Capturer les véritables fenêtres avec le dispositif SmokeTest une fois l'environnement prêt.
+
+## Périmètre
+
+Le présent rapport et les PNG ci-dessus décrivent les contrôles de déploiement précédents.
+Le parcours d'inscription a depuis été modifié : demande sans PIN, acceptation puis activation.
+Voir [activation-sans-pin.md](activation-sans-pin.md) pour le périmètre et la validation de ce changement.
+Les données pédagogiques restent simulées comme indiqué dans le README principal.
+
+## Diagrammes v2 — 3 novembre 2026
+
+Le sous-dossier `diagrammes-v2/` contient 12 PNG générés par
+`outils/generer_documents_v2.py` pour l’analyse des besoins v2.0, les diagrammes
+v2.0, les modèles de tâches v2.0 et le cahier des charges v1.0. Ce sont des
+**schémas de conception** alignés sur le code et les migrations 01 à 14 : ils ne
+constituent ni des captures JavaFX, ni une preuve d’exécution Windows, Docker,
+PostgreSQL, SMTP, NVIDIA ou NVDA. Les scénarios à exécuter réellement sont
+REC-01 à REC-16 dans `docs/Cahier-des-charges.pdf`.
+
+## Récupération du mot de passe — 24 novembre 2026
+
+Voir le [rapport de vérification de la réinitialisation](reinitialisation-tests.md) :
+26 tests ciblés réussis dans GitHub Actions, avec une capture du rapport et les limites
+de cette validation (livraison réelle sur PC1 restant à vérifier).
