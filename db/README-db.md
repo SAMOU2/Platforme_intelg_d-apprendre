@@ -269,7 +269,7 @@ rédigée sur PC1 et ne supprime rien. Ne pas l'appliquer en production.
 ## Appliquer les migrations manquantes en une commande
 
 Un volume Docker existant ne rejoue jamais `db/*.sql`. Le message
-« Mise à jour de la base nécessaire : appliquer les migrations 10, 11, 12 et 16 sur PC1 »
+« Mise à jour de la base nécessaire : sur PC1, lancer postes\appliquer-migrations-PC1.cmd »
 signifie que la base est plus ancienne que le code. Sur PC1, Docker Desktop démarré :
 
 ```powershell
@@ -281,6 +281,17 @@ postes\appliquer-migrations-PC1.cmd -AvecDemonstration   # + offres de démonstr
 Le script vérifie chaque migration avec `to_regclass`, affiche celles qui manquent, écrit une
 sauvegarde `pg_dump` dans `sauvegardes\`, puis n'applique que les fichiers absents. Il ne
 supprime ni table, ni donnée, ni volume. Redémarrer `postes\authentification-PC1.bat` ensuite.
+
+`postes\authentification-PC1.bat` fait déjà ce contrôle à chaque démarrage, en mode silencieux
+(`-Auto`), une fois Docker démarré : la base est ainsi mise à niveau toute seule après un
+`git pull`, ce qui supprime le message « Mise à jour de la base nécessaire » dans l'interface.
+Ce mode n'applique jamais `17-offres-demonstration.sql`, s'arrête proprement — sans rien modifier —
+si la base n'est pas encore joignable (code 2, la vérification est refaite au démarrage suivant),
+et laisse le service démarrer si une migration échoue. Pour le désactiver :
+
+```bat
+set "IHM_MIGRATIONS_AUTO=0"
+```
 
 ## Lanceur automatique Docker / PostgreSQL sous Windows (PC1)
 

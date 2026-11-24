@@ -39,6 +39,32 @@ REM Demarrage de la base locale avant compilation et lancement HTTPS.
 call "%~dp0demarrer-docker-PC1.bat" /auth
 if errorlevel 1 goto :echec
 
+REM Un volume Docker deja cree ne rejoue jamais les fichiers db\*.sql : la base
+REM peut etre plus ancienne que le code (message « Mise a jour de la base
+REM necessaire » dans l'interface). Quand le moteur Docker est deja en marche, on
+REM applique en silence les seules migrations absentes : sauvegarde pg_dump dans
+REM sauvegardes\, aucun fichier deja applique n'est rejoue, rien n'est supprime.
+REM IHM_MIGRATIONS_AUTO=0 dans configuration-PC1.local.cmd desactive ce controle.
+if /i "%IHM_MIGRATIONS_AUTO%"=="0" goto :migrations_faites
+echo Verification des migrations de la base...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0appliquer-migrations-PC1.ps1" -Auto
+REM Codes du mode -Auto : 2 = base non joignable, 1 = echec, 0 = base a jour.
+REM Aucun de ces cas n'empeche le service de demarrer : les donnees existantes restent lisibles.
+if errorlevel 2 goto :migrations_injoignables
+if errorlevel 1 goto :migrations_echec
+echo Base a jour.
+goto :migrations_faites
+
+:migrations_injoignables
+echo [ATTENTION] Base non joignable pour le moment : migrations non verifiees.
+echo             Le service demarre quand meme ; verification refaite au prochain demarrage.
+goto :migrations_faites
+
+:migrations_echec
+echo [ATTENTION] Migrations non appliquees : la base reste dans son etat precedent.
+echo             Relancer postes\appliquer-migrations-PC1.cmd pour lire la cause exacte.
+:migrations_faites
+
 if not defined IHM_AUTH_PORT set "IHM_AUTH_PORT=0"
 
 echo.

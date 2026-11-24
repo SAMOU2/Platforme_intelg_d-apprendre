@@ -149,7 +149,7 @@ Pour tester sur **un seul ordinateur** : mêmes étapes dans le même ordre — 
 - **PC1 annonce une configuration absente** : vérifier `postes\configuration-PC1.local.cmd` sur PC1 uniquement.
 - **Le client ne trouve pas la plateforme** : vérifier que les deux fenêtres PC1 sont toujours ouvertes et que tous les postes utilisent le même réseau. Ne pas saisir `127.0.0.1` sur un autre ordinateur.
 - **Une erreur s’affiche** : lire le premier message `[ERREUR]`. Ne pas supprimer le volume Docker ni la configuration privée pour “réessayer”.
-- **« Mise à jour de la base nécessaire »** : sur PC1, `postes\appliquer-migrations-PC1.cmd` (sauvegarde, applique seulement les migrations absentes, ne supprime rien), puis redémarrer `postes\authentification-PC1.bat`. `-AvecDemonstration` ajoute des offres d’exemple.
+- **« Mise à jour de la base nécessaire »** : normalement traitée seule au démarrage de `postes\authentification-PC1.bat`, qui applique en silence les migrations absentes après sauvegarde. Sinon, lancer `postes\appliquer-migrations-PC1.cmd` (`-AvecDemonstration` ajoute des offres d’exemple).
 
 ### 4.5 Maven à la main (dépannage)
 
