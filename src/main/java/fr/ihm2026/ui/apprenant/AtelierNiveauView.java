@@ -314,18 +314,31 @@ public class AtelierNiveauView extends BorderPane {
     }
 
     /**
-     * L'assistance revient sur les étapes de cours et d'entraînement, mais jamais pendant une
-     * copie ouverte : le serveur refuse déjà l'IA dans ce cas, l'interface ne la propose donc pas
-     * non plus. Le test, lui, reste dans cette fenêtre.
+     * L'assistance accompagne les étapes de cours et d'entraînement. Pendant une copie ouverte,
+     * le serveur refuse l'IA (RG-13) : le panneau reste donc <b>visible mais désactivé</b>, avec
+     * la raison écrite. Auparavant il disparaissait sans explication, ce qui laissait croire que
+     * le bouton « Donner un indice » ou le champ de question étaient cassés.
      */
-    private void ouvrirAssistant() {
-        if (Session.evaluationEnCours()) {
-            setRight(null);
-            return;
+    /**
+     * Revient a la copie ouverte. Si l'etape « Test » ne peut pas etre rouverte (question ou
+     * acces retires entre-temps), on passe par « Mes copies » : la bas, l'apprenant peut
+     * reprendre, soumettre ou abandonner, et le drapeau local d'evaluation est leve par le
+     * routeur. Sans cette porte de sortie, le panneau restait verrouille indefiniment.
+     */
+    private void reprendreEvaluation() {
+        afficherEtape(Session.EtapeAtelier.TEST);
+        if (Session.evaluationEnCours() && etape != Session.EtapeAtelier.TEST) {
+            router.go(Router.RESULTAT);
         }
+    }
+
+    private void ouvrirAssistant() {
         if (assistant == null) {
             assistant = new PanneauAssistant(brouillon::getText);
+            // Sortie explicite du blocage : la copie ouverte est dans cet atelier, on y retourne.
+            assistant.surReprise(this::reprendreEvaluation);
         }
+        assistant.verrouiller(Session.evaluationEnCours());
         setRight(assistant);
     }
 }

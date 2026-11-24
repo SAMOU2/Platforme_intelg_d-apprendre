@@ -27,6 +27,23 @@ public record ReponseIa(
         return new ReponseIa(motif.message(), List.of(), motif, versionPrompt);
     }
 
+    /**
+     * Refus accompagne de sa cause technique, affichee apres le message pedagogique.
+     *
+     * <p>« Assistance momentanement indisponible » ne permet aucune correction. La cause (session
+     * expiree, quota, PC1 injoignable, modele absent, refus du fournisseur) est deja redigee pour
+     * l'utilisateur par le service ; on l'ajoute telle quelle. Le texte reste un refus : il ne
+     * note pas, ne valide pas et ne transmet aucun secret.</p>
+     */
+    public static ReponseIa refusDetaille(MotifRefus motif, String versionPrompt, String cause) {
+        String detail = cause == null ? "" : cause.strip();
+        if (detail.isEmpty() || motif.message().contains(detail)) {
+            return refus(motif, versionPrompt);
+        }
+        return new ReponseIa(motif.message() + "\n\nCause : " + detail,
+                List.of(), motif, versionPrompt);
+    }
+
     public boolean estRefus() {
         return motif.estRefus();
     }
