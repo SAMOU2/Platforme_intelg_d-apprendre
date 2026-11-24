@@ -92,8 +92,13 @@ public final class AideIaApi {
                 return ReponseIa.refus(MotifRefus.TEST_EN_COURS, ModeleSimule.VERSION_PROMPT);
             try { return fr.ihm2026.reseau.Reseau.sessionAuthentification().demanderIa(contexte); }
             catch (RuntimeException ex) {
-                System.err.println("[ia-pc1] Echec de la demande HTTPS : " + ex.getClass().getSimpleName());
-                return ReponseIa.refus(MotifRefus.INDISPONIBLE, ModeleSimule.VERSION_PROMPT);
+                // La cause reelle part vers le panneau : « indisponible » seul ne permet aucune
+                // correction. Le message du service est deja redige pour l'utilisateur (quota,
+                // session expiree, PC1 injoignable, modele absent…).
+                String cause = ex.getMessage() == null || ex.getMessage().isBlank()
+                        ? ex.getClass().getSimpleName() : ex.getMessage().strip();
+                System.err.println("[ia-pc1] Echec de la demande HTTPS : " + cause);
+                return ReponseIa.refusDetaille(MotifRefus.INDISPONIBLE, ModeleSimule.VERSION_PROMPT, cause);
             }
         }
         long debut = System.currentTimeMillis();

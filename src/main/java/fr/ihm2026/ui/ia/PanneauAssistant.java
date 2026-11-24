@@ -28,10 +28,15 @@ import javafx.scene.layout.VBox;
 public class PanneauAssistant extends VBox {
 
     private boolean demandeEnCours;
+    /** Vrai pendant une copie ouverte : le serveur refuse l'IA (RG-13), le panneau l'explique. */
+    private boolean verrouille;
+    /** Action proposee quand l'assistance est suspendue : rouvrir la copie en cours. */
+    private Runnable reprise;
     private final java.util.List<ContexteIa.Tour> historique=new java.util.ArrayList<>();
     private final VBox messages = new VBox(8);
     private final TextField champ = new TextField();
     private final Label pied;
+    private final Button reprendre = new Button("Reprendre la copie en cours");
     private final java.util.List<Button> actions = new java.util.ArrayList<>();
 
     private final java.util.function.Supplier<String> codeCourant;
@@ -66,12 +71,21 @@ public class PanneauAssistant extends VBox {
         champ.getStyleClass().add("champ");
         champ.setOnAction(e -> envoyerLibre());
 
-        pied = new Label("Modèle : " + AideIaApi.identifiantModele()
-                + " · via PC1 : 30 demandes/jour par compte, quota partagé 200.");
+        pied = new Label(textePied());
         pied.getStyleClass().add("mention-ia");
         pied.setWrapText(true);
 
-        getChildren().addAll(titre, mention, scroll, actions, champ, pied);
+        reprendre.getStyleClass().add("btn-secondaire");
+        reprendre.setMaxWidth(Double.MAX_VALUE);
+        reprendre.setVisible(false);
+        reprendre.setManaged(false);
+        reprendre.setOnAction(e -> {
+            if (reprise != null) {
+                reprise.run();
+            }
+        });
+
+        getChildren().addAll(titre, mention, scroll, actions, champ, reprendre, pied);
         setPadding(new Insets(10));
         rafraichirEtat();
     }
@@ -83,12 +97,49 @@ public class PanneauAssistant extends VBox {
      */
     private void rafraichirEtat() {
         EtatAgent etat = AideIaApi.etatAgent();
-        boolean dispo = etat.disponible() && !demandeEnCours;
+        // La copie peut demarrer apres l'affichage du panneau (sujet charge en arriere-plan) :
+        // l'etat est relu ici, pas seulement au changement d'onglet.
+        boolean suspendue = verrouille || Session.evaluationEnCours();
+        boolean dispo = etat.disponible() && !demandeEnCours && !suspendue;
         champ.setDisable(!dispo);
         actions.forEach(b -> b.setDisable(!dispo));
-        if (!dispo) {
+        // Le chemin de sortie est propose la ou le blocage est explique, pas seulement decrit.
+        boolean sortie = suspendue && reprise != null;
+        reprendre.setVisible(sortie);
+        reprendre.setManaged(sortie);
+        if (suspendue) {
+            // Explication explicite : un panneau visible mais inerte doit dire pourquoi.
+            pied.setText("Assistance suspendue : une copie de test est ouverte. Reprenez "
+                    + "l'onglet « 3 · Test final » pour la soumettre ou l'abandonner, puis "
+                    + "revenez ici : l'aide IA se réactive.");
+        } else if (demandeEnCours) {
+            pied.setText("Consultation du cours en cours…");
+        } else if (!etat.disponible()) {
             pied.setText(etat.explication());
+        } else {
+            pied.setText(textePied());
         }
+    }
+
+    /** Rappel des limites, affiche quand l'assistance est disponible. */
+    private String textePied() {
+        return "Modèle : " + AideIaApi.identifiantModele()
+                + " · via PC1 : 30 demandes/jour par compte, quota partagé 200.";
+    }
+
+    /**
+     * Suspend l'assistance (copie de test ouverte) ou la rend disponible, sans retirer le panneau
+     * de l'écran : l'apprenant voit la règle au lieu de chercher un bouton qui ne repond plus.
+     */
+    public void verrouiller(boolean suspendue) {
+        verrouille = suspendue;
+        rafraichirEtat();
+    }
+
+    /** Bouton affiche pendant le verrouillage pour revenir a la copie ouverte. */
+    public void surReprise(Runnable action) {
+        reprise = action;
+        rafraichirEtat();
     }
 
     private Button bouton(String libelle, String type) {
@@ -127,7 +178,6 @@ public class PanneauAssistant extends VBox {
         ajouter(bulle(question, "ia-utilisateur"));
 
         // Style rétro : un rouet de patience en monospace, comme avant les animations en pixels.
-        String piedAvant = pied.getText();
         javafx.animation.Timeline rouet = fr.ihm2026.core.StyleVisuel.estRetro()
                 ? fr.ihm2026.ui.commun.Retro.demarrerRouet(pied, "consultation du cours…")
                 : null;
@@ -139,20 +189,20 @@ public class PanneauAssistant extends VBox {
                 historique.add(new ContexteIa.Tour(question,reponse.reponse()));
                 while(historique.size()>ContexteIa.TOURS_MAX)historique.remove(0);
             }
-            afficherReponse(reponse, rouet, piedAvant);
+            afficherReponse(reponse, rouet);
         }, erreur -> {
             demandeEnCours = false;
-            afficherReponse(ReponseIa.refus(MotifRefus.INDISPONIBLE,
-                    fr.ihm2026.api.ia.ModeleSimule.VERSION_PROMPT), rouet, piedAvant);
+            // Meme regle qu'ailleurs : la cause reelle accompagne le refus, sans quoi l'apprenant
+            // ne peut ni comprendre ni signaler la panne.
+            String cause = erreur.getMessage() == null || erreur.getMessage().isBlank()
+                    ? erreur.getClass().getSimpleName() : erreur.getMessage().strip();
+            afficherReponse(ReponseIa.refusDetaille(MotifRefus.INDISPONIBLE,
+                    fr.ihm2026.api.ia.ModeleSimule.VERSION_PROMPT, cause), rouet);
         });
     }
 
-    private void afficherReponse(ReponseIa reponse, javafx.animation.Timeline rouet, String piedAvant) {
-
+    private void afficherReponse(ReponseIa reponse, javafx.animation.Timeline rouet) {
         fr.ihm2026.ui.commun.Retro.arreterRouet(rouet);
-        if (piedAvant != null) {
-            pied.setText(piedAvant);
-        }
         Label bulle = bulle(reponse.reponse(), reponse.estRefus() ? "ia-systeme" : "ia-reponse");
         ajouter(bulle);
         // Rétro : le texte s'écrit caractère par caractère ; macOS : il apparaît en fondu.
@@ -165,15 +215,8 @@ public class PanneauAssistant extends VBox {
             lien.setWrapText(true);
             ajouter(lien);
         }
-        if (pied != null) {
-            pied.setText(fr.ihm2026.reseau.Reseau.sessionCompteInstallee()
-                    ? "NVIDIA via PC1 · limite de 30 demandes/jour par compte (quota partagé : 200)."
-                    : "Modèle : " + AideIaApi.identifiantModele());
-        }
+        // Le pied suit toujours l'etat reel : verrouillage, indisponibilite, ou rappel des limites.
         rafraichirEtat();
-        if (!AideIaApi.etatAgent().disponible()) {
-            pied.setText(AideIaApi.etatAgent().explication());
-        }
     }
 
     /** Ajoute une bulle au fil et la fait apparaître (fondu + montée, comme Messages). */

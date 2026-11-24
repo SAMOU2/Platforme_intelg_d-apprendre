@@ -67,3 +67,17 @@ git merge --ff-only origin/main
 
 Exécuter séparément, arrêter en cas d'erreur et attendre BUILD SUCCESS. Relancer le serveur
 HTTPS et les interfaces mises à jour. Ne pas forcer l'écrasement des modifications locales.
+
+## Panneau visible pendant le test, mais verrouillé
+
+Sur l'étape « 2 · Entraînement avec IA », l'assistant disparaissait entièrement dès qu'une
+copie restait ouverte (`Session.evaluationEnCours()`), sans un mot d'explication : on pouvait
+croire le panneau cassé. Il reste maintenant affiché, désactivé, avec la raison écrite
+(« Assistance suspendue : une copie de test est ouverte… ») et un bouton « Reprendre la copie
+en cours » qui ramène à l'onglet du test pour la soumettre ou l'abandonner. Le service refuse
+toujours l'IA pendant la copie (`TEST_EN_COURS`, contrôle côté PC1) : l'affichage ne change
+aucune règle, il rend la règle visible.
+
+Un échec de la route IA n'affiche plus le seul message « indisponible » : la cause rédigée par
+le service (session expirée, quota atteint, PC1 injoignable, clé NVIDIA absente, HTTP 401/429)
+suit le refus, et le journal `[ia-pc1]` conserve la même cause.

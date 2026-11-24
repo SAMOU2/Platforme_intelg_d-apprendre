@@ -252,9 +252,16 @@ class InscriptionAuxOffresTest(unittest.TestCase):
         self.assertIn('etapeDemandee', atelier)
         self.assertIn('if (etape != etapeDemandee) {', atelier)
         self.assertIn('afficherEtape(etapeDemandee);', atelier)
-        # Une copie ouverte suspend l'assistance IA dans la fenêtre, comme le fait le serveur.
-        self.assertIn('if (Session.evaluationEnCours()) {', atelier)
-        self.assertIn('setRight(null)', atelier)
+        # Une copie ouverte suspend l'assistance IA, comme le fait le serveur — mais le panneau
+        # reste affiché et verrouillé : le faire disparaître donnait l'impression d'une panne.
+        self.assertIn('assistant.verrouiller(Session.evaluationEnCours());', atelier)
+        self.assertIn('setRight(assistant);', atelier)
+        self.assertNotIn('setRight(null);\n        }', atelier)
+        panneau = lire('src/main/java/fr/ihm2026/ui/ia/PanneauAssistant.java')
+        self.assertIn('public void verrouiller(boolean suspendue)', panneau)
+        self.assertIn('une copie de test est ouverte', panneau)
+        # Un échec de la route IA remonte sa cause au lieu d'un simple « indisponible ».
+        self.assertIn('ReponseIa.refusDetaille(', lire('src/main/java/fr/ihm2026/api/service/AideIaApi.java'))
         session = lire('src/main/java/fr/ihm2026/core/Session.java')
         self.assertIn('public static EtapeAtelier etapeAtelier()', session)
         self.assertIn('public static void setEtapeAtelier(EtapeAtelier etape)', session)
