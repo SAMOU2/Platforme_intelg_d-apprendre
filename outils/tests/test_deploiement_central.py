@@ -49,13 +49,29 @@ class DeploiementCentralTest(unittest.TestCase):
         for client in ['2-administrateur-PC2', '3-enseignant-PC3', '4-apprenant-PC4']:
             self.assertNotIn('demarrer-docker', (ROOT / f'postes/{client}.bat').read_text())
 
+    def test_classes_compilees_par_un_ide_refusees(self):
+        """« Unresolved compilation problems » = classe ECJ, pas la faute de Maven."""
+        auth = (ROOT / 'postes/authentification-PC1.bat').read_text()
+        self.assertIn('Unresolved compilation', auth)
+        self.assertIn('findstr /m /c:', auth)
+        self.assertIn('rmdir /s /q "target\\classes"', auth)
+        # La variable doit etre lue avec expansion retardee dans le meme bloc.
+        self.assertIn('setlocal EnableDelayedExpansion', auth)
+        self.assertIn('!CLASSE_DOUTEUSE!', auth)
+        # Le service se ferme proprement, sans try-with-resources sur des var.
+        serveur = (ROOT / 'src/main/java/fr/ihm2026/api/service/ServeurAuthentificationHttps.java').read_text()
+        self.assertNotIn('try (var instance = new fr.ihm2026.reseau.InstanceHttpsLocale())', serveur)
+        self.assertIn('InstanceHttpsLocale instance = null;', serveur)
+        self.assertIn('fermer(instance);', serveur)
+        self.assertIn('private static void fermer(AutoCloseable ressource)', serveur)
+
     def test_port_https_auto_et_decouverte(self):
         base = ROOT / 'src/main/java/fr/ihm2026'
         serveur = (base / 'api/service/ServeurAuthentificationHttps.java').read_text()
         self.assertIn('getOrDefault("IHM_AUTH_PORT", "0")', serveur)
         self.assertIn('new InetSocketAddress(0)', serveur)
         self.assertIn('instance.publier(serveur.port())', serveur)
-        self.assertIn('if(!instance.acquise())', serveur)
+        self.assertIn('if (!instance.acquise())', serveur)
         registre = (base / 'reseau/InstanceHttpsLocale.java').read_text()
         for garde in ['tryLock()', 'isAlive()', 'startInstant()', 'toEpochMilli()==debut']:
             self.assertIn(garde, registre)

@@ -179,22 +179,43 @@ public final class ServeurAuthentificationHttps implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        try (var instance = new fr.ihm2026.reseau.InstanceHttpsLocale()) {
-            if(!instance.acquise()) {
+        // Types explicites et fermeture manuelle : un try-with-resources sur « var » produit des
+        // classes synthetiques que certains compilateurs (dont ECJ, utilisé par les IDE) laissent
+        // derriere eux en cas d'echec. La console affichait alors « Unresolved compilation
+        // problems » au demarrage, avec une classe compilee par l'IDE au lieu de Maven.
+        fr.ihm2026.reseau.InstanceHttpsLocale instance = null;
+        ServeurAuthentificationHttps serveur = null;
+        try {
+            instance = new fr.ihm2026.reseau.InstanceHttpsLocale();
+            if (!instance.acquise()) {
                 System.out.println("[INFO] Le serveur HTTPS de ce projet est deja lance ou en cours de demarrage. Conservez sa fenetre ouverte ; aucun doublon cree.");
                 return;
             }
-            try (ServeurAuthentificationHttps serveur = demarrerDepuisEnvironnement()) {
-                instance.publier(serveur.port());
-                System.out.println("API d'authentification HTTPS prête sur le port " + serveur.port() + ".");
-                Thread.currentThread().join();
-            }
+            serveur = demarrerDepuisEnvironnement();
+            instance.publier(serveur.port());
+            System.out.println("API d'authentification HTTPS prête sur le port " + serveur.port() + ".");
+            Thread.currentThread().join();
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         } catch (Exception ex) {
             // Ne pas afficher les paramètres JDBC, secrets ou détails internes dans la console.
             System.err.println("[ERREUR] " + diagnosticDemarrage(ex));
             System.exit(1);
+        } finally {
+            fermer(serveur);
+            fermer(instance);
+        }
+    }
+
+    /** Ferme une ressource sans masquer l'erreur de demarrage deja affichee. */
+    private static void fermer(AutoCloseable ressource) {
+        if (ressource == null) {
+            return;
+        }
+        try {
+            ressource.close();
+        } catch (Exception ignore) {
+            // Un echec de fermeture ne doit pas remplacer le diagnostic de demarrage.
         }
     }
 
