@@ -282,6 +282,10 @@ Le script vérifie chaque migration avec `to_regclass`, affiche celles qui manqu
 sauvegarde `pg_dump` dans `sauvegardes\`, puis n'applique que les fichiers absents. Il ne
 supprime ni table, ni donnée, ni volume. Redémarrer `postes\authentification-PC1.bat` ensuite.
 
+Si le conteneur `ihm2026-postgres` existe mais est arrêté (`container ... is not running`, cas
+courant après une extinction du poste), le script le relance avec `docker start` — jamais de
+suppression — puis attend jusqu'à 30 secondes que PostgreSQL accepte les connexions.
+
 `postes\authentification-PC1.bat` fait déjà ce contrôle à chaque démarrage, en mode silencieux
 (`-Auto`), une fois Docker démarré : la base est ainsi mise à niveau toute seule après un
 `git pull`, ce qui supprime le message « Mise à jour de la base nécessaire » dans l'interface.

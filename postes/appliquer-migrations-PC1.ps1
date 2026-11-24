@@ -100,6 +100,41 @@ try {
         throw "Conteneur $conteneur absent. Demarrer la base avec postes\demarrer-docker-PC1.bat, puis relancer."
     }
 
+    # Conteneur present mais arrete : c'est le cas le plus courant apres une extinction du poste.
+    # `docker start` relance le meme conteneur et conserve toutes les donnees (aucun volume touche).
+    if ($inspection.Sortie -notmatch 'true') {
+        if (-not $Auto) { Write-Host "[INFO] Le conteneur $conteneur est arrete : redemarrage." }
+        $demarrage = Invoke-CommandeNative $dockerExe @('start', $conteneur)
+        if ($demarrage.Code -ne 0) {
+            $message = "Le conteneur $conteneur n'a pas pu etre demarre. " + $demarrage.Sortie +
+                       " Verifier Docker Desktop, puis relancer postes\demarrer-docker-PC1.bat."
+            if ($Auto) {
+                Write-Host ('[ATTENTION] ' + $message)
+                exit $CodeBaseInjoignable
+            }
+            throw $message
+        }
+        # Attendre que PostgreSQL accepte les connexions (le conteneur peut etre "started" avant le serveur).
+        $pret = $false
+        for ($essai = 1; $essai -le 30 -and -not $pret; $essai++) {
+            Start-Sleep -Seconds 1
+            $attente = Invoke-CommandeNative $dockerExe @('exec', $conteneur, 'psql', '-tA', '-U', $utilisateur, '-d', $base, '-c', 'SELECT 1;')
+            $pret = ($attente.Code -eq 0)
+        }
+        if (-not $pret) {
+            $logs = Invoke-CommandeNative $dockerExe @('logs', '--tail', '20', $conteneur)
+            $message = "PostgreSQL ne repond pas dans $conteneur apres redemarrage (30 s)." +
+                       " Diagnostics : " + $logs.Sortie +
+                       " Ne pas supprimer le volume ; relancer postes\demarrer-docker-PC1.bat."
+            if ($Auto) {
+                Write-Host ('[ATTENTION] ' + $message)
+                exit $CodeBaseInjoignable
+            }
+            throw $message
+        }
+        if (-not $Auto) { Write-Host "[OK] Conteneur $conteneur demarre, PostgreSQL repond." }
+    }
+
     # Premiere question, la seule qui distingue « base injoignable » d'une sonde impossible :
     # la base repond-elle ? Les sondes suivantes peuvent echouer sur une table absente, ce
     # qui est normal : cela signifie simplement que la migration n'est pas encore appliquee.

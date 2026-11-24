@@ -58,6 +58,21 @@ class ApplicationMigrationsTest(unittest.TestCase):
                 self.assertNotIn(interdit, ps)
         self.assertNotIn('down -v', auth)
 
+    def test_conteneur_arrete_est_redemarre(self):
+        """« container ... is not running » : le conteneur doit etre relance, donnees conservees."""
+        ps = lire('postes/appliquer-migrations-PC1.ps1')
+        # Lecture de l'etat par le code retour de la commande, pas seulement par le texte.
+        self.assertIn("$inspection = Invoke-CommandeNative $dockerExe @('inspect', '--format', '{{.State.Running}}', $conteneur)", ps)
+        self.assertIn("if ($inspection.Sortie -notmatch 'true')", ps)
+        self.assertIn("@('start', $conteneur)", ps)
+        # Attente que PostgreSQL accepte les connexions apres le redemarrage.
+        self.assertIn('$essai = 1; $essai -le 30', ps)
+        self.assertIn("Start-Sleep -Seconds 1", ps)
+        # Aucun risque pour les donnees : jamais de suppression de conteneur ni de volume.
+        for interdit in ('rm -f', 'rm ', 'down -v', 'volume rm', 'container prune'):
+            with self.subTest(interdit=interdit):
+                self.assertNotIn(interdit, ps)
+
     def test_aucun_echappement_java_invalide_dans_les_messages(self):
         """postes\\appliquer... : une seule barre oblique dans le source ne compile pas."""
         api = lire('src/main/java/fr/ihm2026/api/service/AuthentificationApiHttps.java')
